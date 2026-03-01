@@ -1,0 +1,1213 @@
+import React, { useState } from 'react';
+import { useData } from './DataContext';
+import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional } from '../types';
+import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase } from 'lucide-react';
+
+export function AdminPanel() {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes'>('dashboard');
+  const { 
+    about, history, updateAbout, updateHistory,
+    products, addProduct, updateProduct, deleteProduct,
+    partners, addPartner, updatePartner, deletePartner,
+    clients, addClient, updateClient, deleteClient,
+    categories, addCategory, updateCategory, deleteCategory,
+    subcategories, addSubcategory, updateSubcategory, deleteSubcategory,
+    settings, updateSettings,
+    works, addWork, updateWork, deleteWork,
+    professionals, addProfessional, updateProfessional, deleteProfessional
+  } = useData();
+
+  // --- State for Forms ---
+  const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
+  const [editingPartner, setEditingPartner] = useState<Partial<Partner> | null>(null);
+  const [editingClient, setEditingClient] = useState<Partial<Client> | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Partial<Category> | null>(null);
+  const [editingSubcategory, setEditingSubcategory] = useState<Partial<Subcategory> | null>(null);
+  const [editingWork, setEditingWork] = useState<Partial<Work> | null>(null);
+  const [editingProfessional, setEditingProfessional] = useState<Partial<Professional> | null>(null);
+  
+  const [aboutForm, setAboutForm] = useState(about);
+  const [historyForm, setHistoryForm] = useState(history);
+  const [settingsForm, setSettingsForm] = useState(settings);
+
+  // --- UI State ---
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: string; confirmMsg: string; remove: (id: string) => void } | null>(null);
+
+  // --- Auth State ---
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginUser, setLoginUser] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Sync forms with context data when it changes
+  React.useEffect(() => {
+    setSettingsForm(settings);
+  }, [settings]);
+
+  React.useEffect(() => {
+    setAboutForm(about);
+  }, [about]);
+
+  React.useEffect(() => {
+    setHistoryForm(history);
+  }, [history]);
+
+  // --- Helper Functions ---
+  const processFile = (file: File, callback: (base64: string) => void) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      callback(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const processFiles = (files: FileList, callback: (base64s: string[]) => void) => {
+    const promises = Array.from(files).map(file => new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    }));
+    Promise.all(promises).then(callback);
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  // --- Handlers ---
+
+  const handleSaveAbout = () => {
+    try {
+      updateAbout(aboutForm);
+      showNotification('Alterações em "Sobre Nós" salvas com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar Sobre Nós:', error);
+      showNotification('Erro ao salvar alterações.', 'error');
+    }
+  };
+
+  const handleSaveHistory = () => {
+    try {
+      updateHistory(historyForm);
+      showNotification('Alterações em "Nossa História" salvas com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar História:', error);
+      showNotification('Erro ao salvar alterações.', 'error');
+    }
+  };
+
+  const handleSaveSettings = () => {
+    try {
+      console.log('Salvando configurações:', settingsForm);
+      updateSettings(settingsForm);
+      showNotification('Configurações salvas com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
+      showNotification('Erro ao salvar configurações.', 'error');
+    }
+  };
+
+  // Generic Save/Delete Handlers
+  const handleSaveItem = <T extends { id?: string }>(
+    item: Partial<T>,
+    setItem: (i: Partial<T> | null) => void,
+    add: (i: T) => void,
+    update: (i: T) => void,
+    confirmMsg: string
+  ) => {
+    if (item.id) {
+      update(item as T);
+      setItem(null);
+      showNotification(`${confirmMsg} atualizado(a) com sucesso!`);
+    } else {
+      const newItem = { ...item, id: Date.now().toString() } as T;
+      add(newItem);
+      setItem(null);
+      showNotification(`${confirmMsg} criado(a) com sucesso!`);
+    }
+  };
+
+  const handleDeleteItem = (id: string, remove: (id: string) => void, confirmMsg: string) => {
+    setDeleteConfirmation({ id, remove, confirmMsg });
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirmation) {
+      deleteConfirmation.remove(deleteConfirmation.id);
+      showNotification(`${deleteConfirmation.confirmMsg} excluído(a) com sucesso!`);
+      setDeleteConfirmation(null);
+    }
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loginUser === settings.adminUser && loginPassword === settings.adminPassword) {
+      setIsLoggedIn(true);
+      showNotification('Login realizado com sucesso!');
+    } else {
+      showNotification('Usuário ou senha incorretos.', 'error');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setLoginUser('');
+    setLoginPassword('');
+    showNotification('Logout realizado com sucesso.');
+  };
+
+  const removeWorkImage = (index: number) => {
+    if (editingWork && editingWork.images) {
+      const newImages = [...editingWork.images];
+      newImages.splice(index, 1);
+      setEditingWork({ ...editingWork, images: newImages });
+    }
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-stone-100 flex items-center justify-center p-4">
+        {notification && (
+          <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all transform translate-y-0 ${notification.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
+            {notification.message}
+          </div>
+        )}
+        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-800">
+              <Lock size={32} />
+            </div>
+            <h2 className="text-2xl font-bold text-emerald-900">Acesso Administrativo</h2>
+            <p className="text-stone-500">Entre com suas credenciais para continuar</p>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Usuário</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+                  <User size={18} />
+                </div>
+                <input 
+                  type="text" 
+                  value={loginUser}
+                  onChange={(e) => setLoginUser(e.target.value)}
+                  className="w-full pl-10 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                  placeholder="Seu usuário"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Senha</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+                  <Lock size={18} />
+                </div>
+                <input 
+                  type="password" 
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="w-full pl-10 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                  placeholder="Sua senha"
+                />
+              </div>
+            </div>
+            <button 
+              type="submit" 
+              className="w-full bg-emerald-700 text-white py-3 rounded-lg font-bold hover:bg-emerald-800 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              Entrar
+            </button>
+            <div className="text-center">
+              <a href="/" className="text-sm text-stone-500 hover:text-emerald-700">Voltar ao site</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-stone-100 p-6">
+      <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden min-h-[800px] flex flex-col md:flex-row">
+        
+        {/* Sidebar */}
+        <aside className="w-full md:w-64 bg-emerald-900 text-white p-6 flex-shrink-0">
+          <div className="flex items-center gap-2 mb-8">
+            <LayoutDashboard />
+            <h2 className="text-xl font-bold">Painel Admin</h2>
+          </div>
+          
+          <nav className="space-y-2">
+            <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'dashboard' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <LayoutDashboard size={20} /> Dashboard
+            </button>
+            <button onClick={() => setActiveTab('clientes')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'clientes' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <UserCheck size={20} /> Clientes
+            </button>
+            <button onClick={() => setActiveTab('produtos')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'produtos' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Package size={20} /> Produtos
+            </button>
+            <button onClick={() => setActiveTab('obras')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'obras' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Hammer size={20} /> Obras
+            </button>
+            <button onClick={() => setActiveTab('profissionais')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'profissionais' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Briefcase size={20} /> Profissionais
+            </button>
+            <button onClick={() => setActiveTab('categorias')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'categorias' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <List size={20} /> Categorias
+            </button>
+            <button onClick={() => setActiveTab('parceiros')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'parceiros' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Users size={20} /> Parceiros
+            </button>
+            <button onClick={() => setActiveTab('sobre')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'sobre' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Info size={20} /> Sobre Nós
+            </button>
+            <button onClick={() => setActiveTab('ajustes')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'ajustes' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <SettingsIcon size={20} /> Ajustes
+            </button>
+            <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition hover:bg-red-800/50 text-red-200 hover:text-white mt-4">
+              <LogOut size={20} /> Sair
+            </button>
+          </nav>
+
+          <div className="mt-auto pt-8 border-t border-emerald-800">
+            <a href="/" className="text-emerald-200 hover:text-white text-sm flex items-center gap-2">
+              <X size={16} /> Voltar ao Site
+            </a>
+          </div>
+        </aside>
+
+        {/* Content */}
+        <main className="flex-1 p-8 overflow-y-auto relative">
+          
+          {/* Notification Toast */}
+          {notification && (
+            <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all transform translate-y-0 ${notification.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
+              {notification.message}
+            </div>
+          )}
+
+          {/* Delete Confirmation Modal */}
+          {deleteConfirmation && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+              <div className="bg-white p-6 rounded-xl w-full max-w-sm shadow-2xl">
+                <h4 className="text-xl font-bold text-stone-900 mb-2">Confirmar Exclusão</h4>
+                <p className="text-stone-600 mb-6">
+                  Tem certeza que deseja excluir este(a) <strong>{deleteConfirmation.confirmMsg}</strong>? Esta ação não pode ser desfeita.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button 
+                    onClick={() => setDeleteConfirmation(null)}
+                    className="px-4 py-2 border border-stone-300 rounded-lg text-stone-700 hover:bg-stone-50 font-medium"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={confirmDelete}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium flex items-center gap-2"
+                  >
+                    <Trash2 size={18} /> Excluir
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- DASHBOARD --- */}
+          {activeTab === 'dashboard' && (
+            <div>
+              <h3 className="text-2xl font-bold text-emerald-900 mb-6">Visão Geral</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-emerald-100 rounded-lg text-emerald-800"><Package /></div>
+                    <span className="text-3xl font-bold text-emerald-900">{products.length}</span>
+                  </div>
+                  <p className="text-emerald-800 font-medium">Produtos Cadastrados</p>
+                </div>
+                <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-blue-100 rounded-lg text-blue-800"><UserCheck /></div>
+                    <span className="text-3xl font-bold text-blue-900">{clients.length}</span>
+                  </div>
+                  <p className="text-blue-800 font-medium">Clientes Cadastrados</p>
+                </div>
+                <div className="bg-amber-50 p-6 rounded-xl border border-amber-100">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-amber-100 rounded-lg text-amber-800"><Users /></div>
+                    <span className="text-3xl font-bold text-amber-900">{partners.length}</span>
+                  </div>
+                  <p className="text-amber-800 font-medium">Parceiros Ativos</p>
+                </div>
+                <div className="bg-purple-50 p-6 rounded-xl border border-purple-100">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-purple-100 rounded-lg text-purple-800"><List /></div>
+                    <span className="text-3xl font-bold text-purple-900">{categories.length}</span>
+                  </div>
+                  <p className="text-purple-800 font-medium">Categorias</p>
+                </div>
+                <div className="bg-orange-50 p-6 rounded-xl border border-orange-100">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-orange-100 rounded-lg text-orange-800"><Hammer /></div>
+                    <span className="text-3xl font-bold text-orange-900">{works.length}</span>
+                  </div>
+                  <p className="text-orange-800 font-medium">Obras Realizadas</p>
+                </div>
+                <div className="bg-teal-50 p-6 rounded-xl border border-teal-100">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-teal-100 rounded-lg text-teal-800"><Briefcase /></div>
+                    <span className="text-3xl font-bold text-teal-900">{professionals.length}</span>
+                  </div>
+                  <p className="text-teal-800 font-medium">Profissionais Indicados</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- OBRAS --- */}
+          {activeTab === 'obras' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-emerald-900">Gerenciar Obras</h3>
+                <button 
+                  onClick={() => setEditingWork({ title: '', description: '', images: [] })}
+                  className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2"
+                >
+                  <Plus size={18} /> Nova Obra
+                </button>
+              </div>
+
+              {editingWork && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-xl font-bold">{editingWork.id ? 'Editar Obra' : 'Nova Obra'}</h4>
+                      <button onClick={() => setEditingWork(null)}><X /></button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium">Título da Obra</label>
+                        <input className="w-full p-2 border rounded" value={editingWork.title} onChange={e => setEditingWork({...editingWork, title: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Descrição</label>
+                        <textarea className="w-full p-2 border rounded" rows={3} value={editingWork.description} onChange={e => setEditingWork({...editingWork, description: e.target.value})} />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Imagens da Obra</label>
+                        
+                        <div className="mb-4">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => {
+                              if (e.target.files && editingWork) {
+                                processFiles(e.target.files, (newImages) => {
+                                  setEditingWork(prev => {
+                                    if (!prev) return null;
+                                    return {
+                                      ...prev,
+                                      images: [...(prev.images || []), ...newImages]
+                                    };
+                                  });
+                                });
+                              }
+                            }}
+                            className="w-full p-2 border rounded"
+                          />
+                          <p className="text-xs text-stone-500 mt-1">Você pode selecionar múltiplas imagens.</p>
+                        </div>
+
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                          {editingWork.images?.map((img, idx) => (
+                            <div key={idx} className="relative group aspect-square bg-stone-100 rounded overflow-hidden">
+                              {img && img.trim() !== '' ? (
+                                <img 
+                                  src={img} 
+                                  alt={`Obra ${idx}`} 
+                                  className="w-full h-full object-cover" 
+                                  referrerPolicy="no-referrer"
+                                  onError={(e) => {
+                                    e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
+                                    e.currentTarget.onerror = null;
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-stone-100 flex items-center justify-center">
+                                  <ImageIcon className="text-stone-300" />
+                                </div>
+                              )}
+                              <button 
+                                onClick={() => removeWorkImage(idx)}
+                                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ))}
+                          {(!editingWork.images || editingWork.images.length === 0) && (
+                            <div className="col-span-full text-center py-8 text-stone-400 border-2 border-dashed rounded-lg">
+                              Nenhuma imagem adicionada
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex justify-end gap-2">
+                      <button onClick={() => setEditingWork(null)} className="px-4 py-2 border rounded hover:bg-gray-100">Cancelar</button>
+                      <button onClick={() => handleSaveItem(editingWork, setEditingWork, addWork, updateWork, 'obra')} className="px-4 py-2 bg-emerald-700 text-white rounded hover:bg-emerald-800">Salvar</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {works.map(w => (
+                  <div key={w.id} className="bg-white rounded-lg border overflow-hidden shadow-sm">
+                    <div className="h-48 bg-stone-200 relative">
+                      {w.images[0] && w.images[0].trim() !== '' ? (
+                        <img 
+                          src={w.images[0]} 
+                          alt={w.title} 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer" 
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
+                            e.currentTarget.onerror = null;
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-stone-400"><ImageIcon size={48} /></div>
+                      )}
+                      <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                        {w.images.length} fotos
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h4 className="font-bold text-lg mb-1">{w.title}</h4>
+                      <p className="text-stone-600 text-sm line-clamp-2 mb-4">{w.description}</p>
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => setEditingWork(w)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><Edit size={18} /></button>
+                        <button onClick={() => handleDeleteItem(w.id, deleteWork, 'obra')} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={18} /></button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* --- CLIENTES --- */}
+          {activeTab === 'clientes' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-emerald-900">Gerenciar Clientes</h3>
+                <button onClick={() => setEditingClient({ name: '', email: '', phone: '', address: '' })} className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2"><Plus size={18} /> Novo Cliente</button>
+              </div>
+
+              {editingClient && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 rounded-xl w-full max-w-md">
+                    <h4 className="text-xl font-bold mb-4">{editingClient.id ? 'Editar Cliente' : 'Novo Cliente'}</h4>
+                    <div className="space-y-4">
+                      <input className="w-full p-2 border rounded" placeholder="Nome" value={editingClient.name} onChange={e => setEditingClient({...editingClient, name: e.target.value})} />
+                      <input className="w-full p-2 border rounded" placeholder="Email" value={editingClient.email} onChange={e => setEditingClient({...editingClient, email: e.target.value})} />
+                      <input className="w-full p-2 border rounded" placeholder="Telefone" value={editingClient.phone} onChange={e => setEditingClient({...editingClient, phone: e.target.value})} />
+                      <input className="w-full p-2 border rounded" placeholder="Endereço" value={editingClient.address} onChange={e => setEditingClient({...editingClient, address: e.target.value})} />
+                    </div>
+                    <div className="mt-6 flex justify-end gap-2">
+                      <button onClick={() => setEditingClient(null)} className="px-4 py-2 border rounded">Cancelar</button>
+                      <button onClick={() => handleSaveItem(editingClient, setEditingClient, addClient, updateClient, 'cliente')} className="px-4 py-2 bg-emerald-700 text-white rounded">Salvar</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <table className="w-full text-left border rounded-lg overflow-hidden">
+                <thead className="bg-stone-100">
+                  <tr>
+                    <th className="p-4">Nome</th>
+                    <th className="p-4">Email</th>
+                    <th className="p-4">Telefone</th>
+                    <th className="p-4 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {clients.map(c => (
+                    <tr key={c.id} className="border-t hover:bg-stone-50">
+                      <td className="p-4 font-medium">{c.name}</td>
+                      <td className="p-4">{c.email}</td>
+                      <td className="p-4">{c.phone}</td>
+                      <td className="p-4 text-right space-x-2">
+                        <button onClick={() => setEditingClient(c)} className="text-blue-600"><Edit size={18} /></button>
+                        <button onClick={() => handleDeleteItem(c.id, deleteClient, 'cliente')} className="text-red-600"><Trash2 size={18} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* --- CATEGORIAS & SUBCATEGORIAS --- */}
+          {activeTab === 'categorias' && (
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Categorias */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold text-emerald-900">Categorias</h3>
+                  <button onClick={() => setEditingCategory({ name: '' })} className="bg-emerald-700 text-white px-3 py-1 rounded-md text-sm flex items-center gap-1"><Plus size={16} /> Nova</button>
+                </div>
+                
+                {editingCategory && (
+                  <div className="mb-4 p-4 bg-stone-50 rounded-lg border">
+                    <input className="w-full p-2 border rounded mb-2" placeholder="Nome da Categoria" value={editingCategory.name} onChange={e => setEditingCategory({...editingCategory, name: e.target.value})} />
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => setEditingCategory(null)} className="text-sm text-stone-500">Cancelar</button>
+                      <button onClick={() => handleSaveItem(editingCategory, setEditingCategory, addCategory, updateCategory, 'categoria')} className="text-sm bg-emerald-700 text-white px-3 py-1 rounded">Salvar</button>
+                    </div>
+                  </div>
+                )}
+
+                <ul className="space-y-2">
+                  {categories.map(c => (
+                    <li key={c.id} className="flex justify-between items-center p-3 bg-white border rounded hover:bg-stone-50">
+                      <span>{c.name}</span>
+                      <div className="flex gap-2">
+                        <button onClick={() => setEditingCategory(c)} className="text-blue-600"><Edit size={16} /></button>
+                        <button onClick={() => handleDeleteItem(c.id, deleteCategory, 'categoria')} className="text-red-600"><Trash2 size={16} /></button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Subcategorias */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold text-emerald-900">Subcategorias</h3>
+                  <button onClick={() => setEditingSubcategory({ name: '', categoryId: categories[0]?.id || '' })} className="bg-emerald-700 text-white px-3 py-1 rounded-md text-sm flex items-center gap-1"><Plus size={16} /> Nova</button>
+                </div>
+
+                {editingSubcategory && (
+                  <div className="mb-4 p-4 bg-stone-50 rounded-lg border">
+                    <input className="w-full p-2 border rounded mb-2" placeholder="Nome da Subcategoria" value={editingSubcategory.name} onChange={e => setEditingSubcategory({...editingSubcategory, name: e.target.value})} />
+                    <select className="w-full p-2 border rounded mb-2" value={editingSubcategory.categoryId} onChange={e => setEditingSubcategory({...editingSubcategory, categoryId: e.target.value})}>
+                      <option value="">Selecione a Categoria</option>
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => setEditingSubcategory(null)} className="text-sm text-stone-500">Cancelar</button>
+                      <button onClick={() => handleSaveItem(editingSubcategory, setEditingSubcategory, addSubcategory, updateSubcategory, 'subcategoria')} className="text-sm bg-emerald-700 text-white px-3 py-1 rounded">Salvar</button>
+                    </div>
+                  </div>
+                )}
+
+                <ul className="space-y-2">
+                  {subcategories.map(s => (
+                    <li key={s.id} className="flex justify-between items-center p-3 bg-white border rounded hover:bg-stone-50">
+                      <div>
+                        <span className="font-medium">{s.name}</span>
+                        <span className="text-xs text-stone-500 ml-2">({categories.find(c => c.id === s.categoryId)?.name || 'Sem Categoria'})</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setEditingSubcategory(s)} className="text-blue-600"><Edit size={16} /></button>
+                        <button onClick={() => handleDeleteItem(s.id, deleteSubcategory, 'subcategoria')} className="text-red-600"><Trash2 size={16} /></button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* --- AJUSTES --- */}
+          {activeTab === 'ajustes' && (
+            <div className="space-y-8">
+              <h3 className="text-2xl font-bold text-emerald-900">Configurações do Site</h3>
+              
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="bg-stone-50 p-6 rounded-xl border">
+                  <h4 className="font-bold mb-4 flex items-center gap-2"><Tag size={18} /> Identidade Visual</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium">Logomarca</label>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            processFile(e.target.files[0], (base64) => setSettingsForm({...settingsForm, logoUrl: base64}));
+                          }
+                        }}
+                        className="w-full p-2 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Texto do Rodapé</label>
+                      <input className="w-full p-2 border rounded" value={settingsForm.footerText} onChange={e => setSettingsForm({...settingsForm, footerText: e.target.value})} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-stone-50 p-6 rounded-xl border">
+                  <h4 className="font-bold mb-4 flex items-center gap-2"><Users size={18} /> Redes Sociais & Contato</h4>
+                  <div className="space-y-4">
+                    <input className="w-full p-2 border rounded" placeholder="Facebook URL" value={settingsForm.facebookUrl} onChange={e => setSettingsForm({...settingsForm, facebookUrl: e.target.value})} />
+                    <input className="w-full p-2 border rounded" placeholder="Instagram URL" value={settingsForm.instagramUrl} onChange={e => setSettingsForm({...settingsForm, instagramUrl: e.target.value})} />
+                    <input className="w-full p-2 border rounded" placeholder="WhatsApp Link" value={settingsForm.whatsappUrl} onChange={e => setSettingsForm({...settingsForm, whatsappUrl: e.target.value})} />
+                    <input className="w-full p-2 border rounded" placeholder="Endereço" value={settingsForm.address} onChange={e => setSettingsForm({...settingsForm, address: e.target.value})} />
+                    <input className="w-full p-2 border rounded" placeholder="Telefone" value={settingsForm.phone} onChange={e => setSettingsForm({...settingsForm, phone: e.target.value})} />
+                    <input className="w-full p-2 border rounded" placeholder="Email" value={settingsForm.email} onChange={e => setSettingsForm({...settingsForm, email: e.target.value})} />
+                  </div>
+                </div>
+
+                <div className="bg-stone-50 p-6 rounded-xl border md:col-span-2">
+                  <h4 className="font-bold mb-4 flex items-center gap-2"><Lock size={18} /> Segurança (Acesso Admin)</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium">Usuário Admin</label>
+                      <input className="w-full p-2 border rounded" value={settingsForm.adminUser} onChange={e => setSettingsForm({...settingsForm, adminUser: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Senha Admin</label>
+                      <input className="w-full p-2 border rounded" type="text" value={settingsForm.adminPassword} onChange={e => setSettingsForm({...settingsForm, adminPassword: e.target.value})} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-stone-50 p-6 rounded-xl border md:col-span-2">
+                  <h4 className="font-bold mb-4 flex items-center gap-2"><ImageIcon size={18} /> Banner Principal (Slide)</h4>
+                  <p className="text-sm text-stone-500 mb-4">Adicione pelo menos 5 imagens para o slide da página inicial.</p>
+                  
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            processFiles(e.target.files, (newImages) => {
+                              setSettingsForm(prev => ({
+                                ...prev,
+                                heroImages: [...(prev.heroImages || []), ...newImages]
+                              }));
+                            });
+                          }
+                        }}
+                        className="w-full p-2 border rounded"
+                      />
+                    </div>
+                    <p className="text-xs text-stone-500">Você pode selecionar múltiplas imagens para o slide.</p>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                      {settingsForm.heroImages?.map((img, idx) => (
+                        <div key={idx} className="relative group aspect-video bg-stone-200 rounded overflow-hidden border">
+                          {img && img.trim() !== '' ? (
+                            <img 
+                              src={img} 
+                              alt={`Slide ${idx + 1}`} 
+                              className="w-full h-full object-cover" 
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
+                                e.currentTarget.onerror = null;
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-stone-100 text-stone-400">
+                              <ImageIcon size={24} />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                const newImages = [...(settingsForm.heroImages || [])];
+                                if (idx > 0) {
+                                  [newImages[idx], newImages[idx - 1]] = [newImages[idx - 1], newImages[idx]];
+                                  setSettingsForm({ ...settingsForm, heroImages: newImages });
+                                }
+                              }}
+                              disabled={idx === 0}
+                              className="text-white hover:text-emerald-400 disabled:opacity-30"
+                              title="Mover para esquerda"
+                            >
+                              ←
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                const newImages = [...(settingsForm.heroImages || [])];
+                                newImages.splice(idx, 1);
+                                setSettingsForm({ ...settingsForm, heroImages: newImages });
+                              }}
+                              className="bg-red-600 text-white p-1 rounded-full hover:bg-red-700"
+                              title="Remover"
+                            >
+                              <X size={14} />
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                const newImages = [...(settingsForm.heroImages || [])];
+                                if (idx < newImages.length - 1) {
+                                  [newImages[idx], newImages[idx + 1]] = [newImages[idx + 1], newImages[idx]];
+                                  setSettingsForm({ ...settingsForm, heroImages: newImages });
+                                }
+                              }}
+                              disabled={idx === (settingsForm.heroImages?.length || 0) - 1}
+                              className="text-white hover:text-emerald-400 disabled:opacity-30"
+                              title="Mover para direita"
+                            >
+                              →
+                            </button>
+                          </div>
+                          <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1 rounded">
+                            {idx + 1}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {(!settingsForm.heroImages || settingsForm.heroImages.length === 0) && (
+                      <p className="text-center text-stone-400 py-4 border-2 border-dashed rounded">Nenhuma imagem no slide.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-stone-50 p-6 rounded-xl border md:col-span-2">
+                  <h4 className="font-bold mb-4 flex items-center gap-2"><SettingsIcon size={18} /> Integrações</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium">Google Tag Manager ID</label>
+                      <input className="w-full p-2 border rounded" placeholder="GTM-XXXXXX" value={settingsForm.googleTagId} onChange={e => setSettingsForm({...settingsForm, googleTagId: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Facebook Pixel ID</label>
+                      <input className="w-full p-2 border rounded" placeholder="1234567890" value={settingsForm.facebookPixelId} onChange={e => setSettingsForm({...settingsForm, facebookPixelId: e.target.value})} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button type="button" onClick={handleSaveSettings} className="bg-emerald-700 text-white px-6 py-3 rounded-lg font-bold hover:bg-emerald-800 flex items-center gap-2 shadow-lg">
+                  <Save size={20} /> Salvar Configurações
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* --- SOBRE NÓS (Existing) --- */}
+          {activeTab === 'sobre' && (
+            <div className="space-y-12">
+              <div className="bg-stone-50 p-6 rounded-xl border border-stone-200">
+                <h3 className="text-2xl font-bold text-emerald-900 mb-6 flex items-center gap-2">
+                  <Info /> Editar "Sobre Nós"
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">Título</label>
+                    <input 
+                      type="text" 
+                      value={aboutForm.title} 
+                      onChange={e => setAboutForm({...aboutForm, title: e.target.value})}
+                      className="w-full p-2 border rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">Descrição</label>
+                    <textarea 
+                      rows={4}
+                      value={aboutForm.description} 
+                      onChange={e => setAboutForm({...aboutForm, description: e.target.value})}
+                      className="w-full p-2 border rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">Imagem</label>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          processFile(e.target.files[0], (base64) => setAboutForm({...aboutForm, image: base64}));
+                        }
+                      }}
+                      className="w-full p-2 border rounded-md"
+                    />
+                    {aboutForm.image && aboutForm.image.trim() !== '' && (
+                      <img 
+                        src={aboutForm.image} 
+                        alt="Preview" 
+                        className="mt-2 h-32 object-cover rounded-md" 
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
+                          e.currentTarget.onerror = null;
+                        }}
+                      />
+                    )}
+                  </div>
+                  <button onClick={handleSaveAbout} className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2">
+                    <Save size={18} /> Salvar Alterações
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-stone-50 p-6 rounded-xl border border-stone-200">
+                <h3 className="text-2xl font-bold text-emerald-900 mb-6 flex items-center gap-2">
+                  <Info /> Editar "Nossa História"
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">Título</label>
+                    <input 
+                      type="text" 
+                      value={historyForm.title} 
+                      onChange={e => setHistoryForm({...historyForm, title: e.target.value})}
+                      className="w-full p-2 border rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">Descrição</label>
+                    <textarea 
+                      rows={4}
+                      value={historyForm.description} 
+                      onChange={e => setHistoryForm({...historyForm, description: e.target.value})}
+                      className="w-full p-2 border rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">Imagem</label>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          processFile(e.target.files[0], (base64) => setHistoryForm({...historyForm, image: base64}));
+                        }
+                      }}
+                      className="w-full p-2 border rounded-md"
+                    />
+                    {historyForm.image && historyForm.image.trim() !== '' && (
+                      <img 
+                        src={historyForm.image} 
+                        alt="Preview" 
+                        className="mt-2 h-32 object-cover rounded-md" 
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
+                          e.currentTarget.onerror = null;
+                        }}
+                      />
+                    )}
+                  </div>
+                  <button onClick={handleSaveHistory} className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2">
+                    <Save size={18} /> Salvar Alterações
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- PRODUTOS (Existing) --- */}
+          {activeTab === 'produtos' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-emerald-900">Gerenciar Produtos</h3>
+                <button 
+                  onClick={() => setEditingProduct({ name: '', category: '', subcategory: '', brand: '', price: 0, description: '', image: '' })}
+                  className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2"
+                >
+                  <Plus size={18} /> Novo Produto
+                </button>
+              </div>
+
+              {editingProduct && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-xl font-bold">{editingProduct.id ? 'Editar Produto' : 'Novo Produto'}</h4>
+                      <button onClick={() => setEditingProduct(null)}><X /></button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium">Nome do Produto</label>
+                        <input className="w-full p-2 border rounded" value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Marca</label>
+                        <input className="w-full p-2 border rounded" value={editingProduct.brand} onChange={e => setEditingProduct({...editingProduct, brand: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Preço (R$)</label>
+                        <input type="number" className="w-full p-2 border rounded" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: Number(e.target.value)})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Categoria</label>
+                        <select className="w-full p-2 border rounded" value={editingProduct.category} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})}>
+                          <option value="">Selecione...</option>
+                          {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Subcategoria</label>
+                        <select className="w-full p-2 border rounded" value={editingProduct.subcategory} onChange={e => setEditingProduct({...editingProduct, subcategory: e.target.value})}>
+                          <option value="">Selecione...</option>
+                          {subcategories.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium">Imagem</label>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0] && editingProduct) {
+                              processFile(e.target.files[0], (base64) => setEditingProduct({...editingProduct, image: base64}));
+                            }
+                          }}
+                          className="w-full p-2 border rounded"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium">Descrição</label>
+                        <textarea className="w-full p-2 border rounded" rows={3} value={editingProduct.description} onChange={e => setEditingProduct({...editingProduct, description: e.target.value})} />
+                      </div>
+                    </div>
+                    <div className="mt-6 flex justify-end gap-2">
+                      <button onClick={() => setEditingProduct(null)} className="px-4 py-2 border rounded hover:bg-gray-100">Cancelar</button>
+                      <button onClick={() => handleSaveItem(editingProduct, setEditingProduct, addProduct, updateProduct, 'produto')} className="px-4 py-2 bg-emerald-700 text-white rounded hover:bg-emerald-800">Salvar</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-white rounded-lg border overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-stone-100">
+                    <tr>
+                      <th className="p-4">Produto</th>
+                      <th className="p-4">Marca</th>
+                      <th className="p-4">Categoria</th>
+                      <th className="p-4">Preço</th>
+                      <th className="p-4 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map(p => (
+                      <tr key={p.id} className="border-t hover:bg-stone-50">
+                        <td className="p-4 flex items-center gap-3">
+                          {p.image && p.image.trim() !== '' ? (
+                            <img 
+                              src={p.image} 
+                              className="w-10 h-10 rounded object-cover" 
+                              alt="" 
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                e.currentTarget.src = 'https://placehold.co/100x100?text=Erro';
+                                e.currentTarget.onerror = null;
+                              }}
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded bg-stone-200 flex items-center justify-center">
+                              <ImageIcon size={16} className="text-stone-400" />
+                            </div>
+                          )}
+                          {p.name}
+                        </td>
+                        <td className="p-4">{p.brand}</td>
+                        <td className="p-4">{p.category} / {p.subcategory}</td>
+                        <td className="p-4">R$ {p.price?.toFixed(2)}</td>
+                        <td className="p-4 text-right space-x-2">
+                          <button onClick={() => setEditingProduct(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><Edit size={18} /></button>
+                          <button onClick={() => handleDeleteItem(p.id, deleteProduct, 'produto')} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={18} /></button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* --- PARCEIROS (Existing) --- */}
+          {activeTab === 'parceiros' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-emerald-900">Gerenciar Parceiros</h3>
+                <button 
+                  onClick={() => setEditingPartner({ name: '', logo: '' })}
+                  className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2"
+                >
+                  <Plus size={18} /> Novo Parceiro
+                </button>
+              </div>
+
+              {editingPartner && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 rounded-xl w-full max-w-md">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-xl font-bold">{editingPartner.id ? 'Editar Parceiro' : 'Novo Parceiro'}</h4>
+                      <button onClick={() => setEditingPartner(null)}><X /></button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium">Nome</label>
+                        <input className="w-full p-2 border rounded" value={editingPartner.name} onChange={e => setEditingPartner({...editingPartner, name: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Logo</label>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0] && editingPartner) {
+                              processFile(e.target.files[0], (base64) => setEditingPartner({...editingPartner, logo: base64}));
+                            }
+                          }}
+                          className="w-full p-2 border rounded"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-6 flex justify-end gap-2">
+                      <button onClick={() => setEditingPartner(null)} className="px-4 py-2 border rounded hover:bg-gray-100">Cancelar</button>
+                      <button onClick={() => handleSaveItem(editingPartner, setEditingPartner, addPartner, updatePartner, 'parceiro')} className="px-4 py-2 bg-emerald-700 text-white rounded hover:bg-emerald-800">Salvar</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {partners.map(p => (
+                  <div key={p.id} className="bg-white p-4 rounded-xl border shadow-sm flex flex-col items-center relative group">
+                    {p.logo && p.logo.trim() !== '' ? (
+                      <img 
+                        src={p.logo} 
+                        alt={p.name} 
+                        className="h-16 object-contain mb-4" 
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.onerror = null;
+                        }}
+                      />
+                    ) : (
+                      <div className="h-16 w-full flex items-center justify-center bg-stone-50 mb-4 rounded text-stone-400">
+                        <ImageIcon size={32} />
+                      </div>
+                    )}
+                    <h4 className="font-bold text-stone-800">{p.name}</h4>
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-1">
+                      <button onClick={() => setEditingPartner(p)} className="p-1 bg-blue-100 text-blue-600 rounded"><Edit size={16} /></button>
+                      <button onClick={() => handleDeleteItem(p.id, deletePartner, 'parceiro')} className="p-1 bg-red-100 text-red-600 rounded"><Trash2 size={16} /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* --- PROFISSIONAIS --- */}
+          {activeTab === 'profissionais' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-emerald-900">Profissionais Indicados</h3>
+                <button 
+                  onClick={() => setEditingProfessional({ name: '', specialty: '', contact: '', image: '' })}
+                  className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2"
+                >
+                  <Plus size={18} /> Novo Profissional
+                </button>
+              </div>
+
+              {editingProfessional && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 rounded-xl w-full max-w-md">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-xl font-bold">{editingProfessional.id ? 'Editar Profissional' : 'Novo Profissional'}</h4>
+                      <button onClick={() => setEditingProfessional(null)}><X /></button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium">Nome</label>
+                        <input className="w-full p-2 border rounded" value={editingProfessional.name} onChange={e => setEditingProfessional({...editingProfessional, name: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Especialidade</label>
+                        <input className="w-full p-2 border rounded" value={editingProfessional.specialty} onChange={e => setEditingProfessional({...editingProfessional, specialty: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Contato (WhatsApp/Tel)</label>
+                        <input className="w-full p-2 border rounded" value={editingProfessional.contact} onChange={e => setEditingProfessional({...editingProfessional, contact: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Foto</label>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0] && editingProfessional) {
+                              processFile(e.target.files[0], (base64) => setEditingProfessional({...editingProfessional, image: base64}));
+                            }
+                          }}
+                          className="w-full p-2 border rounded"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-6 flex justify-end gap-2">
+                      <button onClick={() => setEditingProfessional(null)} className="px-4 py-2 border rounded hover:bg-gray-100">Cancelar</button>
+                      <button onClick={() => handleSaveItem(editingProfessional, setEditingProfessional, addProfessional, updateProfessional, 'profissional')} className="px-4 py-2 bg-emerald-700 text-white rounded hover:bg-emerald-800">Salvar</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {professionals.map(p => (
+                  <div key={p.id} className="bg-white rounded-xl border shadow-sm overflow-hidden relative group">
+                    <div className="h-48 bg-stone-100 relative">
+                      {p.image && p.image.trim() !== '' ? (
+                        <img 
+                          src={p.image} 
+                          alt={p.name} 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://placehold.co/300x300?text=Sem+Foto';
+                            e.currentTarget.onerror = null;
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-stone-300">
+                          <User size={48} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h4 className="font-bold text-stone-800">{p.name}</h4>
+                      <p className="text-emerald-700 text-sm font-medium">{p.specialty}</p>
+                      <p className="text-stone-500 text-xs mt-1">{p.contact}</p>
+                    </div>
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-1">
+                      <button onClick={() => setEditingProfessional(p)} className="p-1 bg-blue-100 text-blue-600 rounded shadow-sm"><Edit size={16} /></button>
+                      <button onClick={() => handleDeleteItem(p.id, deleteProfessional, 'profissional')} className="p-1 bg-red-100 text-red-600 rounded shadow-sm"><Trash2 size={16} /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
+    </div>
+  );
+}
