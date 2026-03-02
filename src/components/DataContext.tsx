@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work } from '../types';
 import { PRODUCTS as INITIAL_PRODUCTS, PARTNERS as INITIAL_PARTNERS, PROFESSIONALS as INITIAL_PROFESSIONALS } from '../data';
+import { supabase } from '../lib/supabase';
 
 interface DataContextType {
   products: Product[];
@@ -58,7 +59,7 @@ export function useData() {
   return context;
 }
 
-// Helper hook for localStorage persistence
+// Helper hook for localStorage persistence (Fallback)
 function usePersistedState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = useState<T>(() => {
     try {
@@ -82,11 +83,13 @@ function usePersistedState<T>(key: string, initialValue: T): [T, React.Dispatch<
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  // Initialize products with new fields (mock data adjustment)
+  const isSupabaseConfigured = Boolean((import.meta as any).env.VITE_SUPABASE_URL && (import.meta as any).env.VITE_SUPABASE_ANON_KEY);
+
+  // Initialize states
   const [products, setProducts] = usePersistedState<Product[]>('products', 
     INITIAL_PRODUCTS.map(p => ({
       ...p,
-      id: String(p.id), // Ensure ID is string
+      id: String(p.id),
       price: 100 + Math.random() * 500,
       brand: 'Genérica',
       subcategory: 'Geral'
@@ -133,7 +136,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   ]);
 
   const [settings, setSettings] = usePersistedState<Settings>('settings', {
-    logoUrl: '', // Empty means default icon
+    logoUrl: '',
     footerText: '© 2026 Madeireira Pindorama. Todos os direitos reservados.',
     facebookUrl: '#',
     instagramUrl: '#',
@@ -153,24 +156,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       'https://picsum.photos/seed/lumber5/1920/1080'
     ]
   });
-
-  // Ensure admin credentials exist (migration for existing users)
-  useEffect(() => {
-    if (!settings.adminUser || !settings.adminPassword || !settings.heroImages) {
-      setSettings(prev => ({
-        ...prev,
-        adminUser: prev.adminUser || 'admin',
-        adminPassword: prev.adminPassword || 'admin*2026',
-        heroImages: prev.heroImages || [
-          'https://picsum.photos/seed/lumber1/1920/1080',
-          'https://picsum.photos/seed/lumber2/1920/1080',
-          'https://picsum.photos/seed/lumber3/1920/1080',
-          'https://picsum.photos/seed/lumber4/1920/1080',
-          'https://picsum.photos/seed/lumber5/1920/1080'
-        ]
-      }));
-    }
-  }, [settings.adminUser, settings.adminPassword, settings.heroImages, setSettings]);
 
   const [works, setWorks] = usePersistedState<Work[]>('works', [
     {
@@ -194,53 +179,148 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   ]);
 
+  // Ensure admin credentials exist (migration for existing users)
+  useEffect(() => {
+    if (!settings.adminUser || !settings.adminPassword || !settings.heroImages) {
+      setSettings(prev => ({
+        ...prev,
+        adminUser: prev.adminUser || 'admin',
+        adminPassword: prev.adminPassword || 'admin*2026',
+        heroImages: prev.heroImages || [
+          'https://picsum.photos/seed/lumber1/1920/1080',
+          'https://picsum.photos/seed/lumber2/1920/1080',
+          'https://picsum.photos/seed/lumber3/1920/1080',
+          'https://picsum.photos/seed/lumber4/1920/1080',
+          'https://picsum.photos/seed/lumber5/1920/1080'
+        ]
+      }));
+    }
+  }, [settings.adminUser, settings.adminPassword, settings.heroImages, setSettings]);
+
+  // Supabase Fetch Effect
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    const fetchSupabaseData = async () => {
+      try {
+        const [
+          { data: prodData }, { data: partData }, { data: cliData },
+          { data: catData }, { data: subData }, { data: workData },
+          { data: profData }, { data: setData }, { data: abtData }, { data: histData }
+        ] = await Promise.all([
+          supabase.from('products').select('*'),
+          supabase.from('partners').select('*'),
+          supabase.from('clients').select('*'),
+          supabase.from('categories').select('*'),
+          supabase.from('subcategories').select('*'),
+          supabase.from('works').select('*'),
+          supabase.from('professionals').select('*'),
+          supabase.from('settings').select('*').limit(1).maybeSingle(),
+          supabase.from('about').select('*').limit(1).maybeSingle(),
+          supabase.from('history').select('*').limit(1).maybeSingle(),
+        ]);
+
+        if (prodData && prodData.length > 0) setProducts(prodData);
+        if (partData && partData.length > 0) setPartners(partData);
+        if (cliData && cliData.length > 0) setClients(cliData);
+        if (catData && catData.length > 0) setCategories(catData);
+        if (subData && subData.length > 0) setSubcategories(subData);
+        if (workData && workData.length > 0) setWorks(workData);
+        if (profData && profData.length > 0) setProfessionals(profData);
+        
+        if (setData) setSettings(setData);
+        if (abtData) setAbout(abtData);
+        if (histData) setHistory(histData);
+      } catch (error) {
+        console.error("Error fetching from Supabase:", error);
+      }
+    };
+
+    fetchSupabaseData();
+  }, [isSupabaseConfigured]);
+
   // --- CRUD Operations ---
+  const createCrud = <T extends { id?: string }>(table: string, stateSetter: React.Dispatch<React.SetStateAction<T[]>>) => ({
+    add: async (item: T) => {
+      const newItem = { ...item, id: item.id || Date.now().toString() };
+      if (isSupabaseConfigured) {
+        const { data, error } = await supabase.from(table).insert([newItem]).select();
+        if (!error && data) stateSetter(prev => [...prev, data[0]]);
+        else console.error(`Error adding to ${table}:`, error);
+      } else {
+        stateSetter(prev => [...prev, newItem]);
+      }
+    },
+    update: async (item: T) => {
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.from(table).update(item as any).eq('id', item.id);
+        if (!error) stateSetter(prev => prev.map(i => i.id === item.id ? item : i));
+        else console.error(`Error updating ${table}:`, error);
+      } else {
+        stateSetter(prev => prev.map(i => i.id === item.id ? item : i));
+      }
+    },
+    remove: async (id: string) => {
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.from(table).delete().eq('id', id);
+        if (!error) stateSetter(prev => prev.filter(i => i.id !== id));
+        else console.error(`Error deleting from ${table}:`, error);
+      } else {
+        stateSetter(prev => prev.filter(i => i.id !== id));
+      }
+    }
+  });
 
-  const addProduct = (product: Product) => setProducts(prev => [...prev, product]);
-  const updateProduct = (updatedProduct: Product) => setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-  const deleteProduct = (id: string) => setProducts(prev => prev.filter(p => p.id !== id));
+  const productCrud = createCrud<Product>('products', setProducts);
+  const partnerCrud = createCrud<Partner>('partners', setPartners);
+  const clientCrud = createCrud<Client>('clients', setClients);
+  const categoryCrud = createCrud<Category>('categories', setCategories);
+  const subcategoryCrud = createCrud<Subcategory>('subcategories', setSubcategories);
+  const workCrud = createCrud<Work>('works', setWorks);
+  const professionalCrud = createCrud<Professional>('professionals', setProfessionals);
 
-  const addPartner = (partner: Partner) => setPartners(prev => [...prev, partner]);
-  const updatePartner = (updatedPartner: Partner) => setPartners(prev => prev.map(p => p.id === updatedPartner.id ? updatedPartner : p));
-  const deletePartner = (id: string) => setPartners(prev => prev.filter(p => p.id !== id));
+  const updateSettings = async (newSettings: Settings) => {
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('settings').update(newSettings as any).eq('id', '1');
+      if (!error) setSettings(newSettings);
+      else console.error('Error updating settings:', error);
+    } else {
+      setSettings(newSettings);
+    }
+  };
 
-  const updateAbout = (data: AboutData) => setAbout(data);
-  const updateHistory = (data: AboutData) => setHistory(data);
+  const updateAbout = async (newAbout: AboutData) => {
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('about').update(newAbout as any).eq('id', '1');
+      if (!error) setAbout(newAbout);
+      else console.error('Error updating about:', error);
+    } else {
+      setAbout(newAbout);
+    }
+  };
 
-  const addClient = (client: Client) => setClients(prev => [...prev, client]);
-  const updateClient = (updatedClient: Client) => setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
-  const deleteClient = (id: string) => setClients(prev => prev.filter(c => c.id !== id));
-
-  const addCategory = (category: Category) => setCategories(prev => [...prev, category]);
-  const updateCategory = (updatedCategory: Category) => setCategories(prev => prev.map(c => c.id === updatedCategory.id ? updatedCategory : c));
-  const deleteCategory = (id: string) => setCategories(prev => prev.filter(c => c.id !== id));
-
-  const addSubcategory = (subcategory: Subcategory) => setSubcategories(prev => [...prev, subcategory]);
-  const updateSubcategory = (updatedSubcategory: Subcategory) => setSubcategories(prev => prev.map(s => s.id === updatedSubcategory.id ? updatedSubcategory : s));
-  const deleteSubcategory = (id: string) => setSubcategories(prev => prev.filter(s => s.id !== id));
-
-  const updateSettings = (newSettings: Settings) => setSettings(newSettings);
-
-  const addWork = (work: Work) => setWorks(prev => [...prev, work]);
-  const updateWork = (updatedWork: Work) => setWorks(prev => prev.map(w => w.id === updatedWork.id ? updatedWork : w));
-  const deleteWork = (id: string) => setWorks(prev => prev.filter(w => w.id !== id));
-
-  const addProfessional = (professional: Professional) => setProfessionals(prev => [...prev, professional]);
-  const updateProfessional = (updatedProfessional: Professional) => setProfessionals(prev => prev.map(p => p.id === updatedProfessional.id ? updatedProfessional : p));
-  const deleteProfessional = (id: string) => setProfessionals(prev => prev.filter(p => p.id !== id));
+  const updateHistory = async (newHistory: AboutData) => {
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('history').update(newHistory as any).eq('id', '1');
+      if (!error) setHistory(newHistory);
+      else console.error('Error updating history:', error);
+    } else {
+      setHistory(newHistory);
+    }
+  };
 
   return (
     <DataContext.Provider value={{
       products, partners, professionals, about, history, clients, categories, subcategories, settings, works,
-      addProduct, updateProduct, deleteProduct,
-      addPartner, updatePartner, deletePartner,
+      addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.remove,
+      addPartner: partnerCrud.add, updatePartner: partnerCrud.update, deletePartner: partnerCrud.remove,
       updateAbout, updateHistory,
-      addClient, updateClient, deleteClient,
-      addCategory, updateCategory, deleteCategory,
-      addSubcategory, updateSubcategory, deleteSubcategory,
+      addClient: clientCrud.add, updateClient: clientCrud.update, deleteClient: clientCrud.remove,
+      addCategory: categoryCrud.add, updateCategory: categoryCrud.update, deleteCategory: categoryCrud.remove,
+      addSubcategory: subcategoryCrud.add, updateSubcategory: subcategoryCrud.update, deleteSubcategory: subcategoryCrud.remove,
       updateSettings,
-      addWork, updateWork, deleteWork,
-      addProfessional, updateProfessional, deleteProfessional
+      addWork: workCrud.add, updateWork: workCrud.update, deleteWork: workCrud.remove,
+      addProfessional: professionalCrud.add, updateProfessional: professionalCrud.update, deleteProfessional: professionalCrud.remove
     }}>
       {children}
     </DataContext.Provider>
