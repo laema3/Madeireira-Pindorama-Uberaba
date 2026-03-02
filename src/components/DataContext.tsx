@@ -165,6 +165,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       'https://picsum.photos/seed/lumber3/1920/1080',
       'https://picsum.photos/seed/lumber4/1920/1080',
       'https://picsum.photos/seed/lumber5/1920/1080'
+    ],
+    heroSlides: [
+      { url: 'https://picsum.photos/seed/lumber1/1920/1080', title: 'Madeiras Nobres', description: 'Qualidade e procedência garantida para o seu projeto.' },
+      { url: 'https://picsum.photos/seed/lumber2/1920/1080', title: 'Estruturas Completas', description: 'Tudo o que você precisa para a sua obra.' },
+      { url: 'https://picsum.photos/seed/lumber3/1920/1080', title: 'Acabamentos Finos', description: 'Detalhes que fazem a diferença.' },
+      { url: 'https://picsum.photos/seed/lumber4/1920/1080', title: 'Sustentabilidade', description: 'Madeira de reflorestamento e manejo sustentável.' },
+      { url: 'https://picsum.photos/seed/lumber5/1920/1080', title: 'Atendimento Especializado', description: 'Nossa equipe está pronta para te ajudar.' }
     ]
   });
 
@@ -195,7 +202,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // Ensure admin credentials exist (migration for existing users)
   useEffect(() => {
-    if (!settings.adminUser || !settings.adminPassword || !settings.heroImages) {
+    if (!settings.adminUser || !settings.adminPassword || !settings.heroImages || !settings.heroSlides) {
       setSettings(prev => ({
         ...prev,
         adminUser: prev.adminUser || 'admin',
@@ -206,10 +213,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
           'https://picsum.photos/seed/lumber3/1920/1080',
           'https://picsum.photos/seed/lumber4/1920/1080',
           'https://picsum.photos/seed/lumber5/1920/1080'
-        ]
+        ],
+        heroSlides: prev.heroSlides || (prev.heroImages ? prev.heroImages.map((url, i) => ({
+          url,
+          title: i === 0 ? 'Madeiras Nobres' : i === 1 ? 'Estruturas Completas' : i === 2 ? 'Acabamentos Finos' : i === 3 ? 'Sustentabilidade' : 'Atendimento Especializado',
+          description: i === 0 ? 'Qualidade e procedência garantida para o seu projeto.' : i === 1 ? 'Tudo o que você precisa para a sua obra.' : i === 2 ? 'Detalhes que fazem a diferença.' : i === 3 ? 'Madeira de reflorestamento e manejo sustentável.' : 'Nossa equipe está pronta para te ajudar.'
+        })) : [
+          { url: 'https://picsum.photos/seed/lumber1/1920/1080', title: 'Madeiras Nobres', description: 'Qualidade e procedência garantida para o seu projeto.' },
+          { url: 'https://picsum.photos/seed/lumber2/1920/1080', title: 'Estruturas Completas', description: 'Tudo o que você precisa para a sua obra.' },
+          { url: 'https://picsum.photos/seed/lumber3/1920/1080', title: 'Acabamentos Finos', description: 'Detalhes que fazem a diferença.' },
+          { url: 'https://picsum.photos/seed/lumber4/1920/1080', title: 'Sustentabilidade', description: 'Madeira de reflorestamento e manejo sustentável.' },
+          { url: 'https://picsum.photos/seed/lumber5/1920/1080', title: 'Atendimento Especializado', description: 'Nossa equipe está pronta para te ajudar.' }
+        ])
       }));
     }
-  }, [settings.adminUser, settings.adminPassword, settings.heroImages, setSettings]);
+  }, [settings.adminUser, settings.adminPassword, settings.heroImages, settings.heroSlides, setSettings]);
 
   // Supabase Fetch Effect
   useEffect(() => {

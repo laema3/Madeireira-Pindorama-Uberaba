@@ -37,14 +37,8 @@ export function Hero() {
   const { simulateLoading } = useLoader();
   const { settings } = useData();
 
-  const filteredImages = settings.heroImages?.filter(url => url && url.trim() !== '') || [];
-
-  const heroImages = filteredImages.length > 0
-    ? filteredImages.map(url => ({
-        url,
-        title: 'Madeireira Pindorama',
-        subtitle: 'Qualidade e Tradição em Madeiras'
-      }))
+  const heroImages = settings.heroSlides && settings.heroSlides.length > 0
+    ? settings.heroSlides.filter(slide => slide.url && slide.url.trim() !== '')
     : DEFAULT_IMAGES;
 
   useEffect(() => {
@@ -65,6 +59,8 @@ export function Hero() {
       setIndex((prev) => (prev - 1 + heroImages.length) % heroImages.length);
     });
   };
+
+  if (heroImages.length === 0) return null;
 
   return (
     <div className="relative h-[600px] w-full overflow-hidden bg-gray-900">
@@ -92,7 +88,7 @@ export function Hero() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg"
+              className="text-6xl md:text-8xl font-bold mb-6 drop-shadow-2xl"
             >
               {heroImages[index % heroImages.length].title}
             </motion.h1>
@@ -100,9 +96,9 @@ export function Hero() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.7 }}
-              className="text-xl md:text-2xl drop-shadow-md"
+              className="text-3xl md:text-5xl drop-shadow-xl max-w-4xl"
             >
-              {heroImages[index % heroImages.length].subtitle}
+              {heroImages[index % heroImages.length].description || (heroImages[index % heroImages.length] as any).subtitle}
             </motion.p>
           </div>
         </motion.div>

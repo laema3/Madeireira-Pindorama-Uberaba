@@ -60,16 +60,43 @@ export function AdminPanel() {
   const processFile = (file: File, callback: (base64: string) => void) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      callback(reader.result as string);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const max_size = 1200; // Max dimension to save space
+
+        if (width > height) {
+          if (width > max_size) {
+            height *= max_size / width;
+            width = max_size;
+          }
+        } else {
+          if (height > max_size) {
+            width *= max_size / height;
+            height = max_size;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          callback(canvas.toDataURL('image/jpeg', 0.7)); // Compress to 70% JPEG
+        } else {
+          callback(reader.result as string); // Fallback if canvas fails
+        }
+      };
+      img.src = reader.result as string;
     };
     reader.readAsDataURL(file);
   };
 
   const processFiles = (files: FileList, callback: (base64s: string[]) => void) => {
     const promises = Array.from(files).map(file => new Promise<string>((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.readAsDataURL(file);
+      processFile(file, resolve);
     }));
     Promise.all(promises).then(callback);
   };
@@ -707,9 +734,9 @@ export function AdminPanel() {
 
                 <div className="bg-stone-50 p-6 rounded-xl border md:col-span-2">
                   <h4 className="font-bold mb-4 flex items-center gap-2"><ImageIcon size={18} /> Banner Principal (Slide)</h4>
-                  <p className="text-sm text-stone-500 mb-4">Adicione pelo menos 5 imagens para o slide da página inicial.</p>
+                  <p className="text-sm text-stone-500 mb-4">Gerencie as imagens, títulos e descrições do slide da página inicial.</p>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="flex gap-2">
                       <input 
                         type="file" 
@@ -720,7 +747,10 @@ export function AdminPanel() {
                             processFiles(e.target.files, (newImages) => {
                               setSettingsForm(prev => ({
                                 ...prev,
-                                heroImages: [...(prev.heroImages || []), ...newImages]
+                                heroSlides: [
+                                  ...(prev.heroSlides || []),
+                                  ...newImages.map(url => ({ url, title: 'Novo Slide', description: 'Descrição do slide' }))
+                                ]
                               }));
                             });
                           }
@@ -730,78 +760,113 @@ export function AdminPanel() {
                     </div>
                     <p className="text-xs text-stone-500">Você pode selecionar múltiplas imagens para o slide.</p>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      {settingsForm.heroImages?.map((img, idx) => (
-                        <div key={idx} className="relative group aspect-video bg-stone-200 rounded overflow-hidden border">
-                          {img && img.trim() !== '' ? (
-                            <img 
-                              src={img} 
-                              alt={`Slide ${idx + 1}`} 
-                              className="w-full h-full object-cover" 
-                              referrerPolicy="no-referrer"
-                              onError={(e) => {
-                                e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
-                                e.currentTarget.onerror = null;
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-stone-100 text-stone-400">
-                              <ImageIcon size={24} />
+                    <div className="space-y-4">
+                      {settingsForm.heroSlides?.map((slide, idx) => (
+                        <div key={idx} className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-lg border items-start">
+                          <div className="w-full md:w-1/3 relative group aspect-video bg-stone-200 rounded overflow-hidden border">
+                            {slide.url && slide.url.trim() !== '' ? (
+                              <img 
+                                src={slide.url} 
+                                alt={`Slide ${idx + 1}`} 
+                                className="w-full h-full object-cover" 
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
+                                  e.currentTarget.onerror = null;
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-stone-100 text-stone-400">
+                                <ImageIcon size={24} />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const newSlides = [...(settingsForm.heroSlides || [])];
+                                  if (idx > 0) {
+                                    [newSlides[idx], newSlides[idx - 1]] = [newSlides[idx - 1], newSlides[idx]];
+                                    setSettingsForm({ ...settingsForm, heroSlides: newSlides });
+                                  }
+                                }}
+                                disabled={idx === 0}
+                                className="text-white hover:text-emerald-400 disabled:opacity-30"
+                                title="Mover para cima"
+                              >
+                                ↑
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const newSlides = [...(settingsForm.heroSlides || [])];
+                                  newSlides.splice(idx, 1);
+                                  setSettingsForm({ ...settingsForm, heroSlides: newSlides });
+                                }}
+                                className="bg-red-600 text-white p-1 rounded-full hover:bg-red-700"
+                                title="Remover"
+                              >
+                                <X size={14} />
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const newSlides = [...(settingsForm.heroSlides || [])];
+                                  if (idx < newSlides.length - 1) {
+                                    [newSlides[idx], newSlides[idx + 1]] = [newSlides[idx + 1], newSlides[idx]];
+                                    setSettingsForm({ ...settingsForm, heroSlides: newSlides });
+                                  }
+                                }}
+                                disabled={idx === (settingsForm.heroSlides?.length || 0) - 1}
+                                className="text-white hover:text-emerald-400 disabled:opacity-30"
+                                title="Mover para baixo"
+                              >
+                                ↓
+                              </button>
                             </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                            <button 
-                              type="button"
-                              onClick={() => {
-                                const newImages = [...(settingsForm.heroImages || [])];
-                                if (idx > 0) {
-                                  [newImages[idx], newImages[idx - 1]] = [newImages[idx - 1], newImages[idx]];
-                                  setSettingsForm({ ...settingsForm, heroImages: newImages });
-                                }
-                              }}
-                              disabled={idx === 0}
-                              className="text-white hover:text-emerald-400 disabled:opacity-30"
-                              title="Mover para esquerda"
-                            >
-                              ←
-                            </button>
-                            <button 
-                              type="button"
-                              onClick={() => {
-                                const newImages = [...(settingsForm.heroImages || [])];
-                                newImages.splice(idx, 1);
-                                setSettingsForm({ ...settingsForm, heroImages: newImages });
-                              }}
-                              className="bg-red-600 text-white p-1 rounded-full hover:bg-red-700"
-                              title="Remover"
-                            >
-                              <X size={14} />
-                            </button>
-                            <button 
-                              type="button"
-                              onClick={() => {
-                                const newImages = [...(settingsForm.heroImages || [])];
-                                if (idx < newImages.length - 1) {
-                                  [newImages[idx], newImages[idx + 1]] = [newImages[idx + 1], newImages[idx]];
-                                  setSettingsForm({ ...settingsForm, heroImages: newImages });
-                                }
-                              }}
-                              disabled={idx === (settingsForm.heroImages?.length || 0) - 1}
-                              className="text-white hover:text-emerald-400 disabled:opacity-30"
-                              title="Mover para direita"
-                            >
-                              →
-                            </button>
+                            <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1 rounded">
+                              {idx + 1}
+                            </div>
                           </div>
-                          <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1 rounded">
-                            {idx + 1}
+                          
+                          <div className="w-full md:w-2/3 space-y-3">
+                            <div>
+                              <label className="block text-xs font-medium text-stone-500 mb-1">Título</label>
+                              <input 
+                                type="text" 
+                                value={slide.title} 
+                                onChange={(e) => {
+                                  const newSlides = [...(settingsForm.heroSlides || [])];
+                                  newSlides[idx].title = e.target.value;
+                                  setSettingsForm({ ...settingsForm, heroSlides: newSlides });
+                                }}
+                                className="w-full p-2 border rounded text-sm"
+                                placeholder="Título do slide"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-stone-500 mb-1">Descrição</label>
+                              <textarea 
+                                value={slide.description} 
+                                onChange={(e) => {
+                                  const newSlides = [...(settingsForm.heroSlides || [])];
+                                  newSlides[idx].description = e.target.value;
+                                  setSettingsForm({ ...settingsForm, heroSlides: newSlides });
+                                }}
+                                className="w-full p-2 border rounded text-sm"
+                                rows={2}
+                                placeholder="Descrição do slide"
+                              />
+                            </div>
                           </div>
                         </div>
                       ))}
+                      {(!settingsForm.heroSlides || settingsForm.heroSlides.length === 0) && (
+                        <div className="text-center py-8 text-stone-400 border-2 border-dashed rounded-lg">
+                          Nenhum slide adicionado
+                        </div>
+                      )}
                     </div>
-                    {(!settingsForm.heroImages || settingsForm.heroImages.length === 0) && (
-                      <p className="text-center text-stone-400 py-4 border-2 border-dashed rounded">Nenhuma imagem no slide.</p>
-                    )}
                   </div>
                 </div>
 

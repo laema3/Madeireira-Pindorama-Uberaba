@@ -56,6 +56,12 @@ export interface Subcategory {
   categoryId: string;
 }
 
+export interface HeroSlide {
+  url: string;
+  title: string;
+  description: string;
+}
+
 export interface Settings {
   logoUrl: string;
   footerLogoUrl?: string;
@@ -70,7 +76,8 @@ export interface Settings {
   email: string;
   adminUser?: string;
   adminPassword?: string;
-  heroImages?: string[];
+  heroImages?: string[]; // Legacy
+  heroSlides?: HeroSlide[];
 }
 
 export interface Work {

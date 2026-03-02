@@ -103,14 +103,13 @@ export function Chatbot() {
       // Add a timeout to prevent infinite loading
       const responsePromise = chatRef.current.sendMessage({ message: messageText });
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 20000)
+        setTimeout(() => reject(new Error('Timeout')), 30000)
       );
 
       const result = await Promise.race([responsePromise, timeoutPromise]) as any;
-      const response = result.text;
-
-      if (response) {
-        setMessages(prev => [...prev, { role: 'model', text: response }]);
+      
+      if (result && result.text) {
+        setMessages(prev => [...prev, { role: 'model', text: result.text }]);
       } else {
         throw new Error('Empty response');
       }
