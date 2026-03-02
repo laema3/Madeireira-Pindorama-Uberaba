@@ -83,9 +83,19 @@ function usePersistedState<T>(key: string, initialValue: T): [T, React.Dispatch<
 
   useEffect(() => {
     try {
-      localStorage.setItem(key, JSON.stringify(state));
+      // Don't try to save if it's too large (like base64 images in settings)
+      const serialized = JSON.stringify(state);
+      if (serialized.length < 4000000) { // ~4MB limit to be safe (localStorage is usually 5MB)
+        localStorage.setItem(key, serialized);
+      } else {
+        console.warn(`Skipping localStorage for ${key} due to size limits`);
+      }
     } catch (error) {
       console.error(`Error writing localStorage key "${key}":`, error);
+      // If quota exceeded, try to clear some space or just ignore
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        console.warn('LocalStorage quota exceeded. Consider clearing browser data or using Supabase.');
+      }
     }
   }, [key, state]);
 
