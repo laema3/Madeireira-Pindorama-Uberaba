@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work } from '../types';
+import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work, ServiceArea, Post } from '../types';
 import { PRODUCTS as INITIAL_PRODUCTS, PARTNERS as INITIAL_PARTNERS, PROFESSIONALS as INITIAL_PROFESSIONALS } from '../data';
 import { supabase } from '../lib/supabase';
 
@@ -14,6 +14,8 @@ interface DataContextType {
   subcategories: Subcategory[];
   settings: Settings;
   works: Work[];
+  serviceAreas: ServiceArea[];
+  posts: Post[];
   
   addProduct: (product: Product) => void;
   updateProduct: (product: Product) => void;
@@ -47,6 +49,14 @@ interface DataContextType {
   addProfessional: (professional: Professional) => void;
   updateProfessional: (professional: Professional) => void;
   deleteProfessional: (id: string) => void;
+
+  addServiceArea: (serviceArea: ServiceArea) => void;
+  updateServiceArea: (serviceArea: ServiceArea) => void;
+  deleteServiceArea: (id: string) => void;
+
+  addPost: (post: Post) => void;
+  updatePost: (post: Post) => void;
+  deletePost: (id: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -137,6 +147,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const [settings, setSettings] = usePersistedState<Settings>('settings', {
     logoUrl: '',
+    footerLogoUrl: '',
     footerText: '© 2026 Madeireira Pindorama. Todos os direitos reservados.',
     facebookUrl: '#',
     instagramUrl: '#',
@@ -179,6 +190,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   ]);
 
+  const [serviceAreas, setServiceAreas] = usePersistedState<ServiceArea[]>('serviceAreas', []);
+  const [posts, setPosts] = usePersistedState<Post[]>('posts', []);
+
   // Ensure admin credentials exist (migration for existing users)
   useEffect(() => {
     if (!settings.adminUser || !settings.adminPassword || !settings.heroImages) {
@@ -206,7 +220,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const [
           { data: prodData }, { data: partData }, { data: cliData },
           { data: catData }, { data: subData }, { data: workData },
-          { data: profData }, { data: setData }, { data: abtData }, { data: histData }
+          { data: profData }, { data: setData }, { data: abtData }, { data: histData },
+          { data: saData }, { data: postData }
         ] = await Promise.all([
           supabase.from('products').select('*'),
           supabase.from('partners').select('*'),
@@ -218,6 +233,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           supabase.from('settings').select('*').limit(1).maybeSingle(),
           supabase.from('about').select('*').limit(1).maybeSingle(),
           supabase.from('history').select('*').limit(1).maybeSingle(),
+          supabase.from('service_areas').select('*'),
+          supabase.from('posts').select('*')
         ]);
 
         if (prodData && prodData.length > 0) setProducts(prodData);
@@ -227,6 +244,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (subData && subData.length > 0) setSubcategories(subData);
         if (workData && workData.length > 0) setWorks(workData);
         if (profData && profData.length > 0) setProfessionals(profData);
+        if (saData && saData.length > 0) setServiceAreas(saData);
+        if (postData && postData.length > 0) setPosts(postData);
         
         if (setData) setSettings(setData);
         if (abtData) setAbout(abtData);
@@ -278,6 +297,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const subcategoryCrud = createCrud<Subcategory>('subcategories', setSubcategories);
   const workCrud = createCrud<Work>('works', setWorks);
   const professionalCrud = createCrud<Professional>('professionals', setProfessionals);
+  const serviceAreaCrud = createCrud<ServiceArea>('service_areas', setServiceAreas);
+  const postCrud = createCrud<Post>('posts', setPosts);
 
   const updateSettings = async (newSettings: Settings) => {
     if (isSupabaseConfigured) {
@@ -311,7 +332,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   return (
     <DataContext.Provider value={{
-      products, partners, professionals, about, history, clients, categories, subcategories, settings, works,
+      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts,
       addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.remove,
       addPartner: partnerCrud.add, updatePartner: partnerCrud.update, deletePartner: partnerCrud.remove,
       updateAbout, updateHistory,
@@ -320,7 +341,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addSubcategory: subcategoryCrud.add, updateSubcategory: subcategoryCrud.update, deleteSubcategory: subcategoryCrud.remove,
       updateSettings,
       addWork: workCrud.add, updateWork: workCrud.update, deleteWork: workCrud.remove,
-      addProfessional: professionalCrud.add, updateProfessional: professionalCrud.update, deleteProfessional: professionalCrud.remove
+      addProfessional: professionalCrud.add, updateProfessional: professionalCrud.update, deleteProfessional: professionalCrud.remove,
+      addServiceArea: serviceAreaCrud.add, updateServiceArea: serviceAreaCrud.update, deleteServiceArea: serviceAreaCrud.remove,
+      addPost: postCrud.add, updatePost: postCrud.update, deletePost: postCrud.remove
     }}>
       {children}
     </DataContext.Provider>

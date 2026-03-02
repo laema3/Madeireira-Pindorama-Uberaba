@@ -7,6 +7,8 @@ import { Products } from './components/Products';
 import { Works } from './components/Works';
 import { Partners } from './components/Partners';
 import { Professionals } from './components/Professionals';
+import { ServiceAreas } from './components/ServiceAreas';
+import { Posts } from './components/Posts';
 import { Location } from './components/Location';
 import { Footer } from './components/Footer';
 import { Chatbot } from './components/Chatbot';
@@ -45,6 +47,8 @@ export default function App() {
               <Works />
               <Partners />
               <Professionals />
+              <ServiceAreas />
+              <Posts />
               <div id="contato">
                 <ContactForm />
                 <Location />

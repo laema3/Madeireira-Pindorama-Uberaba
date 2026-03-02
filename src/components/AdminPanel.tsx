@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useData } from './DataContext';
-import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional } from '../types';
-import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase } from 'lucide-react';
+import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post } from '../types';
+import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText } from 'lucide-react';
 
 export function AdminPanel() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens'>('dashboard');
   const { 
     about, history, updateAbout, updateHistory,
     products, addProduct, updateProduct, deleteProduct,
@@ -14,7 +14,9 @@ export function AdminPanel() {
     subcategories, addSubcategory, updateSubcategory, deleteSubcategory,
     settings, updateSettings,
     works, addWork, updateWork, deleteWork,
-    professionals, addProfessional, updateProfessional, deleteProfessional
+    professionals, addProfessional, updateProfessional, deleteProfessional,
+    serviceAreas, addServiceArea, updateServiceArea, deleteServiceArea,
+    posts, addPost, updatePost, deletePost
   } = useData();
 
   // --- State for Forms ---
@@ -25,6 +27,8 @@ export function AdminPanel() {
   const [editingSubcategory, setEditingSubcategory] = useState<Partial<Subcategory> | null>(null);
   const [editingWork, setEditingWork] = useState<Partial<Work> | null>(null);
   const [editingProfessional, setEditingProfessional] = useState<Partial<Professional> | null>(null);
+  const [editingServiceArea, setEditingServiceArea] = useState<Partial<ServiceArea> | null>(null);
+  const [editingPost, setEditingPost] = useState<Partial<Post> | null>(null);
   
   const [aboutForm, setAboutForm] = useState(about);
   const [historyForm, setHistoryForm] = useState(history);
@@ -259,6 +263,12 @@ export function AdminPanel() {
             </button>
             <button onClick={() => setActiveTab('parceiros')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'parceiros' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
               <Users size={20} /> Parceiros
+            </button>
+            <button onClick={() => setActiveTab('atuacao')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'atuacao' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <MapPin size={20} /> Área de Atuação
+            </button>
+            <button onClick={() => setActiveTab('postagens')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'postagens' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <FileText size={20} /> Postagens
             </button>
             <button onClick={() => setActiveTab('sobre')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'sobre' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
               <Info size={20} /> Sobre Nós
@@ -636,7 +646,7 @@ export function AdminPanel() {
                   <h4 className="font-bold mb-4 flex items-center gap-2"><Tag size={18} /> Identidade Visual</h4>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium">Logomarca</label>
+                      <label className="block text-sm font-medium">Logomarca Principal</label>
                       <input 
                         type="file" 
                         accept="image/*"
@@ -647,6 +657,20 @@ export function AdminPanel() {
                         }}
                         className="w-full p-2 border rounded"
                       />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Logomarca do Rodapé (Opcional)</label>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            processFile(e.target.files[0], (base64) => setSettingsForm({...settingsForm, footerLogoUrl: base64}));
+                          }
+                        }}
+                        className="w-full p-2 border rounded"
+                      />
+                      <p className="text-xs text-stone-500 mt-1">Se não for enviada, a logomarca principal será usada no rodapé.</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium">Texto do Rodapé</label>
@@ -1199,6 +1223,163 @@ export function AdminPanel() {
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-1">
                       <button onClick={() => setEditingProfessional(p)} className="p-1 bg-blue-100 text-blue-600 rounded shadow-sm"><Edit size={16} /></button>
                       <button onClick={() => handleDeleteItem(p.id, deleteProfessional, 'profissional')} className="p-1 bg-red-100 text-red-600 rounded shadow-sm"><Trash2 size={16} /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* --- ÁREA DE ATUAÇÃO --- */}
+          {activeTab === 'atuacao' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-emerald-900">Gerenciar Área de Atuação</h3>
+                <button 
+                  onClick={() => setEditingServiceArea({ name: '' })}
+                  className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2"
+                >
+                  <Plus size={18} /> Nova Cidade
+                </button>
+              </div>
+
+              {editingServiceArea && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 rounded-xl w-full max-w-md">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-xl font-bold">{editingServiceArea.id ? 'Editar Cidade' : 'Nova Cidade'}</h4>
+                      <button onClick={() => setEditingServiceArea(null)}><X /></button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium">Nome da Cidade</label>
+                        <input className="w-full p-2 border rounded" value={editingServiceArea.name} onChange={e => setEditingServiceArea({...editingServiceArea, name: e.target.value})} />
+                      </div>
+                    </div>
+                    <div className="mt-6 flex justify-end gap-2">
+                      <button onClick={() => setEditingServiceArea(null)} className="px-4 py-2 border rounded hover:bg-gray-100">Cancelar</button>
+                      <button onClick={() => handleSaveItem(editingServiceArea, setEditingServiceArea, addServiceArea, updateServiceArea, 'cidade')} className="px-4 py-2 bg-emerald-700 text-white rounded hover:bg-emerald-800">Salvar</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {serviceAreas.map(sa => (
+                  <div key={sa.id} className="bg-white p-4 rounded-xl border shadow-sm flex items-center justify-between group">
+                    <div className="flex items-center gap-2 text-emerald-800 font-medium">
+                      <MapPin size={18} className="text-emerald-600" />
+                      {sa.name}
+                    </div>
+                    <div className="opacity-0 group-hover:opacity-100 transition flex gap-1">
+                      <button onClick={() => setEditingServiceArea(sa)} className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Edit size={16} /></button>
+                      <button onClick={() => handleDeleteItem(sa.id, deleteServiceArea, 'cidade')} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* --- POSTAGENS --- */}
+          {activeTab === 'postagens' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-emerald-900">Gerenciar Postagens (Dicas)</h3>
+                <button 
+                  onClick={() => setEditingPost({ title: '', content: '', image: '', createdAt: new Date().toISOString() })}
+                  className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2"
+                >
+                  <Plus size={18} /> Nova Postagem
+                </button>
+              </div>
+
+              {editingPost && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-xl font-bold">{editingPost.id ? 'Editar Postagem' : 'Nova Postagem'}</h4>
+                      <button onClick={() => setEditingPost(null)}><X /></button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium">Título</label>
+                        <input className="w-full p-2 border rounded" value={editingPost.title} onChange={e => setEditingPost({...editingPost, title: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Imagem</label>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0] && editingPost) {
+                              processFile(e.target.files[0], (base64) => setEditingPost({...editingPost, image: base64}));
+                            }
+                          }}
+                          className="w-full p-2 border rounded"
+                        />
+                        {editingPost.image && editingPost.image.trim() !== '' && (
+                          <img 
+                            src={editingPost.image} 
+                            alt="Preview" 
+                            className="mt-2 h-32 object-cover rounded-md" 
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
+                              e.currentTarget.onerror = null;
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Conteúdo</label>
+                        <textarea 
+                          className="w-full p-2 border rounded" 
+                          rows={10} 
+                          value={editingPost.content} 
+                          onChange={e => setEditingPost({...editingPost, content: e.target.value})} 
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-6 flex justify-end gap-2">
+                      <button onClick={() => setEditingPost(null)} className="px-4 py-2 border rounded hover:bg-gray-100">Cancelar</button>
+                      <button onClick={() => handleSaveItem(editingPost, setEditingPost, addPost, updatePost, 'postagem')} className="px-4 py-2 bg-emerald-700 text-white rounded hover:bg-emerald-800">Salvar</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {posts.map(post => (
+                  <div key={post.id} className="bg-white rounded-xl border shadow-sm overflow-hidden relative group flex flex-col">
+                    <div className="h-48 bg-stone-100 relative">
+                      {post.image && post.image.trim() !== '' ? (
+                        <img 
+                          src={post.image} 
+                          alt={post.title} 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://placehold.co/600x400?text=Sem+Imagem';
+                            e.currentTarget.onerror = null;
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-stone-300">
+                          <ImageIcon size={48} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4 flex-1 flex flex-col">
+                      <h4 className="font-bold text-stone-800 mb-2 line-clamp-2">{post.title}</h4>
+                      <p className="text-stone-600 text-sm line-clamp-3 flex-1">{post.content}</p>
+                      <div className="mt-4 text-xs text-stone-400">
+                        {new Date(post.createdAt).toLocaleDateString('pt-BR')}
+                      </div>
+                    </div>
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-1">
+                      <button onClick={() => setEditingPost(post)} className="p-1 bg-blue-100 text-blue-600 rounded shadow-sm"><Edit size={16} /></button>
+                      <button onClick={() => handleDeleteItem(post.id, deletePost, 'postagem')} className="p-1 bg-red-100 text-red-600 rounded shadow-sm"><Trash2 size={16} /></button>
                     </div>
                   </div>
                 ))}

@@ -16,6 +16,8 @@ export function Header() {
     { label: 'Produtos', href: '#produtos' },
     { label: 'Obras', href: '#obras' },
     { label: 'Parceiros', href: '#parceiros' },
+    { label: 'Atuação', href: '#atuacao' },
+    { label: 'Dicas', href: '#dicas' },
     { label: 'Contato', href: '#contato' },
   ];
 
@@ -72,13 +74,13 @@ export function Header() {
             )}
           </div>
 
-          <nav className="hidden lg:flex space-x-6">
+          <nav className="hidden lg:flex space-x-2">
             {navItems.map((item) => (
               <a
                 key={item.label}
                 href={item.href}
                 onClick={(e) => handleNavClick(e, item.href)}
-                className="text-stone-600 hover:text-emerald-800 font-medium transition whitespace-nowrap"
+                className="text-stone-600 hover:text-white hover:bg-emerald-700 font-medium text-lg px-4 py-2 rounded-md transition-colors duration-200 whitespace-nowrap"
               >
                 {item.label}
               </a>
@@ -138,7 +140,7 @@ export function Header() {
                 key={item.label}
                 href={item.href}
                 onClick={(e) => handleNavClick(e, item.href)}
-                className="block px-3 py-2 text-base font-medium text-stone-600 hover:text-emerald-800 hover:bg-stone-50 rounded-md"
+                className="block px-3 py-2 text-lg font-medium text-stone-600 hover:text-white hover:bg-emerald-700 rounded-md transition-colors duration-200"
               >
                 {item.label}
               </a>

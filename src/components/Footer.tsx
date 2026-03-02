@@ -6,13 +6,13 @@ export function Footer() {
   const { settings } = useData();
 
   return (
-    <footer className="bg-stone-950 text-stone-400 pt-16 pb-8">
+    <footer className="bg-amber-950 text-amber-200/70 pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           <div>
-            {settings.logoUrl && settings.logoUrl.trim() !== '' && (
+            {(settings.footerLogoUrl || settings.logoUrl) && (settings.footerLogoUrl || settings.logoUrl).trim() !== '' && (
               <img 
-                src={settings.logoUrl} 
+                src={settings.footerLogoUrl && settings.footerLogoUrl.trim() !== '' ? settings.footerLogoUrl : settings.logoUrl} 
                 alt="Madeireira Pindorama" 
                 className="h-32 w-auto object-contain mb-6" 
                 referrerPolicy="no-referrer" 
@@ -26,9 +26,9 @@ export function Footer() {
               Há mais de 20 anos fornecendo madeira de qualidade e soluções para construção civil e marcenaria.
             </p>
             <div className="flex gap-4">
-              <a href={settings.facebookUrl} className="text-stone-400 hover:text-emerald-500 transition"><Facebook /></a>
-              <a href={settings.instagramUrl} className="text-stone-400 hover:text-emerald-500 transition"><Instagram /></a>
-              <a href={settings.whatsappUrl} className="text-stone-400 hover:text-emerald-500 transition"><MessageCircle /></a>
+              <a href={settings.facebookUrl} className="text-amber-200/70 hover:text-emerald-500 transition"><Facebook /></a>
+              <a href={settings.instagramUrl} className="text-amber-200/70 hover:text-emerald-500 transition"><Instagram /></a>
+              <a href={settings.whatsappUrl} className="text-amber-200/70 hover:text-emerald-500 transition"><MessageCircle /></a>
             </div>
           </div>
 
@@ -69,9 +69,9 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-stone-800 pt-8 text-center text-sm flex flex-col items-center gap-2">
+        <div className="border-t border-amber-900 pt-8 text-center text-sm flex flex-col items-center gap-2">
           <p>{settings.footerText}</p>
-          <a href="#admin" className="text-stone-700 hover:text-emerald-600 text-xs">Acesso Administrativo</a>
+          <a href="#admin" className="text-amber-800 hover:text-emerald-600 text-xs">Acesso Administrativo</a>
         </div>
       </div>
     </footer>

@@ -58,6 +58,7 @@ export interface Subcategory {
 
 export interface Settings {
   logoUrl: string;
+  footerLogoUrl?: string;
   footerText: string;
   facebookUrl: string;
   instagramUrl: string;
@@ -77,4 +78,17 @@ export interface Work {
   title: string;
   description: string;
   images: string[]; // Array of image URLs (or base64)
+}
+
+export interface ServiceArea {
+  id: string;
+  name: string;
+}
+
+export interface Post {
+  id: string;
+  title: string;
+  image: string;
+  content: string;
+  created_at?: string;
 }
