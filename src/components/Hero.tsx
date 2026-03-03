@@ -83,12 +83,12 @@ export function Hero() {
               e.currentTarget.onerror = null;
             }}
           />
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4">
+          <div className="absolute inset-0 flex flex-col items-start justify-center text-left text-white px-8 md:px-24">
             <motion.h1
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="text-6xl md:text-8xl font-bold mb-6 drop-shadow-2xl"
+              className="text-6xl md:text-8xl font-bold mb-6 drop-shadow-2xl max-w-5xl"
             >
               {heroImages[index % heroImages.length].title}
             </motion.h1>
