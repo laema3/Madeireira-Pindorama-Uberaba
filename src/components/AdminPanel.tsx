@@ -87,7 +87,14 @@ export function AdminPanel() {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          callback(canvas.toDataURL('image/jpeg', 0.7)); // Compress to 70% JPEG
+          
+          // Preserve transparency for PNG and WebP
+          const mimeType = (file.type === 'image/png' || file.type === 'image/webp') 
+            ? file.type 
+            : 'image/jpeg';
+          
+          const quality = mimeType === 'image/jpeg' ? 0.7 : undefined;
+          callback(canvas.toDataURL(mimeType, quality));
         } else {
           callback(reader.result as string); // Fallback if canvas fails
         }
