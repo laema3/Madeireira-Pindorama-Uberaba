@@ -1,12 +1,13 @@
 import React from 'react';
-import { Menu, X, TreePine, Search, User, Phone, MessageCircle } from 'lucide-react';
-import { useState } from 'react';
+import { Menu, X, TreePine, Search, User, Phone, MessageCircle, ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { useLoader } from './LoaderContext';
 import { useData } from './DataContext';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const { simulateLoading } = useLoader();
   const { settings } = useData();
 
@@ -15,9 +16,15 @@ export function Header() {
     { label: 'Sobre Nós', href: '#sobre' },
     { label: 'Produtos', href: '#produtos' },
     { label: 'Obras', href: '#obras' },
-    { label: 'Parceiros', href: '#parceiros' },
+    { 
+      label: 'Serviços', 
+      href: '#',
+      submenu: [
+        { label: 'Parceiros', href: '#parceiros' },
+        { label: 'Dicas', href: '#dicas' },
+      ]
+    },
     { label: 'Atuação', href: '#atuacao' },
-    { label: 'Dicas', href: '#dicas' },
     { label: 'Contato', href: '#contato' },
   ];
 
@@ -74,44 +81,72 @@ export function Header() {
             )}
           </div>
 
-          <nav className="hidden lg:flex space-x-2">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                onClick={(e) => handleNavClick(e, item.href)}
-                className="text-stone-600 hover:text-white hover:bg-emerald-700 font-medium text-lg px-4 py-2 rounded-md transition-colors duration-200 whitespace-nowrap"
+          <div className="flex items-center gap-8 flex-1 justify-end">
+            <nav className="hidden lg:flex items-center space-x-1">
+              {navItems.map((item) => (
+                <div key={item.label} className="relative group flex items-center">
+                  {item.submenu ? (
+                    <>
+                      <button
+                        className="text-stone-600 group-hover:text-white group-hover:bg-emerald-700 font-medium text-sm px-3 py-2 rounded-md transition-colors duration-200 whitespace-nowrap flex items-center gap-1 h-10"
+                      >
+                        {item.label}
+                        <ChevronDown size={14} className="group-hover:rotate-180 transition-transform" />
+                      </button>
+                      <div className="absolute right-0 top-full mt-0 w-48 bg-white border border-stone-100 shadow-xl rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div className="py-2">
+                          {item.submenu.map((sub) => (
+                            <a
+                              key={sub.label}
+                              href={sub.href}
+                              onClick={(e) => handleNavClick(e, sub.href)}
+                              className="block px-4 py-2 text-sm text-stone-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                            >
+                              {sub.label}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <a
+                      href={item.href}
+                      onClick={(e) => handleNavClick(e, item.href)}
+                      className="text-stone-600 hover:text-white hover:bg-emerald-700 font-medium text-sm px-3 py-2 rounded-md transition-colors duration-200 whitespace-nowrap flex items-center h-10"
+                    >
+                      {item.label}
+                    </a>
+                  )}
+                </div>
+              ))}
+            </nav>
+
+            <div className="flex items-center gap-4">
+              {/* Search Bar Desktop */}
+              <div className="hidden md:flex items-center bg-stone-100 rounded-full px-4 py-2 focus-within:ring-2 focus-within:ring-emerald-500 transition">
+                <Search size={18} className="text-stone-400" />
+                <input 
+                  type="text" 
+                  placeholder="Pesquisar..." 
+                  className="bg-transparent border-none focus:ring-0 text-sm ml-2 w-32 lg:w-48"
+                />
+              </div>
+
+              {/* Mobile Search Toggle */}
+              <button 
+                className="md:hidden p-2 text-stone-600"
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
               >
-                {item.label}
-              </a>
-            ))}
-          </nav>
+                <Search size={24} />
+              </button>
 
-          <div className="flex items-center gap-4">
-            {/* Search Bar Desktop */}
-            <div className="hidden md:flex items-center bg-stone-100 rounded-full px-4 py-2 focus-within:ring-2 focus-within:ring-emerald-500 transition">
-              <Search size={18} className="text-stone-400" />
-              <input 
-                type="text" 
-                placeholder="Pesquisar..." 
-                className="bg-transparent border-none focus:ring-0 text-sm ml-2 w-32 lg:w-48"
-              />
+              <button
+                className="lg:hidden p-2 text-stone-600"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
             </div>
-
-            {/* Mobile Search Toggle */}
-            <button 
-              className="md:hidden p-2 text-stone-600"
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-            >
-              <Search size={24} />
-            </button>
-
-            <button
-              className="lg:hidden p-2 text-stone-600"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
           </div>
         </div>
 
@@ -133,17 +168,44 @@ export function Header() {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-stone-100">
+        <div className="lg:hidden bg-white border-t border-stone-100 max-h-[80vh] overflow-y-auto">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                onClick={(e) => handleNavClick(e, item.href)}
-                className="block px-3 py-2 text-lg font-medium text-stone-600 hover:text-white hover:bg-emerald-700 rounded-md transition-colors duration-200"
-              >
-                {item.label}
-              </a>
+              <div key={item.label}>
+                {item.submenu ? (
+                  <>
+                    <button
+                      onClick={() => setActiveSubmenu(activeSubmenu === item.label ? null : item.label)}
+                      className="w-full flex justify-between items-center px-3 py-2 text-lg font-medium text-stone-600 hover:text-white hover:bg-emerald-700 rounded-md transition-colors duration-200"
+                    >
+                      {item.label}
+                      <ChevronDown size={20} className={`transition-transform ${activeSubmenu === item.label ? 'rotate-180' : ''}`} />
+                    </button>
+                    {activeSubmenu === item.label && (
+                      <div className="bg-stone-50 rounded-md mt-1 ml-4 space-y-1">
+                        {item.submenu.map((sub) => (
+                          <a
+                            key={sub.label}
+                            href={sub.href}
+                            onClick={(e) => handleNavClick(e, sub.href)}
+                            className="block px-3 py-2 text-base font-medium text-stone-500 hover:text-emerald-700"
+                          >
+                            {sub.label}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <a
+                    href={item.href}
+                    onClick={(e) => handleNavClick(e, item.href)}
+                    className="block px-3 py-2 text-lg font-medium text-stone-600 hover:text-white hover:bg-emerald-700 rounded-md transition-colors duration-200"
+                  >
+                    {item.label}
+                  </a>
+                )}
+              </div>
             ))}
             <div className="border-t border-stone-100 mt-4 pt-4 pb-2">
               <div className="flex flex-col gap-3 px-3">
