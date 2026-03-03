@@ -22,6 +22,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    document.title = "Madeireira Pindorama";
     const checkHash = () => {
       setIsAdmin(window.location.hash === '#admin');
     };

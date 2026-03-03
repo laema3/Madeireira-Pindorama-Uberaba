@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useData } from './DataContext';
 import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post } from '../types';
 import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText } from 'lucide-react';
@@ -42,6 +42,9 @@ export function AdminPanel() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginUser, setLoginUser] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+
+  const aboutImageRef = useRef<HTMLInputElement>(null);
+  const historyImageRef = useRef<HTMLInputElement>(null);
 
   // Sync forms with context data when it changes
   React.useEffect(() => {
@@ -673,30 +676,92 @@ export function AdminPanel() {
                   <h4 className="font-bold mb-4 flex items-center gap-2"><Tag size={18} /> Identidade Visual</h4>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium">Logomarca Principal</label>
+                      <label className="block text-sm font-medium mb-2">Logomarca Principal</label>
                       <input 
                         type="file" 
+                        id="logo-input"
                         accept="image/*"
                         onChange={(e) => {
                           if (e.target.files && e.target.files[0]) {
                             processFile(e.target.files[0], (base64) => setSettingsForm({...settingsForm, logoUrl: base64}));
                           }
                         }}
-                        className="w-full p-2 border rounded"
+                        className="hidden"
                       />
+                      {settingsForm.logoUrl ? (
+                        <div className="relative group w-32 h-32 bg-stone-100 rounded-lg overflow-hidden border border-stone-200">
+                          <img src={settingsForm.logoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
+                            <button 
+                              type="button"
+                              onClick={() => document.getElementById('logo-input')?.click()}
+                              className="text-white hover:text-emerald-400 text-xs font-bold"
+                            >
+                              Alterar
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => handleDeleteItem('logo', () => setSettingsForm({...settingsForm, logoUrl: ''}), 'logomarca principal')}
+                              className="text-white hover:text-red-400 text-xs font-bold"
+                            >
+                              Excluir
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button 
+                          type="button"
+                          onClick={() => document.getElementById('logo-input')?.click()}
+                          className="w-32 h-32 border-2 border-dashed border-stone-300 rounded-lg flex flex-col items-center justify-center text-stone-500 hover:bg-stone-50 transition"
+                        >
+                          <Plus size={24} />
+                          <span className="text-xs mt-1">Logo</span>
+                        </button>
+                      )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium">Logomarca do Rodapé (Opcional)</label>
+                      <label className="block text-sm font-medium mb-2">Logomarca do Rodapé (Opcional)</label>
                       <input 
                         type="file" 
+                        id="footer-logo-input"
                         accept="image/*"
                         onChange={(e) => {
                           if (e.target.files && e.target.files[0]) {
                             processFile(e.target.files[0], (base64) => setSettingsForm({...settingsForm, footerLogoUrl: base64}));
                           }
                         }}
-                        className="w-full p-2 border rounded"
+                        className="hidden"
                       />
+                      {settingsForm.footerLogoUrl ? (
+                        <div className="relative group w-32 h-32 bg-stone-100 rounded-lg overflow-hidden border border-stone-200">
+                          <img src={settingsForm.footerLogoUrl} alt="Footer Logo" className="w-full h-full object-contain p-2" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
+                            <button 
+                              type="button"
+                              onClick={() => document.getElementById('footer-logo-input')?.click()}
+                              className="text-white hover:text-emerald-400 text-xs font-bold"
+                            >
+                              Alterar
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => handleDeleteItem('footer-logo', () => setSettingsForm({...settingsForm, footerLogoUrl: ''}), 'logomarca do rodapé')}
+                              className="text-white hover:text-red-400 text-xs font-bold"
+                            >
+                              Excluir
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button 
+                          type="button"
+                          onClick={() => document.getElementById('footer-logo-input')?.click()}
+                          className="w-32 h-32 border-2 border-dashed border-stone-300 rounded-lg flex flex-col items-center justify-center text-stone-500 hover:bg-stone-50 transition"
+                        >
+                          <Plus size={24} />
+                          <span className="text-xs mt-1">Logo Rodapé</span>
+                        </button>
+                      )}
                       <p className="text-xs text-stone-500 mt-1">Se não for enviada, a logomarca principal será usada no rodapé.</p>
                     </div>
                     <div>
@@ -799,9 +864,11 @@ export function AdminPanel() {
                               <button 
                                 type="button"
                                 onClick={() => {
-                                  const newSlides = [...(settingsForm.heroSlides || [])];
-                                  newSlides.splice(idx, 1);
-                                  setSettingsForm({ ...settingsForm, heroSlides: newSlides });
+                                  handleDeleteItem(idx.toString(), () => {
+                                    const newSlides = [...(settingsForm.heroSlides || [])];
+                                    newSlides.splice(idx, 1);
+                                    setSettingsForm({ ...settingsForm, heroSlides: newSlides });
+                                  }, 'slide do banner');
                                 }}
                                 className="bg-red-600 text-white p-1 rounded-full hover:bg-red-700"
                                 title="Remover"
@@ -920,28 +987,57 @@ export function AdminPanel() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-stone-700">Imagem</label>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Imagem</label>
                     <input 
                       type="file" 
+                      ref={aboutImageRef}
                       accept="image/*"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           processFile(e.target.files[0], (base64) => setAboutForm({...aboutForm, image: base64}));
                         }
                       }}
-                      className="w-full p-2 border rounded-md"
+                      className="hidden"
                     />
-                    {aboutForm.image && aboutForm.image.trim() !== '' && (
-                      <img 
-                        src={aboutForm.image} 
-                        alt="Preview" 
-                        className="mt-2 h-32 object-cover rounded-md" 
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
-                          e.currentTarget.onerror = null;
-                        }}
-                      />
+                    
+                    {aboutForm.image && aboutForm.image.trim() !== '' ? (
+                      <div className="relative group w-full max-w-md aspect-video bg-stone-100 rounded-lg overflow-hidden border border-stone-200">
+                        <img 
+                          src={aboutForm.image} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
+                            e.currentTarget.onerror = null;
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-4">
+                          <button 
+                            type="button"
+                            onClick={() => aboutImageRef.current?.click()}
+                            className="bg-white text-emerald-800 p-2 rounded-full hover:bg-emerald-50 shadow-lg flex items-center gap-2 px-4 font-bold"
+                          >
+                            <Edit size={18} /> Alterar
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => handleDeleteItem('about-image', () => setAboutForm({...aboutForm, image: ''}), 'imagem do Sobre Nós')}
+                            className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 shadow-lg flex items-center gap-2 px-4 font-bold"
+                          >
+                            <Trash2 size={18} /> Excluir
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button 
+                        type="button"
+                        onClick={() => aboutImageRef.current?.click()}
+                        className="w-full max-w-md aspect-video border-2 border-dashed border-stone-300 rounded-lg flex flex-col items-center justify-center text-stone-500 hover:bg-stone-50 transition"
+                      >
+                        <ImageIcon size={48} className="mb-2 opacity-20" />
+                        <span className="font-medium">Clique para adicionar imagem</span>
+                      </button>
                     )}
                   </div>
                   <button onClick={handleSaveAbout} className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2">
@@ -974,28 +1070,57 @@ export function AdminPanel() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-stone-700">Imagem</label>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Imagem</label>
                     <input 
                       type="file" 
+                      ref={historyImageRef}
                       accept="image/*"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           processFile(e.target.files[0], (base64) => setHistoryForm({...historyForm, image: base64}));
                         }
                       }}
-                      className="w-full p-2 border rounded-md"
+                      className="hidden"
                     />
-                    {historyForm.image && historyForm.image.trim() !== '' && (
-                      <img 
-                        src={historyForm.image} 
-                        alt="Preview" 
-                        className="mt-2 h-32 object-cover rounded-md" 
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
-                          e.currentTarget.onerror = null;
-                        }}
-                      />
+                    
+                    {historyForm.image && historyForm.image.trim() !== '' ? (
+                      <div className="relative group w-full max-w-md aspect-video bg-stone-100 rounded-lg overflow-hidden border border-stone-200">
+                        <img 
+                          src={historyForm.image} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
+                            e.currentTarget.onerror = null;
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-4">
+                          <button 
+                            type="button"
+                            onClick={() => historyImageRef.current?.click()}
+                            className="bg-white text-emerald-800 p-2 rounded-full hover:bg-emerald-50 shadow-lg flex items-center gap-2 px-4 font-bold"
+                          >
+                            <Edit size={18} /> Alterar
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => handleDeleteItem('history-image', () => setHistoryForm({...historyForm, image: ''}), 'imagem da Nossa História')}
+                            className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 shadow-lg flex items-center gap-2 px-4 font-bold"
+                          >
+                            <Trash2 size={18} /> Excluir
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button 
+                        type="button"
+                        onClick={() => historyImageRef.current?.click()}
+                        className="w-full max-w-md aspect-video border-2 border-dashed border-stone-300 rounded-lg flex flex-col items-center justify-center text-stone-500 hover:bg-stone-50 transition"
+                      >
+                        <ImageIcon size={48} className="mb-2 opacity-20" />
+                        <span className="font-medium">Clique para adicionar imagem</span>
+                      </button>
                     )}
                   </div>
                   <button onClick={handleSaveHistory} className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2">
