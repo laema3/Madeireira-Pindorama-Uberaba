@@ -64,7 +64,18 @@ export function About() {
             transition={{ duration: 0.8 }}
             className="md:order-2"
           >
-            {history.image && history.image.trim() !== '' ? (
+            {history.videoUrl && history.videoUrl.trim() !== '' ? (
+              <div className="rounded-2xl shadow-xl w-full h-96 overflow-hidden">
+                <video 
+                  src={history.videoUrl} 
+                  className="w-full h-full object-cover"
+                  controls
+                  muted
+                  loop
+                  autoPlay
+                />
+              </div>
+            ) : history.image && history.image.trim() !== '' ? (
               <img
                 src={history.image}
                 alt={history.title}
@@ -77,7 +88,7 @@ export function About() {
               />
             ) : (
               <div className="rounded-2xl shadow-xl w-full h-96 bg-stone-200 flex items-center justify-center text-stone-400">
-                Sem imagem
+                Sem mídia
               </div>
             )}
           </motion.div>

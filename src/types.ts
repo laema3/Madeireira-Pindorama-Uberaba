@@ -34,6 +34,7 @@ export interface AboutData {
   title: string;
   description: string;
   image: string;
+  videoUrl?: string;
 }
 
 export interface Client {

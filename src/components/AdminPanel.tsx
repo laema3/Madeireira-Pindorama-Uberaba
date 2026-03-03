@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useData } from './DataContext';
 import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post } from '../types';
-import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText, Video } from 'lucide-react';
 
 export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens'>('dashboard');
@@ -45,6 +45,7 @@ export function AdminPanel() {
 
   const aboutImageRef = useRef<HTMLInputElement>(null);
   const historyImageRef = useRef<HTMLInputElement>(null);
+  const historyVideoRef = useRef<HTMLInputElement>(null);
 
   // Sync forms with context data when it changes
   React.useEffect(() => {
@@ -1077,20 +1078,77 @@ export function AdminPanel() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-2">Imagem</label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-stone-700">Mídia (Imagem ou Vídeo)</label>
+                      <div className="flex gap-2">
+                        <button 
+                          type="button"
+                          onClick={() => historyImageRef.current?.click()}
+                          className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded hover:bg-emerald-200 flex items-center gap-1"
+                        >
+                          <ImageIcon size={14} /> Adicionar Imagem
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => historyVideoRef.current?.click()}
+                          className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200 flex items-center gap-1"
+                        >
+                          <Video size={14} /> Adicionar Vídeo
+                        </button>
+                      </div>
+                    </div>
+
                     <input 
                       type="file" 
                       ref={historyImageRef}
                       accept="image/*"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
-                          processFile(e.target.files[0], (base64) => setHistoryForm({...historyForm, image: base64}));
+                          processFile(e.target.files[0], (base64) => setHistoryForm({...historyForm, image: base64, videoUrl: ''}));
+                        }
+                      }}
+                      className="hidden"
+                    />
+
+                    <input 
+                      type="file" 
+                      ref={historyVideoRef}
+                      accept="video/*"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          if (file.size > 10 * 1024 * 1024) { // 10MB limit for base64
+                            showNotification('O vídeo é muito grande. Tente um arquivo menor que 10MB.', 'error');
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setHistoryForm({...historyForm, videoUrl: reader.result as string, image: ''});
+                          };
+                          reader.readAsDataURL(file);
                         }
                       }}
                       className="hidden"
                     />
                     
-                    {historyForm.image && historyForm.image.trim() !== '' ? (
+                    {historyForm.videoUrl && historyForm.videoUrl.trim() !== '' ? (
+                      <div className="relative group w-full max-w-md aspect-video bg-stone-100 rounded-lg overflow-hidden border border-stone-200">
+                        <video 
+                          src={historyForm.videoUrl} 
+                          className="w-full h-full object-cover"
+                          controls
+                        />
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
+                          <button 
+                            type="button"
+                            onClick={() => handleDeleteItem('history-video', () => setHistoryForm({...historyForm, videoUrl: ''}), 'vídeo da Nossa História')}
+                            className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 shadow-lg"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : historyForm.image && historyForm.image.trim() !== '' ? (
                       <div className="relative group w-full max-w-md aspect-video bg-stone-100 rounded-lg overflow-hidden border border-stone-200">
                         <img 
                           src={historyForm.image} 
@@ -1120,14 +1178,13 @@ export function AdminPanel() {
                         </div>
                       </div>
                     ) : (
-                      <button 
-                        type="button"
-                        onClick={() => historyImageRef.current?.click()}
-                        className="w-full max-w-md aspect-video border-2 border-dashed border-stone-300 rounded-lg flex flex-col items-center justify-center text-stone-500 hover:bg-stone-50 transition"
-                      >
-                        <ImageIcon size={48} className="mb-2 opacity-20" />
-                        <span className="font-medium">Clique para adicionar imagem</span>
-                      </button>
+                      <div className="w-full max-w-md aspect-video border-2 border-dashed border-stone-300 rounded-lg flex flex-col items-center justify-center text-stone-500 gap-2">
+                        <div className="flex gap-4">
+                          <ImageIcon size={48} className="opacity-20" />
+                          <Video size={48} className="opacity-20" />
+                        </div>
+                        <span className="font-medium">Selecione uma Imagem ou Vídeo</span>
+                      </div>
                     )}
                   </div>
                   <button onClick={handleSaveHistory} className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2">

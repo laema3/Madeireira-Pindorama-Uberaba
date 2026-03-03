@@ -132,7 +132,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [history, setHistory] = usePersistedState<AboutData>('history', {
     title: 'Nossa História',
     description: 'Fundada em 1995, começamos como uma pequena serraria familiar. Hoje, somos líderes de mercado, mas mantemos o atendimento próximo e personalizado que nos trouxe até aqui.',
-    image: 'https://picsum.photos/seed/history/800/600'
+    image: 'https://picsum.photos/seed/history/800/600',
+    videoUrl: ''
   });
 
   const [clients, setClients] = usePersistedState<Client[]>('clients', [

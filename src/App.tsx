@@ -17,6 +17,7 @@ import { ContactForm } from './components/ContactForm';
 import { LoaderProvider } from './components/LoaderContext';
 import { DataProvider } from './components/DataContext';
 import { AdminPanel } from './components/AdminPanel';
+import { FaviconManager } from './components/FaviconManager';
 
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -34,6 +35,7 @@ export default function App() {
 
   return (
     <DataProvider>
+      <FaviconManager />
       {isAdmin ? (
         <AdminPanel />
       ) : (
