@@ -12,6 +12,8 @@ async function startServer() {
   const PORT = 3000;
   const db = new Database('data.db');
 
+  console.log('Starting server with NODE_ENV:', process.env.NODE_ENV);
+
   // Initialize database
   db.exec(`
     CREATE TABLE IF NOT EXISTS store (
@@ -24,16 +26,18 @@ async function startServer() {
 
   // API Routes
   app.get('/api/data/:key', (req, res) => {
+    console.log(`GET /api/data/${req.params.key}`);
     const row = db.prepare('SELECT value FROM store WHERE key = ?').get(req.params.key) as { value: string } | undefined;
     if (row) {
       res.json(JSON.parse(row.value));
     } else {
-      // Return null with 200 to avoid console 404 errors on first load
+      console.log(`Key ${req.params.key} not found, returning null`);
       res.json(null);
     }
   });
 
   app.post('/api/data/:key', (req, res) => {
+    console.log(`POST /api/data/${req.params.key}`);
     const { key } = req.params;
     const value = JSON.stringify(req.body);
     db.prepare('INSERT OR REPLACE INTO store (key, value) VALUES (?, ?)').run(key, value);
