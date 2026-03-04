@@ -69,35 +69,63 @@ export function useData() {
   return context;
 }
 
-// Helper hook for localStorage persistence (Fallback)
+// Helper hook for persistence (Backend + LocalStorage Fallback)
 function usePersistedState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
-  const [state, setState] = useState<T>(() => {
-    try {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
-      return initialValue;
-    }
-  });
+  const [state, setState] = useState<T>(initialValue);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Initial load
   useEffect(() => {
-    try {
-      // Don't try to save if it's too large (like base64 images in settings)
-      const serialized = JSON.stringify(state);
-      if (serialized.length < 4000000) { // ~4MB limit to be safe (localStorage is usually 5MB)
+    const loadData = async () => {
+      try {
+        // Try backend first
+        const response = await fetch(`/api/data/${key}`);
+        if (response.ok) {
+          const data = await response.json();
+          setState(data);
+        } else {
+          // Fallback to localStorage
+          const item = localStorage.getItem(key);
+          if (item) setState(JSON.parse(item));
+        }
+      } catch (error) {
+        console.error(`Error loading data for ${key}:`, error);
+        // Fallback to localStorage
+        const item = localStorage.getItem(key);
+        if (item) setState(JSON.parse(item));
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+    loadData();
+  }, [key]);
+
+  // Save on change
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const saveData = async () => {
+      try {
+        const serialized = JSON.stringify(state);
+        
+        // Save to localStorage
         localStorage.setItem(key, serialized);
-      } else {
-        console.warn(`Skipping localStorage for ${key} due to size limits`);
+        
+        // Save to backend
+        await fetch(`/api/data/${key}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: serialized
+        });
+      } catch (error) {
+        console.error(`Error saving data for ${key}:`, error);
       }
-    } catch (error) {
-      console.error(`Error writing localStorage key "${key}":`, error);
-      // If quota exceeded, try to clear some space or just ignore
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        console.warn('LocalStorage quota exceeded. Consider clearing browser data or using Supabase.');
-      }
-    }
-  }, [key, state]);
+    };
+    
+    // Debounce save to avoid too many requests
+    const timer = setTimeout(saveData, 500);
+    return () => clearTimeout(timer);
+  }, [key, state, isInitialized]);
 
   return [state, setState];
 }
@@ -291,30 +319,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const createCrud = <T extends { id?: string }>(table: string, stateSetter: React.Dispatch<React.SetStateAction<T[]>>) => ({
     add: async (item: T) => {
       const newItem = { ...item, id: item.id || Date.now().toString() };
+      // Update local state immediately (optimistic)
+      stateSetter(prev => [...prev, newItem]);
+      
       if (isSupabaseConfigured) {
-        const { data, error } = await supabase.from(table).insert([newItem]).select();
-        if (!error && data) stateSetter(prev => [...prev, data[0]]);
-        else console.error(`Error adding to ${table}:`, error);
-      } else {
-        stateSetter(prev => [...prev, newItem]);
+        const { error } = await supabase.from(table).insert([newItem]);
+        if (error) console.error(`Error adding to ${table} in Supabase:`, error);
       }
     },
     update: async (item: T) => {
+      // Update local state immediately (optimistic)
+      stateSetter(prev => prev.map(i => i.id === item.id ? item : i));
+      
       if (isSupabaseConfigured) {
         const { error } = await supabase.from(table).update(item as any).eq('id', item.id);
-        if (!error) stateSetter(prev => prev.map(i => i.id === item.id ? item : i));
-        else console.error(`Error updating ${table}:`, error);
-      } else {
-        stateSetter(prev => prev.map(i => i.id === item.id ? item : i));
+        if (error) console.error(`Error updating ${table} in Supabase:`, error);
       }
     },
     remove: async (id: string) => {
+      // Update local state immediately (optimistic)
+      stateSetter(prev => prev.filter(i => i.id !== id));
+      
       if (isSupabaseConfigured) {
         const { error } = await supabase.from(table).delete().eq('id', id);
-        if (!error) stateSetter(prev => prev.filter(i => i.id !== id));
-        else console.error(`Error deleting from ${table}:`, error);
-      } else {
-        stateSetter(prev => prev.filter(i => i.id !== id));
+        if (error) console.error(`Error deleting from ${table} in Supabase:`, error);
       }
     }
   });
@@ -330,32 +358,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const postCrud = createCrud<Post>('posts', setPosts);
 
   const updateSettings = async (newSettings: Settings) => {
+    setSettings(newSettings);
     if (isSupabaseConfigured) {
-      const { error } = await supabase.from('settings').update(newSettings as any).eq('id', '1');
-      if (!error) setSettings(newSettings);
-      else console.error('Error updating settings:', error);
-    } else {
-      setSettings(newSettings);
+      const { error } = await supabase.from('settings').upsert({ ...newSettings, id: '1' });
+      if (error) console.error('Error updating settings in Supabase:', error);
     }
   };
 
   const updateAbout = async (newAbout: AboutData) => {
+    setAbout(newAbout);
     if (isSupabaseConfigured) {
-      const { error } = await supabase.from('about').update(newAbout as any).eq('id', '1');
-      if (!error) setAbout(newAbout);
-      else console.error('Error updating about:', error);
-    } else {
-      setAbout(newAbout);
+      const { error } = await supabase.from('about').upsert({ ...newAbout, id: '1' });
+      if (error) console.error('Error updating about in Supabase:', error);
     }
   };
 
   const updateHistory = async (newHistory: AboutData) => {
+    setHistory(newHistory);
     if (isSupabaseConfigured) {
-      const { error } = await supabase.from('history').update(newHistory as any).eq('id', '1');
-      if (!error) setHistory(newHistory);
-      else console.error('Error updating history:', error);
-    } else {
-      setHistory(newHistory);
+      const { error } = await supabase.from('history').upsert({ ...newHistory, id: '1' });
+      if (error) console.error('Error updating history in Supabase:', error);
     }
   };
 
