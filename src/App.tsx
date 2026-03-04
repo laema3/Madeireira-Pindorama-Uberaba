@@ -11,7 +11,6 @@ import { ServiceAreas } from './components/ServiceAreas';
 import { Posts } from './components/Posts';
 import { Location } from './components/Location';
 import { Footer } from './components/Footer';
-import { Chatbot } from './components/Chatbot';
 import { FloatingActions } from './components/FloatingActions';
 import { ContactForm } from './components/ContactForm';
 import { LoaderProvider } from './components/LoaderContext';
@@ -58,7 +57,6 @@ export default function App() {
               </div>
             </main>
             <Footer />
-            <Chatbot />
             <FloatingActions />
             
             {/* Secret Admin Link in Footer (hidden but accessible) */}
