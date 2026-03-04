@@ -17,6 +17,9 @@ interface DataContextType {
   serviceAreas: ServiceArea[];
   posts: Post[];
   
+  isSyncing: boolean;
+  lastSyncError: string | null;
+  
   addProduct: (product: Product) => void;
   updateProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
@@ -70,35 +73,53 @@ export function useData() {
 }
 
 // Helper hook for persistence (Backend + LocalStorage Fallback)
-function usePersistedState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+function usePersistedState<T>(
+  key: string, 
+  initialValue: T, 
+  onSyncChange?: (syncing: boolean, error: string | null) => void
+): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = useState<T>(initialValue);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [lastSavedValue, setLastSavedValue] = useState<string>(JSON.stringify(initialValue));
 
   // Initial load
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Try backend first
-        const response = await fetch(`/api/data/${key}`);
+        // Try backend first with cache busting
+        const response = await fetch(`/api/data/${key}?t=${Date.now()}`);
         if (response.ok) {
           const data = await response.json();
           if (data !== null) {
             setState(data);
+            setLastSavedValue(JSON.stringify(data));
           } else {
             // If not in backend, check localStorage
             const item = localStorage.getItem(key);
-            if (item) setState(JSON.parse(item));
+            if (item) {
+              const parsed = JSON.parse(item);
+              setState(parsed);
+              setLastSavedValue(item);
+            }
           }
         } else {
           // Fallback to localStorage if response not ok
           const item = localStorage.getItem(key);
-          if (item) setState(JSON.parse(item));
+          if (item) {
+            const parsed = JSON.parse(item);
+            setState(parsed);
+            setLastSavedValue(item);
+          }
         }
       } catch (error) {
         console.error(`Error loading data for ${key}:`, error);
         // Fallback to localStorage
         const item = localStorage.getItem(key);
-        if (item) setState(JSON.parse(item));
+        if (item) {
+          const parsed = JSON.parse(item);
+          setState(parsed);
+          setLastSavedValue(item);
+        }
       } finally {
         setIsInitialized(true);
       }
@@ -110,34 +131,57 @@ function usePersistedState<T>(key: string, initialValue: T): [T, React.Dispatch<
   useEffect(() => {
     if (!isInitialized) return;
 
+    const serialized = JSON.stringify(state);
+    
+    // Skip if value hasn't changed from what we last saved or loaded
+    if (serialized === lastSavedValue) return;
+
     const saveData = async () => {
+      if (onSyncChange) onSyncChange(true, null);
       try {
-        const serialized = JSON.stringify(state);
-        
         // Save to localStorage
         localStorage.setItem(key, serialized);
         
         // Save to backend
-        await fetch(`/api/data/${key}`, {
+        const response = await fetch(`/api/data/${key}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: serialized
         });
-      } catch (error) {
+        
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}`);
+        }
+        
+        setLastSavedValue(serialized);
+        if (onSyncChange) onSyncChange(false, null);
+      } catch (error: any) {
         console.error(`Error saving data for ${key}:`, error);
+        if (onSyncChange) onSyncChange(false, error.message || 'Erro ao salvar no servidor');
       }
     };
     
     // Debounce save to avoid too many requests
-    const timer = setTimeout(saveData, 500);
+    const timer = setTimeout(saveData, 1000);
     return () => clearTimeout(timer);
-  }, [key, state, isInitialized]);
+  }, [key, state, isInitialized, lastSavedValue, onSyncChange]);
 
   return [state, setState];
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const isSupabaseConfigured = Boolean((import.meta as any).env.VITE_SUPABASE_URL && (import.meta as any).env.VITE_SUPABASE_ANON_KEY);
+
+  const [syncingStates, setSyncingStates] = useState<Record<string, boolean>>({});
+  const [syncErrors, setSyncErrors] = useState<Record<string, string | null>>({});
+
+  const handleSyncChange = (key: string) => (syncing: boolean, error: string | null) => {
+    setSyncingStates(prev => ({ ...prev, [key]: syncing }));
+    setSyncErrors(prev => ({ ...prev, [key]: error }));
+  };
+
+  const isSyncing = Object.values(syncingStates).some(s => s);
+  const lastSyncError = Object.values(syncErrors).find(e => e !== null) || null;
 
   // Initialize states
   const [products, setProducts] = usePersistedState<Product[]>('products', 
@@ -147,39 +191,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
       price: 100 + Math.random() * 500,
       brand: 'Genérica',
       subcategory: 'Geral'
-    }))
+    })),
+    handleSyncChange('products')
   );
   
   const [partners, setPartners] = usePersistedState<Partner[]>('partners', 
-    INITIAL_PARTNERS.map(p => ({ ...p, id: String(p.id) }))
+    INITIAL_PARTNERS.map(p => ({ ...p, id: String(p.id) })),
+    handleSyncChange('partners')
   );
   const [professionals, setProfessionals] = usePersistedState<Professional[]>('professionals', 
-    INITIAL_PROFESSIONALS.map(p => ({ ...p, id: String(p.id) }))
+    INITIAL_PROFESSIONALS.map(p => ({ ...p, id: String(p.id) })),
+    handleSyncChange('professionals')
   );
   
   const [about, setAbout] = usePersistedState<AboutData>('about', {
     title: 'Tradição e Qualidade em Madeiras',
     description: 'A Madeireira Pindorama nasceu com o propósito de oferecer o que há de melhor em madeiras nobres e materiais para construção. Com mais de duas décadas de história, nos consolidamos como referência na região, sempre prezando pela procedência legal de nossos produtos e pelo respeito ao meio ambiente.',
     image: 'https://picsum.photos/seed/lumberyard/800/600'
-  });
+  }, handleSyncChange('about'));
 
   const [history, setHistory] = usePersistedState<AboutData>('history', {
     title: 'Nossa História',
     description: 'Fundada em 1995, começamos como uma pequena serraria familiar. Hoje, somos líderes de mercado, mas mantemos o atendimento próximo e personalizado que nos trouxe até aqui.',
     image: 'https://picsum.photos/seed/history/800/600',
     videoUrl: ''
-  });
+  }, handleSyncChange('history'));
 
   const [clients, setClients] = usePersistedState<Client[]>('clients', [
     { id: '1', name: 'Construtora Silva', email: 'contato@silva.com', phone: '(11) 99999-1111', address: 'Rua A, 123' },
     { id: '2', name: 'Marcenaria Arte', email: 'arte@marcenaria.com', phone: '(11) 98888-2222', address: 'Av B, 456' }
-  ]);
+  ], handleSyncChange('clients'));
 
   const [categories, setCategories] = usePersistedState<Category[]>('categories', [
     { id: '1', name: 'Estrutural' },
     { id: '2', name: 'Acabamento' },
     { id: '3', name: 'Chapas' }
-  ]);
+  ], handleSyncChange('categories'));
 
   const [subcategories, setSubcategories] = usePersistedState<Subcategory[]>('subcategories', [
     { id: '1', name: 'Vigas', categoryId: '1' },
@@ -188,7 +235,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     { id: '4', name: 'Forros', categoryId: '2' },
     { id: '5', name: 'MDF', categoryId: '3' },
     { id: '6', name: 'Compensados', categoryId: '3' }
-  ]);
+  ], handleSyncChange('subcategories'));
 
   const [settings, setSettings] = usePersistedState<Settings>('settings', {
     logoUrl: '',
@@ -218,7 +265,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       { url: 'https://picsum.photos/seed/lumber4/1920/1080', title: 'Sustentabilidade', description: 'Madeira de reflorestamento e manejo sustentável.' },
       { url: 'https://picsum.photos/seed/lumber5/1920/1080', title: 'Atendimento Especializado', description: 'Nossa equipe está pronta para te ajudar.' }
     ]
-  });
+  }, handleSyncChange('settings'));
 
   const [works, setWorks] = usePersistedState<Work[]>('works', [
     {
@@ -240,10 +287,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         'https://picsum.photos/seed/deck2/800/600'
       ]
     }
-  ]);
+  ], handleSyncChange('works'));
 
-  const [serviceAreas, setServiceAreas] = usePersistedState<ServiceArea[]>('serviceAreas', []);
-  const [posts, setPosts] = usePersistedState<Post[]>('posts', []);
+  const [serviceAreas, setServiceAreas] = usePersistedState<ServiceArea[]>('serviceAreas', [], handleSyncChange('serviceAreas'));
+  const [posts, setPosts] = usePersistedState<Post[]>('posts', [], handleSyncChange('posts'));
 
   // Ensure admin credentials exist (migration for existing users)
   useEffect(() => {
@@ -390,6 +437,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <DataContext.Provider value={{
       products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts,
+      isSyncing, lastSyncError,
       addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.remove,
       addPartner: partnerCrud.add, updatePartner: partnerCrud.update, deletePartner: partnerCrud.remove,
       updateAbout, updateHistory,

@@ -16,7 +16,8 @@ export function AdminPanel() {
     works, addWork, updateWork, deleteWork,
     professionals, addProfessional, updateProfessional, deleteProfessional,
     serviceAreas, addServiceArea, updateServiceArea, deleteServiceArea,
-    posts, addPost, updatePost, deletePost
+    posts, addPost, updatePost, deletePost,
+    isSyncing, lastSyncError
   } = useData();
 
   // --- State for Forms ---
@@ -276,9 +277,29 @@ export function AdminPanel() {
         
         {/* Sidebar */}
         <aside className="w-full md:w-64 bg-emerald-900 text-white p-6 flex-shrink-0">
-          <div className="flex items-center gap-2 mb-8">
+          <div className="flex items-center gap-2 mb-2">
             <LayoutDashboard />
             <h2 className="text-xl font-bold">Painel Admin</h2>
+          </div>
+          
+          {/* Sync Status Indicator */}
+          <div className="flex items-center gap-2 text-[10px] mb-8 opacity-80">
+            {isSyncing ? (
+              <div className="flex items-center gap-1 text-emerald-300">
+                <div className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />
+                Salvando no servidor...
+              </div>
+            ) : lastSyncError ? (
+              <div className="flex items-center gap-1 text-red-400">
+                <div className="w-2 h-2 bg-red-400 rounded-full" />
+                Erro de conexão
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-emerald-500">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                Sincronizado
+              </div>
+            )}
           </div>
           
           <nav className="space-y-2">
