@@ -20,6 +20,10 @@ interface DataContextType {
   isSyncing: boolean;
   lastSyncError: string | null;
   
+  exportData: () => string;
+  importData: (jsonData: string) => Promise<boolean>;
+  forceSyncPull: () => void;
+  
   addProduct: (product: Product) => void;
   updateProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
@@ -292,6 +296,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [serviceAreas, setServiceAreas] = usePersistedState<ServiceArea[]>('serviceAreas', [], handleSyncChange('serviceAreas'));
   const [posts, setPosts] = usePersistedState<Post[]>('posts', [], handleSyncChange('posts'));
 
+  const exportData = () => {
+    return JSON.stringify({
+      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts
+    }, null, 2);
+  };
+
+  const importData = async (jsonData: string) => {
+    try {
+      const parsed = JSON.parse(jsonData);
+      if (parsed.products) setProducts(parsed.products);
+      if (parsed.partners) setPartners(parsed.partners);
+      if (parsed.professionals) setProfessionals(parsed.professionals);
+      if (parsed.about) setAbout(parsed.about);
+      if (parsed.history) setHistory(parsed.history);
+      if (parsed.clients) setClients(parsed.clients);
+      if (parsed.categories) setCategories(parsed.categories);
+      if (parsed.subcategories) setSubcategories(parsed.subcategories);
+      if (parsed.settings) setSettings(parsed.settings);
+      if (parsed.works) setWorks(parsed.works);
+      if (parsed.serviceAreas) setServiceAreas(parsed.serviceAreas);
+      if (parsed.posts) setPosts(parsed.posts);
+      return true;
+    } catch (e) {
+      console.error("Import error", e);
+      return false;
+    }
+  };
+
+  const forceSyncPull = () => {
+    localStorage.clear();
+    window.location.reload();
+  };
+
   // Ensure admin credentials exist (migration for existing users)
   useEffect(() => {
     if (!settings.adminUser || !settings.adminPassword || !settings.heroImages || !settings.heroSlides) {
@@ -438,6 +475,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <DataContext.Provider value={{
       products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts,
       isSyncing, lastSyncError,
+      exportData, importData, forceSyncPull,
       addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.remove,
       addPartner: partnerCrud.add, updatePartner: partnerCrud.update, deletePartner: partnerCrud.remove,
       updateAbout, updateHistory,

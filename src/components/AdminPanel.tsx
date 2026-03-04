@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { useData } from './DataContext';
 import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post } from '../types';
-import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText, Video } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText, Video, RefreshCw, Download, Upload } from 'lucide-react';
 
 export function AdminPanel() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao'>('dashboard');
   const { 
     about, history, updateAbout, updateHistory,
     products, addProduct, updateProduct, deleteProduct,
@@ -17,7 +17,7 @@ export function AdminPanel() {
     professionals, addProfessional, updateProfessional, deleteProfessional,
     serviceAreas, addServiceArea, updateServiceArea, deleteServiceArea,
     posts, addPost, updatePost, deletePost,
-    isSyncing, lastSyncError
+    isSyncing, lastSyncError, exportData, importData, forceSyncPull
   } = useData();
 
   // --- State for Forms ---
@@ -336,6 +336,9 @@ export function AdminPanel() {
             <button onClick={() => setActiveTab('ajustes')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'ajustes' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
               <SettingsIcon size={20} /> Ajustes
             </button>
+            <button onClick={() => setActiveTab('sincronizacao')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'sincronizacao' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <RefreshCw size={20} /> Sincronização
+            </button>
             <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition hover:bg-red-800/50 text-red-200 hover:text-white mt-4">
               <LogOut size={20} /> Sair
             </button>
@@ -379,6 +382,108 @@ export function AdminPanel() {
                   >
                     <Trash2 size={18} /> Excluir
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- SINCRONIZACAO --- */}
+          {activeTab === 'sincronizacao' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-stone-800">Sincronização e Backup</h2>
+              </div>
+              
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                <h3 className="text-lg font-bold text-stone-800 mb-4 flex items-center gap-2">
+                  <RefreshCw className="text-emerald-600" />
+                  Sincronização Manual
+                </h3>
+                <p className="text-stone-600 mb-6">
+                  Use esta opção se você estiver acessando o painel de um novo dispositivo (como seu smartphone) e os dados mais recentes não estiverem aparecendo. Isso forçará o sistema a baixar a versão mais atual do servidor.
+                </p>
+                <button 
+                  onClick={() => {
+                    if (window.confirm("Isso apagará o cache local e recarregará a página com os dados do servidor. Continuar?")) {
+                      forceSyncPull();
+                    }
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium transition flex items-center gap-2"
+                >
+                  <RefreshCw size={20} />
+                  Forçar Atualização (Baixar do Servidor)
+                </button>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                <h3 className="text-lg font-bold text-stone-800 mb-4 flex items-center gap-2">
+                  <Download className="text-emerald-600" />
+                  Exportar Dados (Backup)
+                </h3>
+                <p className="text-stone-600 mb-6">
+                  Faça o download de todos os dados do site (produtos, configurações, textos) em um arquivo JSON. Isso é útil para manter uma cópia de segurança segura.
+                </p>
+                <button 
+                  onClick={() => {
+                    const dataStr = exportData();
+                    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                    const exportFileDefaultName = `backup-pindorama-${new Date().toISOString().split('T')[0]}.json`;
+                    const linkElement = document.createElement('a');
+                    linkElement.setAttribute('href', dataUri);
+                    linkElement.setAttribute('download', exportFileDefaultName);
+                    linkElement.click();
+                    showNotification('Backup exportado com sucesso!');
+                  }}
+                  className="bg-stone-800 hover:bg-stone-900 text-white px-6 py-3 rounded-lg font-medium transition flex items-center gap-2"
+                >
+                  <Download size={20} />
+                  Baixar Arquivo de Backup
+                </button>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                <h3 className="text-lg font-bold text-stone-800 mb-4 flex items-center gap-2">
+                  <Upload className="text-emerald-600" />
+                  Importar Dados (Restaurar)
+                </h3>
+                <p className="text-stone-600 mb-6">
+                  Restaure os dados do site a partir de um arquivo de backup JSON. <strong>Atenção:</strong> Isso substituirá TODOS os dados atuais do site.
+                </p>
+                <div className="flex items-center gap-4">
+                  <label className="bg-stone-200 hover:bg-stone-300 text-stone-800 px-6 py-3 rounded-lg font-medium transition flex items-center gap-2 cursor-pointer">
+                    <Upload size={20} />
+                    Selecionar Arquivo e Restaurar
+                    <input 
+                      type="file" 
+                      accept=".json" 
+                      className="hidden" 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        if (window.confirm("ATENÇÃO: Isso substituirá todos os dados atuais do site pelos dados do arquivo. Tem certeza?")) {
+                          const reader = new FileReader();
+                          reader.onload = async (event) => {
+                            try {
+                              const content = event.target?.result as string;
+                              const success = await importData(content);
+                              if (success) {
+                                showNotification('Dados restaurados com sucesso! Recarregando...');
+                                setTimeout(() => window.location.reload(), 2000);
+                              } else {
+                                showNotification('Erro ao restaurar dados. Arquivo inválido.', 'error');
+                              }
+                            } catch (err) {
+                              showNotification('Erro ao ler o arquivo.', 'error');
+                            }
+                          };
+                          reader.readAsText(file);
+                        }
+                        // Reset input
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
                 </div>
               </div>
             </div>
