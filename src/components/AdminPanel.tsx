@@ -49,10 +49,13 @@ export function AdminPanel() {
 
     setIsGeneratingAI(idx);
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
+      // Accessing process.env.GEMINI_API_KEY which is defined in vite.config.ts
+      const apiKey = (process.env as any).GEMINI_API_KEY;
       
       if (!apiKey) {
-        showNotification('Chave API do Gemini não configurada.', 'error');
+        console.error('GEMINI_API_KEY is missing in process.env');
+        showNotification('Chave API do Gemini não encontrada no ambiente. Verifique as configurações do projeto.', 'error');
+        setIsGeneratingAI(null);
         return;
       }
 

@@ -60,7 +60,7 @@ export function Chatbot() {
     if (chatRef.current && !force) return;
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = (process.env as any).GEMINI_API_KEY;
       if (apiKey) {
         const ai = new GoogleGenAI({ apiKey });
         chatRef.current = ai.chats.create({
@@ -86,6 +86,15 @@ export function Chatbot() {
   const handleSend = async (textOverride?: string) => {
     const messageText = textOverride || input;
     if (!messageText.trim() || isLoading) return;
+
+    const apiKey = (process.env as any).GEMINI_API_KEY;
+    if (!apiKey) {
+      setMessages(prev => [...prev, 
+        { role: 'user', text: messageText },
+        { role: 'model', text: '⚠️ A chave API do Gemini não foi encontrada nas configurações do sistema. Por favor, configure a GEMINI_API_KEY para ativar o assistente.' }
+      ]);
+      return;
+    }
 
     if (!textOverride) setInput('');
     setMessages(prev => [...prev, { role: 'user', text: messageText }]);
