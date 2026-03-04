@@ -49,13 +49,18 @@ async function startServer() {
   });
 
   // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production') {
+  // Forced to true to ensure we are not serving stale production builds
+  const isDev = true; 
+  
+  if (isDev) {
+    console.log('Using Vite middleware (Development Mode)');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   } else {
+    console.log('Serving static files from dist (Production Mode)');
     app.use(express.static(path.join(__dirname, 'dist')));
     app.get('*', (req, res) => {
       res.sendFile(path.join(__dirname, 'dist', 'index.html'));
