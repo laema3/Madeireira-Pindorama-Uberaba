@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useData } from './DataContext';
 import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post } from '../types';
-import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText, Video, Sparkles, Loader2 } from 'lucide-react';
-import { GoogleGenAI, Type } from "@google/genai";
+import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText, Video } from 'lucide-react';
 
 export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens'>('dashboard');
@@ -41,71 +40,7 @@ export function AdminPanel() {
 
   // --- Auth State ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isGeneratingAI, setIsGeneratingAI] = useState<number | null>(null);
 
-  const generateSlideContent = async (idx: number) => {
-    const slide = settingsForm.heroSlides?.[idx];
-    if (!slide || !slide.url) return;
-
-    setIsGeneratingAI(idx);
-    try {
-      // Accessing process.env.GEMINI_API_KEY which is defined in vite.config.ts
-      const apiKey = (process.env as any).GEMINI_API_KEY;
-      
-      if (!apiKey) {
-        console.error('GEMINI_API_KEY is missing in process.env');
-        showNotification('Chave API do Gemini não encontrada no ambiente. Verifique as configurações do projeto.', 'error');
-        setIsGeneratingAI(null);
-        return;
-      }
-
-      const ai = new GoogleGenAI({ apiKey });
-      
-      const prompt = "Você é um especialista em marketing para uma madeireira chamada Madeireira Pindorama. Analise esta imagem (se fornecida) ou o fato de ser uma madeireira e crie um título curto e impactante (máximo 5 palavras) e uma descrição cativante (máximo 15 palavras) para um banner de site. O tom deve ser profissional, confiável e focado em qualidade e sustentabilidade. Responda APENAS em JSON com as chaves 'title' e 'description'.";
-
-      let parts: any[] = [{ text: prompt }];
-      
-      // If it's a base64 image, send it to Gemini
-      if (slide.url.startsWith('data:image/')) {
-        const [mimeType, base64Data] = slide.url.split(';base64,');
-        parts.push({
-          inlineData: {
-            mimeType: mimeType.replace('data:', ''),
-            data: base64Data
-          }
-        });
-      }
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: { parts },
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              description: { type: Type.STRING }
-            },
-            required: ["title", "description"]
-          }
-        }
-      });
-
-      const result = JSON.parse(response.text || '{}');
-      if (result.title && result.description) {
-        const newSlides = [...(settingsForm.heroSlides || [])];
-        newSlides[idx] = { ...newSlides[idx], title: result.title, description: result.description };
-        setSettingsForm({ ...settingsForm, heroSlides: newSlides });
-        showNotification('Conteúdo gerado com IA!');
-      }
-    } catch (error) {
-      console.error('Erro ao gerar conteúdo com IA:', error);
-      showNotification('Erro ao gerar conteúdo com IA.', 'error');
-    } finally {
-      setIsGeneratingAI(null);
-    }
-  };
   const [loginUser, setLoginUser] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
@@ -974,15 +909,6 @@ export function AdminPanel() {
                             <div>
                               <div className="flex justify-between items-center mb-1">
                                 <label className="block text-xs font-medium text-stone-500">Título</label>
-                                <button 
-                                  type="button"
-                                  onClick={() => generateSlideContent(idx)}
-                                  disabled={isGeneratingAI !== null}
-                                  className="text-[10px] flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 transition"
-                                >
-                                  {isGeneratingAI === idx ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                                  Gerar com IA
-                                </button>
                               </div>
                               <input 
                                 type="text" 

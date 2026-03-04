@@ -82,9 +82,15 @@ function usePersistedState<T>(key: string, initialValue: T): [T, React.Dispatch<
         const response = await fetch(`/api/data/${key}`);
         if (response.ok) {
           const data = await response.json();
-          setState(data);
+          if (data !== null) {
+            setState(data);
+          } else {
+            // If not in backend, check localStorage
+            const item = localStorage.getItem(key);
+            if (item) setState(JSON.parse(item));
+          }
         } else {
-          // Fallback to localStorage
+          // Fallback to localStorage if response not ok
           const item = localStorage.getItem(key);
           if (item) setState(JSON.parse(item));
         }

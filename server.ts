@@ -12,10 +12,6 @@ async function startServer() {
   const PORT = 3000;
   const db = new Database('data.db');
 
-  console.log('Starting server with NODE_ENV:', process.env.NODE_ENV);
-  const apiKey = process.env.GEMINI_API_KEY;
-  console.log('GEMINI_API_KEY status:', apiKey ? `Present (starts with ${apiKey.substring(0, 4)}...)` : 'Missing');
-
   // Initialize database
   db.exec(`
     CREATE TABLE IF NOT EXISTS store (
@@ -30,10 +26,6 @@ async function startServer() {
   app.use((req, res, next) => {
     console.log(`${req.method} ${req.url}`);
     next();
-  });
-
-  app.get('/api/test', (req, res) => {
-    res.json({ message: 'API is working' });
   });
 
   // API Routes
@@ -57,31 +49,17 @@ async function startServer() {
   });
 
   app.get('/api/health', (req, res) => {
-    res.json({ 
-      status: 'ok', 
-      gemini_api_key_set: !!process.env.GEMINI_API_KEY,
-      node_env: process.env.NODE_ENV
-    });
+    res.json({ status: 'ok' });
   });
 
-  // Vite middleware for development
-  // Forced to true to ensure we are not serving stale production builds
-  const isDev = true; 
+  // Serve static files from dist (Production Mode)
+  console.log('Serving static files from dist');
+  app.use(express.static(path.join(__dirname, 'dist')));
   
-  if (isDev) {
-    console.log('Using Vite middleware (Development Mode)');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    console.log('Serving static files from dist (Production Mode)');
-    app.use(express.static(path.join(__dirname, 'dist')));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-    });
-  }
+  // API routes are already defined above, so this catch-all is for the SPA
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  });
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
