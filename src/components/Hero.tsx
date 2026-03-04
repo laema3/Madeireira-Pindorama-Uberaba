@@ -83,23 +83,25 @@ export function Hero() {
               e.currentTarget.onerror = null;
             }}
           />
-          <div className="absolute inset-0 flex flex-col items-start justify-center text-left text-white px-8 md:px-24">
-            <motion.h1
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="text-6xl md:text-8xl font-bold mb-6 drop-shadow-2xl max-w-5xl"
-            >
-              {heroImages[index % heroImages.length].title}
-            </motion.h1>
-            <motion.p
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              className="text-3xl md:text-5xl drop-shadow-xl max-w-4xl"
-            >
-              {heroImages[index % heroImages.length].description || (heroImages[index % heroImages.length] as any).subtitle}
-            </motion.p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white px-8 md:px-24">
+            <div className="w-full max-w-7xl text-left">
+              <motion.h1
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="text-6xl md:text-8xl font-bold mb-6 drop-shadow-2xl max-w-5xl"
+              >
+                {heroImages[index % heroImages.length].title}
+              </motion.h1>
+              <motion.p
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                className="text-3xl md:text-5xl drop-shadow-xl max-w-4xl"
+              >
+                {heroImages[index % heroImages.length].description || (heroImages[index % heroImages.length] as any).subtitle}
+              </motion.p>
+            </div>
           </div>
         </motion.div>
       </AnimatePresence>
