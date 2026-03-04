@@ -13,6 +13,8 @@ async function startServer() {
   const db = new Database('data.db');
 
   console.log('Starting server with NODE_ENV:', process.env.NODE_ENV);
+  const apiKey = process.env.GEMINI_API_KEY;
+  console.log('GEMINI_API_KEY status:', apiKey ? `Present (starts with ${apiKey.substring(0, 4)}...)` : 'Missing');
 
   // Initialize database
   db.exec(`
@@ -23,6 +25,16 @@ async function startServer() {
   `);
 
   app.use(express.json({ limit: '50mb' }));
+
+  // Request logger
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
+
+  app.get('/api/test', (req, res) => {
+    res.json({ message: 'API is working' });
+  });
 
   // API Routes
   app.get('/api/data/:key', (req, res) => {
@@ -45,7 +57,11 @@ async function startServer() {
   });
 
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok' });
+    res.json({ 
+      status: 'ok', 
+      gemini_api_key_set: !!process.env.GEMINI_API_KEY,
+      node_env: process.env.NODE_ENV
+    });
   });
 
   // Vite middleware for development
