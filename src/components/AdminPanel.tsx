@@ -49,7 +49,14 @@ export function AdminPanel() {
 
     setIsGeneratingAI(idx);
     try {
-      const ai = new GoogleGenAI({ apiKey: (process.env as any).GEMINI_API_KEY });
+      const apiKey = process.env.GEMINI_API_KEY;
+      
+      if (!apiKey) {
+        showNotification('Chave API do Gemini não configurada.', 'error');
+        return;
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
       
       const prompt = "Você é um especialista em marketing para uma madeireira chamada Madeireira Pindorama. Analise esta imagem (se fornecida) ou o fato de ser uma madeireira e crie um título curto e impactante (máximo 5 palavras) e uma descrição cativante (máximo 15 palavras) para um banner de site. O tom deve ser profissional, confiável e focado em qualidade e sustentabilidade. Responda APENAS em JSON com as chaves 'title' e 'description'.";
 

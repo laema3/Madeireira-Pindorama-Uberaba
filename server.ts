@@ -28,7 +28,8 @@ async function startServer() {
     if (row) {
       res.json(JSON.parse(row.value));
     } else {
-      res.status(404).json({ error: 'Not found' });
+      // Return null with 200 to avoid console 404 errors on first load
+      res.json(null);
     }
   });
 
