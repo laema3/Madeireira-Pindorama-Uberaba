@@ -1035,6 +1035,13 @@ export function AdminPanel() {
                         }}
                         className="w-full p-2 border rounded"
                       />
+                      <button 
+                        type="button"
+                        onClick={() => setSettingsForm({...settingsForm, heroSlides: []})}
+                        className="bg-red-100 text-red-700 px-4 py-2 rounded-md text-sm hover:bg-red-200"
+                      >
+                        Limpar todos
+                      </button>
                     </div>
                     <p className="text-xs text-stone-500">Você pode selecionar até 3 imagens para o slide.</p>
 

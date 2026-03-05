@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work, ServiceArea, Post } from '../types';
-import { PRODUCTS as INITIAL_PRODUCTS, PARTNERS as INITIAL_PARTNERS, PROFESSIONALS as INITIAL_PROFESSIONALS } from '../data';
 import { db, auth } from '../lib/firebase';
 import { 
   collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, 
@@ -119,22 +118,41 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [data, setData] = useState<T[]>(initialData);
 
     useEffect(() => {
-      if (!enabled) {
+      handleSyncChange(collectionName, true);
+      let unsubscribe: () => void;
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      const setupListener = () => {
+        const q = query(collection(db, collectionName));
+        unsubscribe = onSnapshot(q, (snapshot) => {
+          const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+          setData(items);
+          handleSyncChange(collectionName, snapshot.metadata.hasPendingWrites);
+          retryCount = 0; // Reset retry count on success
+        }, (error) => {
+          console.error(`Error fetching ${collectionName}:`, error);
+          
+          // Handle connection errors with retry
+          if (error.code === 'unavailable' && retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Retrying connection for ${collectionName} (${retryCount}/${maxRetries})...`);
+            setTimeout(setupListener, 2000 * retryCount); // Exponential backoff
+          } else {
+            handleSyncChange(collectionName, false, error.message);
+          }
+        });
+      };
+
+      if (enabled) {
+        setupListener();
+      } else {
         setData(initialData);
-        return;
       }
 
-      handleSyncChange(collectionName, true);
-      const q = query(collection(db, collectionName));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
-        setData(items);
-        handleSyncChange(collectionName, snapshot.metadata.hasPendingWrites);
-      }, (error) => {
-        console.error(`Error fetching ${collectionName}:`, error);
-        handleSyncChange(collectionName, false, error.message);
-      });
-      return () => unsubscribe();
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
     }, [collectionName, enabled]);
 
     return [data, setData] as const;
@@ -164,10 +182,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return [data, setData] as const;
   }
 
-  // Initialize states with Firestore
-  const [products] = useFirestoreCollection<Product>('products', INITIAL_PRODUCTS.map(p => ({...p, id: String(p.id)})));
-  const [partners] = useFirestoreCollection<Partner>('partners', INITIAL_PARTNERS.map(p => ({...p, id: String(p.id)})));
-  const [professionals] = useFirestoreCollection<Professional>('professionals', INITIAL_PROFESSIONALS.map(p => ({...p, id: String(p.id)})));
+  // Initialize states with Firestore - Start with empty arrays instead of mock data
+  const [products] = useFirestoreCollection<Product>('products', []);
+  const [partners] = useFirestoreCollection<Partner>('partners', []);
+  const [professionals] = useFirestoreCollection<Professional>('professionals', []);
   // Only fetch clients if user is logged in (admin)
   const [clients] = useFirestoreCollection<Client>('clients', [], !!user);
   const [categories] = useFirestoreCollection<Category>('categories', []);
