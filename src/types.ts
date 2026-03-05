@@ -67,6 +67,8 @@ export interface Settings {
   logoUrl: string;
   footerLogoUrl?: string;
   footerText: string;
+  footerDescription?: string;
+  openingHours?: string;
   facebookUrl: string;
   instagramUrl: string;
   whatsappUrl: string;

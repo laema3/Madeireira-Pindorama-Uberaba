@@ -973,6 +973,14 @@ export function AdminPanel() {
                       <label className="block text-sm font-medium">Texto do Rodapé</label>
                       <input className="w-full p-2 border rounded" value={settingsForm.footerText} onChange={e => setSettingsForm({...settingsForm, footerText: e.target.value})} />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium">Descrição abaixo da Logo</label>
+                      <textarea className="w-full p-2 border rounded" rows={2} value={settingsForm.footerDescription || ''} onChange={e => setSettingsForm({...settingsForm, footerDescription: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Horários de Funcionamento</label>
+                      <textarea className="w-full p-2 border rounded" rows={2} value={settingsForm.openingHours || ''} onChange={e => setSettingsForm({...settingsForm, openingHours: e.target.value})} />
+                    </div>
                   </div>
                 </div>
 
