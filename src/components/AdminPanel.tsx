@@ -1,7 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useData } from './DataContext';
 import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post } from '../types';
 import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText, Video, RefreshCw, Download, Upload } from 'lucide-react';
+import { auth } from '../lib/firebase';
+import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 
 export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao'>('dashboard');
@@ -40,25 +42,32 @@ export function AdminPanel() {
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: string; confirmMsg: string; remove: (id: string) => void } | null>(null);
 
   // --- Auth State ---
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const [loginUser, setLoginUser] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const aboutImageRef = useRef<HTMLInputElement>(null);
   const historyImageRef = useRef<HTMLInputElement>(null);
   const historyVideoRef = useRef<HTMLInputElement>(null);
 
   // Sync forms with context data when it changes
-  React.useEffect(() => {
+  useEffect(() => {
     setSettingsForm(settings);
   }, [settings]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setAboutForm(about);
   }, [about]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setHistoryForm(history);
   }, [history]);
 
@@ -71,7 +80,7 @@ export function AdminPanel() {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        const max_size = 1200; // Max dimension to save space
+        const max_size = 800; // Max dimension to save space (reduced from 1200)
 
         if (width > height) {
           if (width > max_size) {
@@ -96,7 +105,7 @@ export function AdminPanel() {
             ? file.type 
             : 'image/jpeg';
           
-          const quality = mimeType === 'image/jpeg' ? 0.7 : undefined;
+          const quality = mimeType === 'image/jpeg' ? 0.6 : undefined;
           callback(canvas.toDataURL(mimeType, quality));
         } else {
           callback(reader.result as string); // Fallback if canvas fails
@@ -143,7 +152,17 @@ export function AdminPanel() {
 
   const handleSaveSettings = () => {
     try {
-      console.log('Salvando configurações:', settingsForm);
+      // Create a sanitized copy for logging to avoid flooding the console with base64 strings
+      const sanitizedSettings = {
+        ...settingsForm,
+        logoUrl: settingsForm.logoUrl ? (settingsForm.logoUrl.startsWith('data:') ? '<base64_data>' : settingsForm.logoUrl) : '',
+        footerLogoUrl: settingsForm.footerLogoUrl ? (settingsForm.footerLogoUrl.startsWith('data:') ? '<base64_data>' : settingsForm.footerLogoUrl) : '',
+        heroSlides: settingsForm.heroSlides?.map(slide => ({
+          ...slide,
+          url: slide.url && slide.url.startsWith('data:') ? '<base64_data>' : slide.url
+        }))
+      };
+      console.log('Salvando configurações:', sanitizedSettings);
       updateSettings(settingsForm);
       showNotification('Configurações salvas com sucesso!');
     } catch (error) {
@@ -184,21 +203,52 @@ export function AdminPanel() {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (loginUser === settings.adminUser && loginPassword === settings.adminPassword) {
-      setIsLoggedIn(true);
+  const handleGoogleLogin = async () => {
+    setIsLoggingIn(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
       showNotification('Login realizado com sucesso!');
-    } else {
-      showNotification('Usuário ou senha incorretos.', 'error');
+    } catch (error: any) {
+      console.error("Login error:", error);
+      showNotification('Erro ao fazer login com Google: ' + error.message, 'error');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setLoginUser('');
-    setLoginPassword('');
-    showNotification('Logout realizado com sucesso.');
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      showNotification('Por favor, preencha email e senha.', 'error');
+      return;
+    }
+    
+    setIsLoggingIn(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      showNotification('Login realizado com sucesso!');
+    } catch (error: any) {
+      console.error("Login error:", error);
+      let msg = 'Erro ao fazer login.';
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        msg = 'Email ou senha incorretos.';
+      } else if (error.code === 'auth/too-many-requests') {
+        msg = 'Muitas tentativas falhas. Tente novamente mais tarde.';
+      }
+      showNotification(msg, 'error');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      showNotification('Logout realizado com sucesso.');
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const removeWorkImage = (index: number) => {
@@ -209,7 +259,7 @@ export function AdminPanel() {
     }
   };
 
-  if (!isLoggedIn) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-stone-100 flex items-center justify-center p-4">
         {notification && (
@@ -217,55 +267,75 @@ export function AdminPanel() {
             {notification.message}
           </div>
         )}
-        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-800">
-              <Lock size={32} />
-            </div>
-            <h2 className="text-2xl font-bold text-emerald-900">Acesso Administrativo</h2>
-            <p className="text-stone-500">Entre com suas credenciais para continuar</p>
+        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md text-center">
+          <div className="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-800">
+            <Lock size={32} />
           </div>
-          <form onSubmit={handleLogin} className="space-y-6">
+          <h2 className="text-2xl font-bold text-emerald-900 mb-2">Acesso Administrativo</h2>
+          <p className="text-stone-500 mb-8">Faça login para continuar</p>
+          
+          <button 
+            onClick={handleGoogleLogin} 
+            disabled={isLoggingIn}
+            className="w-full bg-white border border-stone-300 text-stone-700 py-3 rounded-lg font-bold hover:bg-stone-50 transition shadow-sm hover:shadow flex items-center justify-center gap-3 mb-6"
+          >
+            {isLoggingIn ? (
+              <RefreshCw className="animate-spin" size={20} />
+            ) : (
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+              </svg>
+            )}
+            Entrar com Google
+          </button>
+
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-stone-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-stone-500">Ou entre com email</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleEmailLogin} className="space-y-4 text-left">
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1">Usuário</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
-                  <User size={18} />
-                </div>
-                <input 
-                  type="text" 
-                  value={loginUser}
-                  onChange={(e) => setLoginUser(e.target.value)}
-                  className="w-full pl-10 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-                  placeholder="Seu usuário"
-                />
-              </div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Email</label>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                placeholder="seu@email.com"
+                required
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">Senha</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
-                  <Lock size={18} />
-                </div>
-                <input 
-                  type="password" 
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full pl-10 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-                  placeholder="Sua senha"
-                />
-              </div>
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                placeholder="••••••••"
+                required
+              />
             </div>
             <button 
-              type="submit" 
-              className="w-full bg-emerald-700 text-white py-3 rounded-lg font-bold hover:bg-emerald-800 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              type="submit"
+              disabled={isLoggingIn}
+              className="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold hover:bg-emerald-700 transition shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              Entrar
+              {isLoggingIn ? <RefreshCw className="animate-spin" size={20} /> : 'Entrar'}
             </button>
-            <div className="text-center">
-              <a href="/" className="text-sm text-stone-500 hover:text-emerald-700">Voltar ao site</a>
-            </div>
           </form>
+          
+          <div className="mt-6 text-center">
+            <a href="/" className="text-sm text-stone-500 hover:text-emerald-700">Voltar ao site</a>
+          </div>
         </div>
       </div>
     );
@@ -944,6 +1014,14 @@ export function AdminPanel() {
                         multiple
                         onChange={(e) => {
                           if (e.target.files) {
+                            const currentCount = settingsForm.heroSlides?.length || 0;
+                            const newFiles = Array.from(e.target.files);
+                            
+                            if (currentCount + newFiles.length > 3) {
+                              showNotification('Limite de 3 imagens no banner.', 'error');
+                              return;
+                            }
+
                             processFiles(e.target.files, (newImages) => {
                               setSettingsForm(prev => ({
                                 ...prev,
@@ -958,7 +1036,7 @@ export function AdminPanel() {
                         className="w-full p-2 border rounded"
                       />
                     </div>
-                    <p className="text-xs text-stone-500">Você pode selecionar múltiplas imagens para o slide.</p>
+                    <p className="text-xs text-stone-500">Você pode selecionar até 3 imagens para o slide.</p>
 
                     <div className="space-y-4">
                       {settingsForm.heroSlides?.map((slide, idx) => (

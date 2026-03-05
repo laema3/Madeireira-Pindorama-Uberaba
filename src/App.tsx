@@ -17,6 +17,7 @@ import { LoaderProvider } from './components/LoaderContext';
 import { DataProvider } from './components/DataContext';
 import { AdminPanel } from './components/AdminPanel';
 import { FaviconManager } from './components/FaviconManager';
+import { ConnectionStatus } from './components/ConnectionStatus';
 
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -35,6 +36,7 @@ export default function App() {
   return (
     <DataProvider>
       <FaviconManager />
+      <ConnectionStatus />
       {isAdmin ? (
         <AdminPanel />
       ) : (

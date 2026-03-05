@@ -1,0 +1,209 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A product available for sale or display.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "subcategory": { "type": "string" },
+        "brand": { "type": "string" },
+        "image": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" }
+      },
+      "required": ["name", "category", "subcategory", "brand", "image", "description", "price"]
+    },
+    "Partner": {
+      "title": "Partner",
+      "description": "A business partner or affiliate.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "logo": { "type": "string" }
+      },
+      "required": ["name", "logo"]
+    },
+    "Professional": {
+      "title": "Professional",
+      "description": "A professional service provider.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "specialty": { "type": "string" },
+        "contact": { "type": "string" },
+        "image": { "type": "string" }
+      },
+      "required": ["name", "specialty", "contact", "image"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "A customer or client record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["name", "email", "phone"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product category.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Subcategory": {
+      "title": "Subcategory",
+      "description": "Product subcategory.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "categoryId": { "type": "string" }
+      },
+      "required": ["name", "categoryId"]
+    },
+    "Work": {
+      "title": "Work",
+      "description": "A portfolio work or project.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["title", "description", "images"]
+    },
+    "ServiceArea": {
+      "title": "ServiceArea",
+      "description": "Area where services are provided.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A blog post or news item.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "image": { "type": "string" },
+        "content": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "image", "content", "created_at"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global application settings.",
+      "type": "object",
+      "properties": {
+        "logoUrl": { "type": "string" },
+        "footerLogoUrl": { "type": "string" },
+        "footerText": { "type": "string" },
+        "facebookUrl": { "type": "string" },
+        "instagramUrl": { "type": "string" },
+        "whatsappUrl": { "type": "string" },
+        "googleTagId": { "type": "string" },
+        "facebookPixelId": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "adminUser": { "type": "string" },
+        "adminPassword": { "type": "string" },
+        "heroSlides": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "url": { "type": "string" },
+              "title": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "required": ["url", "title", "description"]
+          } 
+        }
+      },
+      "required": ["footerText", "facebookUrl", "instagramUrl", "whatsappUrl", "googleTagId", "facebookPixelId", "address", "phone", "email"]
+    },
+    "AboutData": {
+      "title": "AboutData",
+      "description": "About page content.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "image": { "type": "string" },
+        "videoUrl": { "type": "string" }
+      },
+      "required": ["title", "description", "image"]
+    }
+  },
+  "firestore": {
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of products."
+    },
+    "partners/{partnerId}": {
+      "schema": "Partner",
+      "description": "Collection of partners."
+    },
+    "professionals/{professionalId}": {
+      "schema": "Professional",
+      "description": "Collection of professionals."
+    },
+    "clients/{clientId}": {
+      "schema": "Client",
+      "description": "Collection of clients."
+    },
+    "categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Collection of categories."
+    },
+    "subcategories/{subcategoryId}": {
+      "schema": "Subcategory",
+      "description": "Collection of subcategories."
+    },
+    "works/{workId}": {
+      "schema": "Work",
+      "description": "Collection of works."
+    },
+    "service_areas/{serviceAreaId}": {
+      "schema": "ServiceArea",
+      "description": "Collection of service areas."
+    },
+    "posts/{postId}": {
+      "schema": "Post",
+      "description": "Collection of posts."
+    },
+    "settings/global": {
+      "schema": "Settings",
+      "description": "Global settings document."
+    },
+    "about/global": {
+      "schema": "AboutData",
+      "description": "About page content document."
+    },
+    "history/global": {
+      "schema": "AboutData",
+      "description": "History page content document."
+    }
+  }
+}

@@ -1,7 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work, ServiceArea, Post } from '../types';
 import { PRODUCTS as INITIAL_PRODUCTS, PARTNERS as INITIAL_PARTNERS, PROFESSIONALS as INITIAL_PROFESSIONALS } from '../data';
-import { supabase } from '../lib/supabase';
+import { db, auth } from '../lib/firebase';
+import { 
+  collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, 
+  query, orderBy, Timestamp 
+} from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface DataContextType {
   products: Product[];
@@ -19,6 +24,7 @@ interface DataContextType {
   
   isSyncing: boolean;
   lastSyncError: string | null;
+  isOnline: boolean;
   
   exportData: () => string;
   importData: (jsonData: string) => Promise<boolean>;
@@ -76,172 +82,101 @@ export function useData() {
   return context;
 }
 
-// Helper hook for persistence (Backend + LocalStorage Fallback)
-function usePersistedState<T>(
-  key: string, 
-  initialValue: T, 
-  onSyncChange?: (syncing: boolean, error: string | null) => void
-): [T, React.Dispatch<React.SetStateAction<T>>] {
-  const [state, setState] = useState<T>(initialValue);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [lastSavedValue, setLastSavedValue] = useState<string>(JSON.stringify(initialValue));
-
-  // Initial load
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Try backend first with cache busting
-        const response = await fetch(`/api/data/${key}?t=${Date.now()}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data !== null) {
-            setState(data);
-            setLastSavedValue(JSON.stringify(data));
-          } else {
-            // If not in backend, check localStorage
-            const item = localStorage.getItem(key);
-            if (item) {
-              const parsed = JSON.parse(item);
-              setState(parsed);
-              setLastSavedValue(item);
-            }
-          }
-        } else {
-          // Fallback to localStorage if response not ok
-          const item = localStorage.getItem(key);
-          if (item) {
-            const parsed = JSON.parse(item);
-            setState(parsed);
-            setLastSavedValue(item);
-          }
-        }
-      } catch (error) {
-        console.error(`Error loading data for ${key}:`, error);
-        // Fallback to localStorage
-        const item = localStorage.getItem(key);
-        if (item) {
-          const parsed = JSON.parse(item);
-          setState(parsed);
-          setLastSavedValue(item);
-        }
-      } finally {
-        setIsInitialized(true);
-      }
-    };
-    loadData();
-  }, [key]);
-
-  // Save on change
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    const serialized = JSON.stringify(state);
-    
-    // Skip if value hasn't changed from what we last saved or loaded
-    if (serialized === lastSavedValue) return;
-
-    const saveData = async () => {
-      if (onSyncChange) onSyncChange(true, null);
-      try {
-        // Save to localStorage
-        localStorage.setItem(key, serialized);
-        
-        // Save to backend
-        const response = await fetch(`/api/data/${key}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: serialized
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Server returned ${response.status}`);
-        }
-        
-        setLastSavedValue(serialized);
-        if (onSyncChange) onSyncChange(false, null);
-      } catch (error: any) {
-        console.error(`Error saving data for ${key}:`, error);
-        if (onSyncChange) onSyncChange(false, error.message || 'Erro ao salvar no servidor');
-      }
-    };
-    
-    // Debounce save to avoid too many requests
-    const timer = setTimeout(saveData, 1000);
-    return () => clearTimeout(timer);
-  }, [key, state, isInitialized, lastSavedValue, onSyncChange]);
-
-  return [state, setState];
-}
-
 export function DataProvider({ children }: { children: ReactNode }) {
-  const isSupabaseConfigured = Boolean((import.meta as any).env.VITE_SUPABASE_URL && (import.meta as any).env.VITE_SUPABASE_ANON_KEY);
-
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncingStates, setSyncingStates] = useState<Record<string, boolean>>({});
   const [syncErrors, setSyncErrors] = useState<Record<string, string | null>>({});
+  const [user, setUser] = useState<any>(null);
 
-  const handleSyncChange = (key: string) => (syncing: boolean, error: string | null) => {
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleSyncChange = (key: string, syncing: boolean, error: string | null = null) => {
     setSyncingStates(prev => ({ ...prev, [key]: syncing }));
-    setSyncErrors(prev => ({ ...prev, [key]: error }));
+    if (error) setSyncErrors(prev => ({ ...prev, [key]: error }));
   };
 
   const isSyncing = Object.values(syncingStates).some(s => s);
   const lastSyncError = Object.values(syncErrors).find(e => e !== null) || null;
 
-  // Initialize states
-  const [products, setProducts] = usePersistedState<Product[]>('products', 
-    INITIAL_PRODUCTS.map(p => ({
-      ...p,
-      id: String(p.id),
-      price: 100 + Math.random() * 500,
-      brand: 'Genérica',
-      subcategory: 'Geral'
-    })),
-    handleSyncChange('products')
-  );
-  
-  const [partners, setPartners] = usePersistedState<Partner[]>('partners', 
-    INITIAL_PARTNERS.map(p => ({ ...p, id: String(p.id) })),
-    handleSyncChange('partners')
-  );
-  const [professionals, setProfessionals] = usePersistedState<Professional[]>('professionals', 
-    INITIAL_PROFESSIONALS.map(p => ({ ...p, id: String(p.id) })),
-    handleSyncChange('professionals')
-  );
-  
-  const [about, setAbout] = usePersistedState<AboutData>('about', {
-    title: 'Tradição e Qualidade em Madeiras',
-    description: 'A Madeireira Pindorama nasceu com o propósito de oferecer o que há de melhor em madeiras nobres e materiais para construção. Com mais de duas décadas de história, nos consolidamos como referência na região, sempre prezando pela procedência legal de nossos produtos e pelo respeito ao meio ambiente.',
-    image: 'https://picsum.photos/seed/lumberyard/800/600'
-  }, handleSyncChange('about'));
+  // Generic Firestore Hook for Collections
+  function useFirestoreCollection<T>(collectionName: string, initialData: T[], enabled: boolean = true) {
+    const [data, setData] = useState<T[]>(initialData);
 
-  const [history, setHistory] = usePersistedState<AboutData>('history', {
-    title: 'Nossa História',
-    description: 'Fundada em 1995, começamos como uma pequena serraria familiar. Hoje, somos líderes de mercado, mas mantemos o atendimento próximo e personalizado que nos trouxe até aqui.',
-    image: 'https://picsum.photos/seed/history/800/600',
-    videoUrl: ''
-  }, handleSyncChange('history'));
+    useEffect(() => {
+      if (!enabled) {
+        setData(initialData);
+        return;
+      }
 
-  const [clients, setClients] = usePersistedState<Client[]>('clients', [
-    { id: '1', name: 'Construtora Silva', email: 'contato@silva.com', phone: '(11) 99999-1111', address: 'Rua A, 123' },
-    { id: '2', name: 'Marcenaria Arte', email: 'arte@marcenaria.com', phone: '(11) 98888-2222', address: 'Av B, 456' }
-  ], handleSyncChange('clients'));
+      handleSyncChange(collectionName, true);
+      const q = query(collection(db, collectionName));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+        setData(items);
+        handleSyncChange(collectionName, snapshot.metadata.hasPendingWrites);
+      }, (error) => {
+        console.error(`Error fetching ${collectionName}:`, error);
+        handleSyncChange(collectionName, false, error.message);
+      });
+      return () => unsubscribe();
+    }, [collectionName, enabled]);
 
-  const [categories, setCategories] = usePersistedState<Category[]>('categories', [
-    { id: '1', name: 'Estrutural' },
-    { id: '2', name: 'Acabamento' },
-    { id: '3', name: 'Chapas' }
-  ], handleSyncChange('categories'));
+    return [data, setData] as const;
+  }
 
-  const [subcategories, setSubcategories] = usePersistedState<Subcategory[]>('subcategories', [
-    { id: '1', name: 'Vigas', categoryId: '1' },
-    { id: '2', name: 'Caibros', categoryId: '1' },
-    { id: '3', name: 'Decks', categoryId: '2' },
-    { id: '4', name: 'Forros', categoryId: '2' },
-    { id: '5', name: 'MDF', categoryId: '3' },
-    { id: '6', name: 'Compensados', categoryId: '3' }
-  ], handleSyncChange('subcategories'));
+  // Generic Firestore Hook for Documents
+  function useFirestoreDocument<T>(collectionName: string, docId: string, initialData: T) {
+    const [data, setData] = useState<T>(initialData);
 
-  const [settings, setSettings] = usePersistedState<Settings>('settings', {
+    useEffect(() => {
+      handleSyncChange(collectionName, true);
+      const unsubscribe = onSnapshot(doc(db, collectionName, docId), (docSnap) => {
+        if (docSnap.exists()) {
+          setData(docSnap.data() as T);
+        } 
+        // Removed auto-initialization to prevent infinite loops with security rules
+        handleSyncChange(collectionName, docSnap.metadata.hasPendingWrites);
+      }, (error) => {
+        // Only log/show error if it's NOT a permission error on a read (which shouldn't happen for public docs, but good practice)
+        // or if we really care. For now, we suppress the sync error for missing docs to avoid UI noise.
+        console.error(`Error fetching ${collectionName}/${docId}:`, error);
+        handleSyncChange(collectionName, false, error.message);
+      });
+      return () => unsubscribe();
+    }, [collectionName, docId]);
+
+    return [data, setData] as const;
+  }
+
+  // Initialize states with Firestore
+  const [products] = useFirestoreCollection<Product>('products', INITIAL_PRODUCTS.map(p => ({...p, id: String(p.id)})));
+  const [partners] = useFirestoreCollection<Partner>('partners', INITIAL_PARTNERS.map(p => ({...p, id: String(p.id)})));
+  const [professionals] = useFirestoreCollection<Professional>('professionals', INITIAL_PROFESSIONALS.map(p => ({...p, id: String(p.id)})));
+  // Only fetch clients if user is logged in (admin)
+  const [clients] = useFirestoreCollection<Client>('clients', [], !!user);
+  const [categories] = useFirestoreCollection<Category>('categories', []);
+  const [subcategories] = useFirestoreCollection<Subcategory>('subcategories', []);
+  const [works] = useFirestoreCollection<Work>('works', []);
+  const [serviceAreas] = useFirestoreCollection<ServiceArea>('service_areas', []);
+  const [posts] = useFirestoreCollection<Post>('posts', []);
+
+  const [settings, setSettings] = useFirestoreDocument<Settings>('settings', 'global', {
     logoUrl: '',
     footerLogoUrl: '',
     footerText: '© 2026 Madeireira Pindorama. Todos os direitos reservados.',
@@ -255,46 +190,90 @@ export function DataProvider({ children }: { children: ReactNode }) {
     email: 'contato@madeireirapindorama.com.br',
     adminUser: 'admin',
     adminPassword: 'admin*2026',
-    heroImages: [
-      'https://picsum.photos/seed/lumber1/1920/1080',
-      'https://picsum.photos/seed/lumber2/1920/1080',
-      'https://picsum.photos/seed/lumber3/1920/1080',
-      'https://picsum.photos/seed/lumber4/1920/1080',
-      'https://picsum.photos/seed/lumber5/1920/1080'
-    ],
-    heroSlides: [
-      { url: 'https://picsum.photos/seed/lumber1/1920/1080', title: 'Madeiras Nobres', description: 'Qualidade e procedência garantida para o seu projeto.' },
-      { url: 'https://picsum.photos/seed/lumber2/1920/1080', title: 'Estruturas Completas', description: 'Tudo o que você precisa para a sua obra.' },
-      { url: 'https://picsum.photos/seed/lumber3/1920/1080', title: 'Acabamentos Finos', description: 'Detalhes que fazem a diferença.' },
-      { url: 'https://picsum.photos/seed/lumber4/1920/1080', title: 'Sustentabilidade', description: 'Madeira de reflorestamento e manejo sustentável.' },
-      { url: 'https://picsum.photos/seed/lumber5/1920/1080', title: 'Atendimento Especializado', description: 'Nossa equipe está pronta para te ajudar.' }
-    ]
-  }, handleSyncChange('settings'));
+    heroSlides: []
+  });
 
-  const [works, setWorks] = usePersistedState<Work[]>('works', [
-    {
-      id: '1',
-      title: 'Pergolado Residencial',
-      description: 'Estrutura completa em Garapeira com acabamento em verniz náutico.',
-      images: [
-        'https://picsum.photos/seed/pergola1/800/600',
-        'https://picsum.photos/seed/pergola2/800/600',
-        'https://picsum.photos/seed/pergola3/800/600'
-      ]
+  const [about, setAbout] = useFirestoreDocument<AboutData>('about', 'global', {
+    title: 'Tradição e Qualidade em Madeiras',
+    description: 'A Madeireira Pindorama nasceu com o propósito de oferecer o que há de melhor em madeiras nobres.',
+    image: 'https://picsum.photos/seed/lumberyard/800/600'
+  });
+
+  const [history, setHistory] = useFirestoreDocument<AboutData>('history', 'global', {
+    title: 'Nossa História',
+    description: 'Fundada em 1995, começamos como uma pequena serraria familiar.',
+    image: 'https://picsum.photos/seed/history/800/600'
+  });
+
+  // CRUD Operations
+  const createCrud = <T extends { id?: string }>(collectionName: string) => ({
+    add: async (item: T) => {
+      try {
+        await addDoc(collection(db, collectionName), item);
+      } catch (error: any) {
+        console.error(`Error adding to ${collectionName}:`, error);
+        handleSyncChange(collectionName, false, `Erro ao adicionar: ${error.message}`);
+      }
     },
-    {
-      id: '2',
-      title: 'Deck de Piscina',
-      description: 'Deck em Cumaru com sistema de fixação oculta.',
-      images: [
-        'https://picsum.photos/seed/deck1/800/600',
-        'https://picsum.photos/seed/deck2/800/600'
-      ]
+    update: async (item: T) => {
+      if (!item.id) return;
+      try {
+        const { id, ...data } = item;
+        await updateDoc(doc(db, collectionName, id), data as any);
+      } catch (error: any) {
+        console.error(`Error updating ${collectionName}:`, error);
+        handleSyncChange(collectionName, false, `Erro ao atualizar: ${error.message}`);
+      }
+    },
+    remove: async (id: string) => {
+      try {
+        await deleteDoc(doc(db, collectionName, id));
+      } catch (error: any) {
+        console.error(`Error deleting from ${collectionName}:`, error);
+        handleSyncChange(collectionName, false, `Erro ao excluir: ${error.message}`);
+      }
     }
-  ], handleSyncChange('works'));
+  });
 
-  const [serviceAreas, setServiceAreas] = usePersistedState<ServiceArea[]>('serviceAreas', [], handleSyncChange('serviceAreas'));
-  const [posts, setPosts] = usePersistedState<Post[]>('posts', [], handleSyncChange('posts'));
+  const productCrud = createCrud<Product>('products');
+  const partnerCrud = createCrud<Partner>('partners');
+  const clientCrud = createCrud<Client>('clients');
+  const categoryCrud = createCrud<Category>('categories');
+  const subcategoryCrud = createCrud<Subcategory>('subcategories');
+  const workCrud = createCrud<Work>('works');
+  const professionalCrud = createCrud<Professional>('professionals');
+  const serviceAreaCrud = createCrud<ServiceArea>('service_areas');
+  const postCrud = createCrud<Post>('posts');
+
+  const updateSettingsFn = async (newSettings: Settings) => {
+    // Optimistic update is tricky with single doc if we want to revert on error, 
+    // but for now we rely on onSnapshot to fix it if it fails.
+    // setSettings(newSettings); 
+    try {
+      await setDoc(doc(db, 'settings', 'global'), newSettings);
+    } catch (error: any) {
+      console.error('Error updating settings:', error);
+      handleSyncChange('settings', false, `Erro ao salvar configurações: ${error.message}`);
+    }
+  };
+
+  const updateAboutFn = async (newAbout: AboutData) => {
+    try {
+      await setDoc(doc(db, 'about', 'global'), newAbout);
+    } catch (error: any) {
+      console.error('Error updating about:', error);
+      handleSyncChange('about', false, `Erro ao salvar Sobre Nós: ${error.message}`);
+    }
+  };
+
+  const updateHistoryFn = async (newHistory: AboutData) => {
+    try {
+      await setDoc(doc(db, 'history', 'global'), newHistory);
+    } catch (error: any) {
+      console.error('Error updating history:', error);
+      handleSyncChange('history', false, `Erro ao salvar História: ${error.message}`);
+    }
+  };
 
   const exportData = () => {
     return JSON.stringify({
@@ -303,186 +282,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const importData = async (jsonData: string) => {
-    try {
-      const parsed = JSON.parse(jsonData);
-      if (parsed.products) setProducts(parsed.products);
-      if (parsed.partners) setPartners(parsed.partners);
-      if (parsed.professionals) setProfessionals(parsed.professionals);
-      if (parsed.about) setAbout(parsed.about);
-      if (parsed.history) setHistory(parsed.history);
-      if (parsed.clients) setClients(parsed.clients);
-      if (parsed.categories) setCategories(parsed.categories);
-      if (parsed.subcategories) setSubcategories(parsed.subcategories);
-      if (parsed.settings) setSettings(parsed.settings);
-      if (parsed.works) setWorks(parsed.works);
-      if (parsed.serviceAreas) setServiceAreas(parsed.serviceAreas);
-      if (parsed.posts) setPosts(parsed.posts);
-      return true;
-    } catch (e) {
-      console.error("Import error", e);
-      return false;
-    }
+    // Import logic would be complex with Firestore (batch writes), skipping for now or implementing basic
+    console.warn("Import not fully implemented for Firestore yet");
+    return false;
   };
 
   const forceSyncPull = () => {
-    localStorage.clear();
     window.location.reload();
-  };
-
-  // Ensure admin credentials exist (migration for existing users)
-  useEffect(() => {
-    if (!settings.adminUser || !settings.adminPassword || !settings.heroImages || !settings.heroSlides) {
-      setSettings(prev => ({
-        ...prev,
-        adminUser: prev.adminUser || 'admin',
-        adminPassword: prev.adminPassword || 'admin*2026',
-        heroImages: prev.heroImages || [
-          'https://picsum.photos/seed/lumber1/1920/1080',
-          'https://picsum.photos/seed/lumber2/1920/1080',
-          'https://picsum.photos/seed/lumber3/1920/1080',
-          'https://picsum.photos/seed/lumber4/1920/1080',
-          'https://picsum.photos/seed/lumber5/1920/1080'
-        ],
-        heroSlides: prev.heroSlides || (prev.heroImages ? prev.heroImages.map((url, i) => ({
-          url,
-          title: i === 0 ? 'Madeiras Nobres' : i === 1 ? 'Estruturas Completas' : i === 2 ? 'Acabamentos Finos' : i === 3 ? 'Sustentabilidade' : 'Atendimento Especializado',
-          description: i === 0 ? 'Qualidade e procedência garantida para o seu projeto.' : i === 1 ? 'Tudo o que você precisa para a sua obra.' : i === 2 ? 'Detalhes que fazem a diferença.' : i === 3 ? 'Madeira de reflorestamento e manejo sustentável.' : 'Nossa equipe está pronta para te ajudar.'
-        })) : [
-          { url: 'https://picsum.photos/seed/lumber1/1920/1080', title: 'Madeiras Nobres', description: 'Qualidade e procedência garantida para o seu projeto.' },
-          { url: 'https://picsum.photos/seed/lumber2/1920/1080', title: 'Estruturas Completas', description: 'Tudo o que você precisa para a sua obra.' },
-          { url: 'https://picsum.photos/seed/lumber3/1920/1080', title: 'Acabamentos Finos', description: 'Detalhes que fazem a diferença.' },
-          { url: 'https://picsum.photos/seed/lumber4/1920/1080', title: 'Sustentabilidade', description: 'Madeira de reflorestamento e manejo sustentável.' },
-          { url: 'https://picsum.photos/seed/lumber5/1920/1080', title: 'Atendimento Especializado', description: 'Nossa equipe está pronta para te ajudar.' }
-        ])
-      }));
-    }
-  }, [settings.adminUser, settings.adminPassword, settings.heroImages, settings.heroSlides, setSettings]);
-
-  // Supabase Fetch Effect
-  useEffect(() => {
-    if (!isSupabaseConfigured) return;
-
-    const fetchSupabaseData = async () => {
-      try {
-        const [
-          { data: prodData }, { data: partData }, { data: cliData },
-          { data: catData }, { data: subData }, { data: workData },
-          { data: profData }, { data: setData }, { data: abtData }, { data: histData },
-          { data: saData }, { data: postData }
-        ] = await Promise.all([
-          supabase.from('products').select('*'),
-          supabase.from('partners').select('*'),
-          supabase.from('clients').select('*'),
-          supabase.from('categories').select('*'),
-          supabase.from('subcategories').select('*'),
-          supabase.from('works').select('*'),
-          supabase.from('professionals').select('*'),
-          supabase.from('settings').select('*').limit(1).maybeSingle(),
-          supabase.from('about').select('*').limit(1).maybeSingle(),
-          supabase.from('history').select('*').limit(1).maybeSingle(),
-          supabase.from('service_areas').select('*'),
-          supabase.from('posts').select('*')
-        ]);
-
-        if (prodData && prodData.length > 0) setProducts(prodData);
-        if (partData && partData.length > 0) setPartners(partData);
-        if (cliData && cliData.length > 0) setClients(cliData);
-        if (catData && catData.length > 0) setCategories(catData);
-        if (subData && subData.length > 0) setSubcategories(subData);
-        if (workData && workData.length > 0) setWorks(workData);
-        if (profData && profData.length > 0) setProfessionals(profData);
-        if (saData && saData.length > 0) setServiceAreas(saData);
-        if (postData && postData.length > 0) setPosts(postData);
-        
-        if (setData) setSettings(setData);
-        if (abtData) setAbout(abtData);
-        if (histData) setHistory(histData);
-      } catch (error) {
-        console.error("Error fetching from Supabase:", error);
-      }
-    };
-
-    fetchSupabaseData();
-  }, [isSupabaseConfigured]);
-
-  // --- CRUD Operations ---
-  const createCrud = <T extends { id?: string }>(table: string, stateSetter: React.Dispatch<React.SetStateAction<T[]>>) => ({
-    add: async (item: T) => {
-      const newItem = { ...item, id: item.id || Date.now().toString() };
-      // Update local state immediately (optimistic)
-      stateSetter(prev => [...prev, newItem]);
-      
-      if (isSupabaseConfigured) {
-        const { error } = await supabase.from(table).insert([newItem]);
-        if (error) console.error(`Error adding to ${table} in Supabase:`, error);
-      }
-    },
-    update: async (item: T) => {
-      // Update local state immediately (optimistic)
-      stateSetter(prev => prev.map(i => i.id === item.id ? item : i));
-      
-      if (isSupabaseConfigured) {
-        const { error } = await supabase.from(table).update(item as any).eq('id', item.id);
-        if (error) console.error(`Error updating ${table} in Supabase:`, error);
-      }
-    },
-    remove: async (id: string) => {
-      // Update local state immediately (optimistic)
-      stateSetter(prev => prev.filter(i => i.id !== id));
-      
-      if (isSupabaseConfigured) {
-        const { error } = await supabase.from(table).delete().eq('id', id);
-        if (error) console.error(`Error deleting from ${table} in Supabase:`, error);
-      }
-    }
-  });
-
-  const productCrud = createCrud<Product>('products', setProducts);
-  const partnerCrud = createCrud<Partner>('partners', setPartners);
-  const clientCrud = createCrud<Client>('clients', setClients);
-  const categoryCrud = createCrud<Category>('categories', setCategories);
-  const subcategoryCrud = createCrud<Subcategory>('subcategories', setSubcategories);
-  const workCrud = createCrud<Work>('works', setWorks);
-  const professionalCrud = createCrud<Professional>('professionals', setProfessionals);
-  const serviceAreaCrud = createCrud<ServiceArea>('service_areas', setServiceAreas);
-  const postCrud = createCrud<Post>('posts', setPosts);
-
-  const updateSettings = async (newSettings: Settings) => {
-    setSettings(newSettings);
-    if (isSupabaseConfigured) {
-      const { error } = await supabase.from('settings').upsert({ ...newSettings, id: '1' });
-      if (error) console.error('Error updating settings in Supabase:', error);
-    }
-  };
-
-  const updateAbout = async (newAbout: AboutData) => {
-    setAbout(newAbout);
-    if (isSupabaseConfigured) {
-      const { error } = await supabase.from('about').upsert({ ...newAbout, id: '1' });
-      if (error) console.error('Error updating about in Supabase:', error);
-    }
-  };
-
-  const updateHistory = async (newHistory: AboutData) => {
-    setHistory(newHistory);
-    if (isSupabaseConfigured) {
-      const { error } = await supabase.from('history').upsert({ ...newHistory, id: '1' });
-      if (error) console.error('Error updating history in Supabase:', error);
-    }
   };
 
   return (
     <DataContext.Provider value={{
       products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts,
-      isSyncing, lastSyncError,
+      isSyncing, lastSyncError, isOnline,
       exportData, importData, forceSyncPull,
       addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.remove,
       addPartner: partnerCrud.add, updatePartner: partnerCrud.update, deletePartner: partnerCrud.remove,
-      updateAbout, updateHistory,
+      updateAbout: updateAboutFn, updateHistory: updateHistoryFn,
       addClient: clientCrud.add, updateClient: clientCrud.update, deleteClient: clientCrud.remove,
       addCategory: categoryCrud.add, updateCategory: categoryCrud.update, deleteCategory: categoryCrud.remove,
       addSubcategory: subcategoryCrud.add, updateSubcategory: subcategoryCrud.update, deleteSubcategory: subcategoryCrud.remove,
-      updateSettings,
+      updateSettings: updateSettingsFn,
       addWork: workCrud.add, updateWork: workCrud.update, deleteWork: workCrud.remove,
       addProfessional: professionalCrud.add, updateProfessional: professionalCrud.update, deleteProfessional: professionalCrud.remove,
       addServiceArea: serviceAreaCrud.add, updateServiceArea: serviceAreaCrud.update, deleteServiceArea: serviceAreaCrud.remove,
