@@ -62,15 +62,17 @@ service cloud.firestore {
     // Collection: service_areas
     // Document ID: {serviceAreaId}
     // Fields:
-    //   - name: string (required) - Service area name
+    //   - title: string (required) - Service area title
+    //   - description: string (required) - Service area description
+    //   - image: string (required) - Image URL/base64
     //
     // Collection: posts
     // Document ID: {postId}
     // Fields:
     //   - title: string (required) - Post title
-    //   - image: string (required) - Image URL
+    //   - image: string (required) - Image URL/base64
     //   - content: string (required) - Post content
-    //   - created_at: string (required, ISO 8601) - Creation date
+    //   - createdAt: string (required, ISO 8601) - Creation date
     //
     // Document: settings/global
     // Fields:
@@ -213,16 +215,18 @@ service cloud.firestore {
     }
 
     function isValidServiceArea(data) {
-      return hasRequiredFields(['name']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100;
+      return hasRequiredFields(['title', 'description', 'image']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.description is string && data.description.size() < 5000 &&
+             data.image is string && isValidUrl(data.image);
     }
 
     function isValidPost(data) {
-      return hasRequiredFields(['title', 'image', 'content', 'created_at']) &&
+      return hasRequiredFields(['title', 'image', 'content', 'createdAt']) &&
              data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
              data.image is string && isValidUrl(data.image) &&
-             data.content is string && data.content.size() < 10000 &&
-             data.created_at is string && isValidDateString(data.created_at);
+             data.content is string && data.content.size() < 20000 &&
+             data.createdAt is string && isValidDateString(data.createdAt);
     }
 
     function isValidSettings(data) {
