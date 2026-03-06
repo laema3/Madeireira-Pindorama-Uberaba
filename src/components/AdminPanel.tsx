@@ -1712,44 +1712,88 @@ export function AdminPanel() {
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-bold text-emerald-900">Gerenciar Área de Atuação</h3>
                 <button 
-                  onClick={() => setEditingServiceArea({ name: '' })}
+                  onClick={() => setEditingServiceArea({ title: '', description: '', image: '' })}
                   className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2"
                 >
-                  <Plus size={18} /> Nova Cidade
+                  <Plus size={18} /> Nova Atuação
                 </button>
               </div>
 
               {editingServiceArea && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white p-6 rounded-xl w-full max-w-md">
+                  <div className="bg-white p-6 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
                     <div className="flex justify-between items-center mb-4">
-                      <h4 className="text-xl font-bold">{editingServiceArea.id ? 'Editar Cidade' : 'Nova Cidade'}</h4>
+                      <h4 className="text-xl font-bold">{editingServiceArea.id ? 'Editar Atuação' : 'Nova Atuação'}</h4>
                       <button onClick={() => setEditingServiceArea(null)}><X /></button>
                     </div>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium">Nome da Cidade</label>
-                        <input className="w-full p-2 border rounded" value={editingServiceArea.name} onChange={e => setEditingServiceArea({...editingServiceArea, name: e.target.value})} />
+                        <label className="block text-sm font-medium">Título</label>
+                        <input className="w-full p-2 border rounded" value={editingServiceArea.title || ''} onChange={e => setEditingServiceArea({...editingServiceArea, title: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Imagem</label>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0] && editingServiceArea) {
+                              processFile(e.target.files[0], (base64) => setEditingServiceArea({...editingServiceArea, image: base64}));
+                            }
+                          }}
+                          className="w-full p-2 border rounded"
+                        />
+                        {editingServiceArea.image && editingServiceArea.image.trim() !== '' && (
+                          <img 
+                            src={editingServiceArea.image} 
+                            alt="Preview" 
+                            className="mt-2 h-32 object-cover rounded-md" 
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Descrição</label>
+                        <textarea 
+                          className="w-full p-2 border rounded" 
+                          rows={4} 
+                          value={editingServiceArea.description || ''} 
+                          onChange={e => setEditingServiceArea({...editingServiceArea, description: e.target.value})} 
+                        />
                       </div>
                     </div>
                     <div className="mt-6 flex justify-end gap-2">
                       <button onClick={() => setEditingServiceArea(null)} className="px-4 py-2 border rounded hover:bg-gray-100">Cancelar</button>
-                      <button onClick={() => handleSaveItem(editingServiceArea, setEditingServiceArea, addServiceArea, updateServiceArea, 'cidade')} className="px-4 py-2 bg-emerald-700 text-white rounded hover:bg-emerald-800">Salvar</button>
+                      <button onClick={() => handleSaveItem(editingServiceArea, setEditingServiceArea, addServiceArea, updateServiceArea, 'atuação')} className="px-4 py-2 bg-emerald-700 text-white rounded hover:bg-emerald-800">Salvar</button>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {serviceAreas.map(sa => (
-                  <div key={sa.id} className="bg-white p-4 rounded-xl border shadow-sm flex items-center justify-between group">
-                    <div className="flex items-center gap-2 text-emerald-800 font-medium">
-                      <MapPin size={18} className="text-emerald-600" />
-                      {sa.name}
+                  <div key={sa.id} className="bg-white rounded-xl border shadow-sm overflow-hidden flex group relative">
+                    <div className="w-1/3 h-40 bg-stone-100">
+                      {sa.image && sa.image.trim() !== '' ? (
+                        <img 
+                          src={sa.image} 
+                          alt={sa.title} 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-stone-300">
+                          <ImageIcon size={32} />
+                        </div>
+                      )}
                     </div>
-                    <div className="opacity-0 group-hover:opacity-100 transition flex gap-1">
-                      <button onClick={() => setEditingServiceArea(sa)} className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Edit size={16} /></button>
-                      <button onClick={() => handleDeleteItem(sa.id, deleteServiceArea, 'cidade')} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                    <div className="w-2/3 p-4">
+                      <h4 className="font-bold text-stone-800 mb-2">{sa.title}</h4>
+                      <p className="text-stone-600 text-sm line-clamp-3">{sa.description}</p>
+                    </div>
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-1">
+                      <button onClick={() => setEditingServiceArea(sa)} className="p-1 bg-blue-100 text-blue-600 rounded shadow-sm"><Edit size={16} /></button>
+                      <button onClick={() => handleDeleteItem(sa.id, deleteServiceArea, 'atuação')} className="p-1 bg-red-100 text-red-600 rounded shadow-sm"><Trash2 size={16} /></button>
                     </div>
                   </div>
                 ))}

@@ -19,14 +19,32 @@ export function ServiceAreas() {
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {serviceAreas.map((area) => (
             <div 
               key={area.id} 
-              className="flex items-center gap-2 bg-emerald-50 text-emerald-800 px-6 py-3 rounded-full font-medium shadow-sm border border-emerald-100"
+              className="flex flex-col sm:flex-row bg-stone-50 rounded-2xl overflow-hidden shadow-sm border border-stone-100 group hover:shadow-md transition-shadow"
             >
-              <MapPin size={18} className="text-emerald-600" />
-              {area.name}
+              <div className="sm:w-1/3 h-48 sm:h-auto overflow-hidden">
+                {area.image ? (
+                  <img 
+                    src={area.image} 
+                    alt={area.title} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-emerald-100 flex items-center justify-center text-emerald-300">
+                    <MapPin size={48} />
+                  </div>
+                )}
+              </div>
+              <div className="sm:w-2/3 p-6 flex flex-col justify-center">
+                <h3 className="text-xl font-bold text-emerald-900 mb-2">{area.title}</h3>
+                <p className="text-stone-600 leading-relaxed">
+                  {area.description}
+                </p>
+              </div>
             </div>
           ))}
         </div>

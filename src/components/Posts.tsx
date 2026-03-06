@@ -43,8 +43,17 @@ export function Posts() {
               </div>
               <div className="p-6 flex-1 flex flex-col">
                 <h3 className="text-xl font-bold text-emerald-900 mb-2 line-clamp-2">{post.title}</h3>
-                <p className="text-stone-600 line-clamp-3 flex-1">{post.content}</p>
-                <div className="mt-4 text-emerald-600 font-medium text-sm">Ler mais &rarr;</div>
+                <p className="text-stone-600 line-clamp-3 mb-6 flex-1 leading-relaxed">{post.content}</p>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPost(post);
+                  }}
+                  className="w-full py-3 px-4 bg-emerald-50 text-emerald-700 font-bold rounded-lg hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2 group/btn"
+                >
+                  LEIA MAIS
+                  <span className="group-hover/btn:translate-x-1 transition-transform">&rarr;</span>
+                </button>
               </div>
             </div>
           ))}

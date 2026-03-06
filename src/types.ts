@@ -93,7 +93,9 @@ export interface Work {
 
 export interface ServiceArea {
   id: string;
-  name: string;
+  title: string;
+  description: string;
+  image: string;
 }
 
 export interface Post {
