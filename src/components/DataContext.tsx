@@ -22,6 +22,8 @@ interface DataContextType {
   posts: Post[];
   
   isSyncing: boolean;
+  isInitialLoading: boolean;
+  loadingProgress: number;
   lastSyncError: string | null;
   isOnline: boolean;
   
@@ -84,8 +86,13 @@ export function useData() {
 export function DataProvider({ children }: { children: ReactNode }) {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncingStates, setSyncingStates] = useState<Record<string, boolean>>({});
+  const [initialSyncDone, setInitialSyncDone] = useState<Record<string, boolean>>({});
   const [syncErrors, setSyncErrors] = useState<Record<string, string | null>>({});
   const [user, setUser] = useState<any>(null);
+
+  const totalItemsToLoad = 12; // 9 collections + 3 documents
+  const itemsLoadedCount = Object.values(initialSyncDone).filter(done => done).length;
+  const loadingProgress = Math.round((itemsLoadedCount / totalItemsToLoad) * 100);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -105,17 +112,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const handleSyncChange = (key: string, syncing: boolean, error: string | null = null) => {
+  const handleSyncChange = (key: string, syncing: boolean, error: string | null = null, firstSync: boolean = false) => {
     setSyncingStates(prev => ({ ...prev, [key]: syncing }));
+    if (firstSync) setInitialSyncDone(prev => ({ ...prev, [key]: true }));
     if (error) setSyncErrors(prev => ({ ...prev, [key]: error }));
   };
 
   const isSyncing = Object.values(syncingStates).some(s => s);
+  const isInitialLoading = itemsLoadedCount < totalItemsToLoad;
   const lastSyncError = Object.values(syncErrors).find(e => e !== null) || null;
 
   // Generic Firestore Hook for Collections
   function useFirestoreCollection<T>(collectionName: string, initialData: T[], enabled: boolean = true) {
     const [data, setData] = useState<T[]>(initialData);
+    const [hasSyncedOnce, setHasSyncedOnce] = useState(false);
 
     useEffect(() => {
       handleSyncChange(collectionName, true);
@@ -128,7 +138,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         unsubscribe = onSnapshot(q, (snapshot) => {
           const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
           setData(items);
-          handleSyncChange(collectionName, snapshot.metadata.hasPendingWrites);
+          
+          const isFirstSync = !hasSyncedOnce;
+          if (isFirstSync) setHasSyncedOnce(true);
+          
+          handleSyncChange(collectionName, snapshot.metadata.hasPendingWrites, null, isFirstSync);
           retryCount = 0; // Reset retry count on success
         }, (error) => {
           console.error(`Error fetching ${collectionName}:`, error);
@@ -139,7 +153,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             console.log(`Retrying connection for ${collectionName} (${retryCount}/${maxRetries})...`);
             setTimeout(setupListener, 2000 * retryCount); // Exponential backoff
           } else {
-            handleSyncChange(collectionName, false, error.message);
+            handleSyncChange(collectionName, false, error.message, true);
           }
         });
       };
@@ -148,6 +162,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setupListener();
       } else {
         setData(initialData);
+        // If disabled (like clients for non-admin), mark as done to not block loader
+        handleSyncChange(collectionName, false, null, true);
       }
 
       return () => {
@@ -161,20 +177,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Generic Firestore Hook for Documents
   function useFirestoreDocument<T>(collectionName: string, docId: string, initialData: T) {
     const [data, setData] = useState<T>(initialData);
+    const [hasSyncedOnce, setHasSyncedOnce] = useState(false);
 
     useEffect(() => {
-      handleSyncChange(collectionName, true);
+      handleSyncChange(`${collectionName}_${docId}`, true);
       const unsubscribe = onSnapshot(doc(db, collectionName, docId), (docSnap) => {
         if (docSnap.exists()) {
           setData(docSnap.data() as T);
         } 
-        // Removed auto-initialization to prevent infinite loops with security rules
-        handleSyncChange(collectionName, docSnap.metadata.hasPendingWrites);
+        
+        const isFirstSync = !hasSyncedOnce;
+        if (isFirstSync) setHasSyncedOnce(true);
+
+        handleSyncChange(`${collectionName}_${docId}`, docSnap.metadata.hasPendingWrites, null, isFirstSync);
       }, (error) => {
-        // Only log/show error if it's NOT a permission error on a read (which shouldn't happen for public docs, but good practice)
-        // or if we really care. For now, we suppress the sync error for missing docs to avoid UI noise.
         console.error(`Error fetching ${collectionName}/${docId}:`, error);
-        handleSyncChange(collectionName, false, error.message);
+        handleSyncChange(`${collectionName}_${docId}`, false, error.message, true);
       });
       return () => unsubscribe();
     }, [collectionName, docId]);
@@ -312,7 +330,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <DataContext.Provider value={{
       products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts,
-      isSyncing, lastSyncError, isOnline,
+      isSyncing, lastSyncError, isOnline, loadingProgress, isInitialLoading,
       exportData, importData, forceSyncPull,
       addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.remove,
       addPartner: partnerCrud.add, updatePartner: partnerCrud.update, deletePartner: partnerCrud.remove,

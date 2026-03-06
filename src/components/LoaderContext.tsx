@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Hammer } from 'lucide-react';
+import { useData } from './DataContext';
 
 interface LoaderContextType {
   simulateLoading: (callback?: () => void) => void;
@@ -18,46 +19,69 @@ export function useLoader() {
 }
 
 export function LoaderProvider({ children }: { children: ReactNode }) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const { isInitialLoading, loadingProgress } = useData();
 
   const simulateLoading = (callback?: () => void) => {
-    if (isLoading) return;
-    setIsLoading(true);
+    if (isSimulating) return;
+    setIsSimulating(true);
     setTimeout(() => {
-      setIsLoading(false);
+      setIsSimulating(false);
       if (callback) callback();
     }, 2000);
   };
 
+  const isLoading = isInitialLoading || isSimulating;
+
   return (
     <LoaderContext.Provider value={{ simulateLoading, isLoading }}>
-      {children}
+      {!isInitialLoading && children}
       <AnimatePresence>
         {isLoading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-stone-900/80 backdrop-blur-sm flex flex-col items-center justify-center"
+            className="fixed inset-0 z-[100] bg-stone-900 flex flex-col items-center justify-center"
           >
-            <motion.div
-              animate={{ rotate: [0, -45, 0] }}
-              transition={{ 
-                duration: 0.5, 
-                repeat: Infinity, 
-                ease: "easeInOut" 
-              }}
-              className="bg-white p-6 rounded-full shadow-2xl"
-            >
-              <Hammer size={48} className="text-emerald-800" />
-            </motion.div>
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-4 text-white font-bold text-xl tracking-wider"
-            >
-              CARREGANDO...
-            </motion.p>
+            <div className="relative flex flex-col items-center">
+              <motion.div
+                animate={{ rotate: [0, -45, 0] }}
+                transition={{ 
+                  duration: 0.5, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+                className="bg-white p-8 rounded-full shadow-2xl mb-8"
+              >
+                <Hammer size={64} className="text-emerald-800" />
+              </motion.div>
+
+              <div className="w-64 h-2 bg-stone-800 rounded-full overflow-hidden mb-4">
+                <motion.div 
+                  className="h-full bg-emerald-500"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${loadingProgress}%` }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-white font-bold text-2xl tracking-widest"
+              >
+                {loadingProgress}%
+              </motion.p>
+              
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-2 text-stone-400 text-sm uppercase tracking-widest"
+              >
+                Sincronizando Dados...
+              </motion.p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

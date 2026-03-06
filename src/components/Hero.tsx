@@ -8,27 +8,27 @@ const DEFAULT_IMAGES = [
   {
     url: 'https://picsum.photos/seed/lumber1/1920/1080',
     title: 'Qualidade que Constrói Sonhos',
-    subtitle: 'As melhores madeiras para sua obra ou reforma.'
+    description: 'As melhores madeiras para sua obra ou reforma.'
   },
   {
     url: 'https://picsum.photos/seed/lumber2/1920/1080',
     title: 'Sustentabilidade e Confiança',
-    subtitle: 'Madeiras certificadas e de origem legal.'
+    description: 'Madeiras certificadas e de origem legal.'
   },
   {
     url: 'https://picsum.photos/seed/lumber3/1920/1080',
     title: 'Variedade em Acabamentos',
-    subtitle: 'Decks, forros e assoalhos com o melhor preço.'
+    description: 'Decks, forros e assoalhos com o melhor preço.'
   },
   {
     url: 'https://picsum.photos/seed/lumber4/1920/1080',
     title: 'Entrega Rápida e Segura',
-    subtitle: 'Logística eficiente para atender sua necessidade.'
+    description: 'Logística eficiente para atender sua necessidade.'
   },
   {
     url: 'https://picsum.photos/seed/lumber5/1920/1080',
     title: 'Parceria com Profissionais',
-    subtitle: 'Soluções completas para marceneiros e carpinteiros.'
+    description: 'Soluções completas para marceneiros e carpinteiros.'
   }
 ];
 
@@ -99,7 +99,7 @@ export function Hero() {
                 transition={{ delay: 0.7 }}
                 className="text-3xl md:text-5xl drop-shadow-xl max-w-4xl"
               >
-                {heroImages[index % heroImages.length].description || (heroImages[index % heroImages.length] as any).subtitle}
+                {heroImages[index % heroImages.length].description}
               </motion.p>
             </div>
           </div>

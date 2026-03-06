@@ -60,7 +60,8 @@ export interface Subcategory {
 export interface HeroSlide {
   url: string;
   title: string;
-  description: string;
+  description?: string;
+  subtitle?: string;
 }
 
 export interface Settings {
@@ -100,5 +101,5 @@ export interface Post {
   title: string;
   image: string;
   content: string;
-  created_at?: string;
+  createdAt?: string;
 }

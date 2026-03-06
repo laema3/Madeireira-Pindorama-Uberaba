@@ -22,8 +22,8 @@ export function Footer() {
               />
             )}
             <h3 className="text-white text-xl font-bold mb-6">Madeireira Pindorama</h3>
-            <p className="mb-6">
-              Há mais de 20 anos fornecendo madeira de qualidade e soluções para construção civil e marcenaria.
+            <p className="mb-6 whitespace-pre-line">
+              {settings.footerDescription || 'Há mais de 20 anos fornecendo madeira de qualidade e soluções para construção civil e marcenaria.'}
             </p>
             <div className="flex gap-4">
               <a href={settings.facebookUrl} className="text-white/90 hover:text-emerald-300 transition"><Facebook /></a>
@@ -52,20 +52,26 @@ export function Footer() {
 
           <div>
             <h3 className="text-white text-lg font-bold mb-6">Horário de Funcionamento</h3>
-            <ul className="space-y-2">
-              <li className="flex justify-between">
-                <span>Segunda a Sexta</span>
-                <span className="text-white">08:00 - 18:00</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Sábado</span>
-                <span className="text-white">08:00 - 12:00</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Domingo</span>
-                <span className="text-emerald-200">Fechado</span>
-              </li>
-            </ul>
+            {settings.openingHours ? (
+              <p className="whitespace-pre-line text-white/90 leading-relaxed">
+                {settings.openingHours}
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                <li className="flex justify-between">
+                  <span>Segunda a Sexta</span>
+                  <span className="text-white">08:00 - 18:00</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Sábado</span>
+                  <span className="text-white">08:00 - 12:00</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Domingo</span>
+                  <span className="text-emerald-200">Fechado</span>
+                </li>
+              </ul>
+            )}
           </div>
         </div>
 
