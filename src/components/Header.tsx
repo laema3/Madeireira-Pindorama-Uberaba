@@ -73,7 +73,9 @@ export function Header() {
     }
 
     // For regular routes
+    e.preventDefault();
     setIsMenuOpen(false);
+    navigate(href);
   };
 
   return (

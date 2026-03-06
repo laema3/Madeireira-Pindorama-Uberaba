@@ -20,18 +20,36 @@ export function useLoader() {
 
 export function LoaderProvider({ children }: { children: ReactNode }) {
   const [isSimulating, setIsSimulating] = useState(false);
+  const [simulatedProgress, setSimulatedProgress] = useState(0);
   const { isInitialLoading, loadingProgress } = useData();
 
   const simulateLoading = (callback?: () => void) => {
     if (isSimulating) return;
     setIsSimulating(true);
-    setTimeout(() => {
-      setIsSimulating(false);
-      if (callback) callback();
-    }, 2000);
+    setSimulatedProgress(0);
+    
+    const duration = 2000;
+    const interval = 20;
+    const steps = duration / interval;
+    const increment = 100 / steps;
+    
+    let currentProgress = 0;
+    const timer = setInterval(() => {
+      currentProgress += increment;
+      if (currentProgress >= 100) {
+        currentProgress = 100;
+        clearInterval(timer);
+        setTimeout(() => {
+          setIsSimulating(false);
+          if (callback) callback();
+        }, 200);
+      }
+      setSimulatedProgress(currentProgress);
+    }, interval);
   };
 
   const isLoading = isInitialLoading || isSimulating;
+  const displayProgress = isInitialLoading ? loadingProgress : Math.round(simulatedProgress);
 
   return (
     <LoaderContext.Provider value={{ simulateLoading, isLoading }}>
@@ -61,8 +79,8 @@ export function LoaderProvider({ children }: { children: ReactNode }) {
                 <motion.div 
                   className="h-full bg-emerald-500"
                   initial={{ width: 0 }}
-                  animate={{ width: `${loadingProgress}%` }}
-                  transition={{ duration: 0.3 }}
+                  animate={{ width: `${displayProgress}%` }}
+                  transition={{ duration: 0.1 }}
                 />
               </div>
 
@@ -71,7 +89,7 @@ export function LoaderProvider({ children }: { children: ReactNode }) {
                 animate={{ opacity: 1 }}
                 className="text-white font-bold text-2xl tracking-widest"
               >
-                {loadingProgress}%
+                {displayProgress}%
               </motion.p>
               
               <motion.p
@@ -79,7 +97,7 @@ export function LoaderProvider({ children }: { children: ReactNode }) {
                 animate={{ opacity: 1 }}
                 className="mt-2 text-stone-400 text-sm uppercase tracking-widest"
               >
-                Sincronizando Dados...
+                {isInitialLoading ? 'Sincronizando Dados...' : 'Carregando Página...'}
               </motion.p>
             </div>
           </motion.div>
