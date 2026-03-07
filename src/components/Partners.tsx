@@ -7,9 +7,12 @@ export function Partners() {
   return (
     <section id="parceiros" className="py-16 bg-white text-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4 text-emerald-800">Parceiros</h2>
-          <p className="text-gray-600">Trabalhamos com as melhores marcas do mercado.</p>
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-emerald-900 mb-4">Parceiros</h2>
+          <div className="w-24 h-1 bg-emerald-600 mx-auto rounded-full"></div>
+          <p className="mt-4 text-stone-600 max-w-2xl mx-auto">
+            Trabalhamos com as melhores marcas do mercado.
+          </p>
         </div>
 
         <div className="flex flex-wrap justify-center items-center gap-12 opacity-80">

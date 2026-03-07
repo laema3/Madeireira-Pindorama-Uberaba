@@ -5,22 +5,19 @@ import { Phone, Star } from 'lucide-react';
 export function Professionals() {
   const { professionals } = useData();
 
-  if (!professionals || professionals.length === 0) {
-    return null;
-  }
-
   return (
     <section className="py-16 bg-emerald-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-emerald-900 mb-4">Profissionais Indicados</h2>
-          <p className="text-stone-600 max-w-2xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-emerald-900 mb-4">Profissionais Indicados</h2>
+          <div className="w-24 h-1 bg-emerald-600 mx-auto rounded-full"></div>
+          <p className="mt-4 text-stone-600 max-w-2xl mx-auto">
             Encontre os melhores especialistas para o seu projeto.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {professionals.map((pro) => (
+          {professionals && professionals.map((pro) => (
             <div key={pro.id} className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-4">
               {pro.image && pro.image.trim() !== '' ? (
                 <img

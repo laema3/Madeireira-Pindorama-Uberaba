@@ -6,19 +6,16 @@ export function Posts() {
   const { posts } = useData();
   const [selectedPost, setSelectedPost] = useState<any>(null);
 
-  if (!posts || posts.length === 0) {
-    return null;
-  }
-
   // Show only up to 6 posts on the homepage
-  const displayedPosts = posts.slice(0, 6);
+  const displayedPosts = posts ? posts.slice(0, 6) : [];
 
   return (
     <section id="dicas" className="py-16 bg-stone-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-emerald-900 mb-4">Dicas e Novidades</h2>
-          <p className="text-stone-600 max-w-2xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-emerald-900 mb-4">Dicas e Novidades</h2>
+          <div className="w-24 h-1 bg-emerald-600 mx-auto rounded-full"></div>
+          <p className="mt-4 text-stone-600 max-w-2xl mx-auto">
             Acompanhe nossas dicas, tendências e novidades do setor.
           </p>
         </div>

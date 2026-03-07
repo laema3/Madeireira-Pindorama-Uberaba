@@ -5,22 +5,19 @@ import { MapPin } from 'lucide-react';
 export function ServiceAreas() {
   const { serviceAreas } = useData();
 
-  if (!serviceAreas || serviceAreas.length === 0) {
-    return null;
-  }
-
   return (
     <section id="atuacao" className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-emerald-900 mb-4">Área de Atuação</h2>
-          <p className="text-stone-600 max-w-2xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-emerald-900 mb-4">Área de Atuação</h2>
+          <div className="w-24 h-1 bg-emerald-600 mx-auto rounded-full"></div>
+          <p className="mt-4 text-stone-600 max-w-2xl mx-auto">
             Atendemos diversas cidades com qualidade e compromisso.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {serviceAreas.map((area) => (
+          {serviceAreas && serviceAreas.map((area) => (
             <div 
               key={area.id} 
               className="flex flex-col sm:flex-row bg-stone-50 rounded-2xl overflow-hidden shadow-sm border border-stone-100 group hover:shadow-md transition-shadow"
