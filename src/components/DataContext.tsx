@@ -90,9 +90,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [syncErrors, setSyncErrors] = useState<Record<string, string | null>>({});
   const [user, setUser] = useState<any>(null);
 
+  const [forceLoaded, setForceLoaded] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setForceLoaded(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const totalItemsToLoad = 12; // 9 collections + 3 documents
   const itemsLoadedCount = Object.values(initialSyncDone).filter(done => done).length;
   const loadingProgress = Math.round((itemsLoadedCount / totalItemsToLoad) * 100);
+  const isInitialLoading = !forceLoaded && itemsLoadedCount < totalItemsToLoad;
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -119,7 +129,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const isSyncing = Object.values(syncingStates).some(s => s);
-  const isInitialLoading = itemsLoadedCount < totalItemsToLoad;
   const lastSyncError = Object.values(syncErrors).find(e => e !== null) || null;
 
   // Generic Firestore Hook for Collections

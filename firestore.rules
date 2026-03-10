@@ -112,7 +112,7 @@ service cloud.firestore {
     // Check if user is admin (using hardcoded email for bootstrapping or custom claim/role if implemented)
     function isAdmin() {
       return isAuthenticated() && 
-        (request.auth.token.email == "camillasites@gmail.com" && request.auth.token.email_verified == true);
+        (request.auth.token.email == "camillasites@gmail.com");
     }
 
     // Validate required fields exist

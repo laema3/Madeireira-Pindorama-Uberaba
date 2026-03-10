@@ -8,9 +8,10 @@ export function Products() {
   return (
     <section id="produtos" className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-emerald-900 mb-4">Nossos Produtos</h2>
-          <p className="text-stone-600 max-w-2xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-emerald-900 mb-4">Nossos Produtos</h2>
+          <div className="w-24 h-1 bg-emerald-600 mx-auto rounded-full"></div>
+          <p className="mt-4 text-stone-600 max-w-2xl mx-auto">
             Trabalhamos com uma ampla variedade de madeiras e derivados para atender todas as etapas da sua obra.
           </p>
         </div>

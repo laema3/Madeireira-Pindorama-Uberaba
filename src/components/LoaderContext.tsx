@@ -24,7 +24,10 @@ export function LoaderProvider({ children }: { children: ReactNode }) {
   const { isInitialLoading, loadingProgress } = useData();
 
   const simulateLoading = (callback?: () => void) => {
-    if (isSimulating) return;
+    if (isSimulating) {
+      if (callback) callback();
+      return;
+    }
     setIsSimulating(true);
     setSimulatedProgress(0);
     

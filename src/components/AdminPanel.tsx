@@ -360,9 +360,12 @@ export function AdminPanel() {
                 Salvando no servidor...
               </div>
             ) : lastSyncError ? (
-              <div className="flex items-center gap-1 text-red-400">
+              <div className="flex items-center gap-1 text-red-400 group relative">
                 <div className="w-2 h-2 bg-red-400 rounded-full" />
                 Erro de conexão
+                <div className="absolute left-0 top-full mt-2 hidden group-hover:block bg-red-900 text-white p-2 rounded text-xs z-50 w-48 break-words">
+                  {lastSyncError}
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-1 text-emerald-500">

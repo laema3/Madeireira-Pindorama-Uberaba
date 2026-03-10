@@ -79,41 +79,31 @@ export function Header() {
   };
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-40">
+    <header className="bg-white/95 backdrop-blur-sm shadow-sm sticky top-0 z-40">
       {/* Top Bar */}
-      <div className="bg-emerald-900 text-white py-2 px-4 hidden sm:block">
-        <div className="max-w-7xl mx-auto flex justify-between items-center text-sm">
-          <div className="flex gap-6">
-            <a href={`tel:${settings.phone}`} className="flex items-center gap-2 hover:text-emerald-200 transition">
-              <Phone size={14} />
-              <span>{settings.phone}</span>
-            </a>
-            <a href={settings.whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-emerald-200 transition">
-              <MessageCircle size={14} />
-              <span>WhatsApp</span>
-            </a>
-          </div>
+      <div className="bg-emerald-900 text-white py-1 px-4 hidden sm:block">
+        <div className="max-w-7xl mx-auto flex justify-end items-center text-[10px] uppercase tracking-widest font-bold">
           <div className="flex gap-4">
             <button className="hover:text-emerald-200 transition flex items-center gap-1">
-              <User size={14} />
-              <span>Login / Cadastrar</span>
+              <User size={10} />
+              <span>Área do Cliente</span>
             </button>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4 min-h-[100px]">
+        <div className="flex justify-between items-center py-4">
           <div className="flex items-center gap-4 shrink-0">
             <Link to="/" onClick={(e) => handleNavClick(e as any, '/')}>
               {settings.logoUrl && settings.logoUrl.trim() !== '' ? (
                 <img 
                   src={settings.logoUrl} 
                   alt="Logo" 
-                  className="h-24 w-auto object-contain" 
+                  className="h-16 md:h-20 w-auto object-contain" 
                   referrerPolicy="no-referrer" 
                   onError={(e) => {
-                    e.currentTarget.style.display = 'none'; // Hide broken image
+                    e.currentTarget.style.display = 'none';
                   }}
                 />
               ) : (
@@ -124,19 +114,19 @@ export function Header() {
             </Link>
           </div>
 
-          <div className="flex items-center gap-8 flex-1 justify-end">
-            <nav className="hidden lg:flex items-center space-x-1">
+          <div className="flex items-center gap-8">
+            <nav className="hidden lg:flex items-center space-x-6">
               {navItems.map((item) => (
-                <div key={item.label} className="relative group flex items-center">
+                <div key={item.label} className="relative group">
                   {item.submenu ? (
                     <>
                       <button
-                        className="text-stone-600 group-hover:text-white group-hover:bg-emerald-700 font-medium text-sm px-3 py-2 rounded-md transition-colors duration-200 whitespace-nowrap flex items-center gap-1 h-10"
+                        className="text-stone-700 hover:text-white hover:bg-emerald-700 font-semibold text-base px-3 py-2 rounded-lg transition-colors flex items-center gap-1"
                       >
                         {item.label}
-                        <ChevronDown size={14} className="group-hover:rotate-180 transition-transform" />
+                        <ChevronDown size={16} className="group-hover:rotate-180 transition-transform" />
                       </button>
-                      <div className="absolute right-0 top-full mt-0 w-48 bg-white border border-stone-100 shadow-xl rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                      <div className="absolute left-0 top-full mt-2 w-48 bg-white border border-stone-100 shadow-xl rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-hidden">
                         <div className="py-2">
                           {item.submenu.map((sub) => (
                             <Link
@@ -155,7 +145,7 @@ export function Header() {
                     <Link
                       to={item.href}
                       onClick={(e) => handleNavClick(e as any, item.href)}
-                      className="text-stone-600 hover:text-white hover:bg-emerald-700 font-medium text-sm px-3 py-2 rounded-md transition-colors duration-200 whitespace-nowrap flex items-center h-10"
+                      className="text-stone-700 hover:text-white hover:bg-emerald-700 font-semibold text-base px-3 py-2 rounded-lg transition-colors"
                     >
                       {item.label}
                     </Link>
@@ -165,23 +155,14 @@ export function Header() {
             </nav>
 
             <div className="flex items-center gap-4">
-              {/* Search Bar Desktop */}
-              <div className="hidden md:flex items-center bg-stone-100 rounded-full px-4 py-2 focus-within:ring-2 focus-within:ring-emerald-500 transition">
-                <Search size={18} className="text-stone-400" />
-                <input 
-                  type="text" 
-                  placeholder="Pesquisar..." 
-                  className="bg-transparent border-none focus:ring-0 text-sm ml-2 w-32 lg:w-48"
-                />
-              </div>
-
-              {/* Mobile Search Toggle */}
-              <button 
-                className="md:hidden p-2 text-stone-600"
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
+              {/* Phone Button like in the image */}
+              <a 
+                href={`tel:${settings.phone}`}
+                className="hidden md:flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-emerald-950 font-bold py-2.5 px-6 rounded-full transition shadow-sm"
               >
-                <Search size={24} />
-              </button>
+                <Phone size={18} />
+                <span>{settings.phone}</span>
+              </a>
 
               <button
                 className="lg:hidden p-2 text-stone-600"
