@@ -54,11 +54,17 @@ export function Hero() {
 
   return (
     <div className="relative min-h-[600px] md:h-[750px] w-full overflow-hidden bg-[#2a2a2a] flex items-center">
-      {/* Background Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#2a2a2a] via-[#3a3a3a] to-[#1a1a1a] opacity-90"></div>
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=2069&auto=format&fit=crop")' }}
+      ></div>
+      
+      {/* Dark Overlay for Text Readability (Transparency) */}
+      <div className="absolute inset-0 bg-[#2a2a2a]/80"></div>
       
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
+      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 py-12 md:py-0">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -173,8 +179,8 @@ export function Hero() {
                 <TreePine size={24} />
               </div>
               <div>
-                <div className="text-2xl font-bold text-emerald-900 leading-none">+30 Anos</div>
-                <div className="text-xs text-stone-500 font-medium uppercase tracking-wider">Desde 1995</div>
+                <div className="text-2xl font-bold text-emerald-900 leading-none">+46 Anos</div>
+                <div className="text-xs text-stone-500 font-medium uppercase tracking-wider">Desde 1978</div>
               </div>
             </motion.div>
 
