@@ -1066,8 +1066,8 @@ export function AdminPanel() {
                             const currentCount = settingsForm.heroSlides?.length || 0;
                             const newFiles = Array.from(e.target.files);
                             
-                            if (currentCount + newFiles.length > 3) {
-                              showNotification('Limite de 3 imagens no banner.', 'error');
+                            if (currentCount + newFiles.length > 6) {
+                              showNotification('Limite de 6 imagens no banner.', 'error');
                               return;
                             }
 
@@ -1092,7 +1092,7 @@ export function AdminPanel() {
                         Limpar todos
                       </button>
                     </div>
-                    <p className="text-xs text-stone-500">Você pode selecionar até 3 imagens para o slide.</p>
+                    <p className="text-xs text-stone-500">Você pode selecionar até 6 imagens para o slide.</p>
 
                     <div className="space-y-4">
                       {settingsForm.heroSlides?.map((slide, idx) => (
