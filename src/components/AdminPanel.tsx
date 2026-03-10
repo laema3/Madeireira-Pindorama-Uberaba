@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from './DataContext';
 import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post } from '../types';
-import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText, Video, RefreshCw, Download, Upload } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText, Video, RefreshCw, Download, Upload, Sparkles } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
+import { GoogleGenAI } from '@google/genai';
 
 export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao'>('dashboard');
@@ -40,6 +41,7 @@ export function AdminPanel() {
   // --- UI State ---
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: string; confirmMsg: string; remove: (id: string) => void } | null>(null);
+  const [isGeneratingDesc, setIsGeneratingDesc] = useState<Record<number, boolean>>({});
 
   // --- Auth State ---
   const [user, setUser] = useState<any>(null);
@@ -168,6 +170,42 @@ export function AdminPanel() {
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
       showNotification('Erro ao salvar configurações.', 'error');
+    }
+  };
+
+  const handleGenerateDescription = async (index: number, title: string) => {
+    if (!title || title.trim() === '') {
+      showNotification('Preencha o título primeiro para gerar a descrição com IA.', 'error');
+      return;
+    }
+
+    setIsGeneratingDesc(prev => ({ ...prev, [index]: true }));
+    try {
+      const apiKey = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        showNotification('Chave da API do Gemini não configurada.', 'error');
+        return;
+      }
+      
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Crie uma descrição curta e chamativa (máximo 2 frases) para um banner de um site de uma madeireira (Madeireira Pindorama), baseada neste título: "${title}"`,
+      });
+      
+      const generatedText = response.text?.trim() || '';
+      
+      if (generatedText) {
+        const newSlides = [...(settingsForm.heroSlides || [])];
+        newSlides[index].description = generatedText;
+        setSettingsForm({ ...settingsForm, heroSlides: newSlides });
+        showNotification('Descrição gerada com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro ao gerar descrição:', error);
+      showNotification('Erro ao gerar descrição com IA.', 'error');
+    } finally {
+      setIsGeneratingDesc(prev => ({ ...prev, [index]: false }));
     }
   };
 
@@ -1145,7 +1183,22 @@ export function AdminPanel() {
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-stone-500 mb-1">Descrição</label>
+                              <div className="flex justify-between items-center mb-1">
+                                <label className="block text-xs font-medium text-stone-500">Descrição</label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleGenerateDescription(idx, slide.title)}
+                                  disabled={isGeneratingDesc[idx]}
+                                  className="text-[10px] flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition disabled:opacity-50"
+                                >
+                                  {isGeneratingDesc[idx] ? (
+                                    <RefreshCw size={12} className="animate-spin" />
+                                  ) : (
+                                    <Sparkles size={12} />
+                                  )}
+                                  Gerar com IA
+                                </button>
+                              </div>
                               <textarea 
                                 value={slide.description} 
                                 onChange={(e) => {
