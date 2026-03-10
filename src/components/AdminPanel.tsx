@@ -74,7 +74,7 @@ export function AdminPanel() {
   }, [history]);
 
   // --- Helper Functions ---
-  const processFile = (file: File, callback: (base64: string) => void) => {
+  const processFile = (file: File, callback: (base64: string) => void, options?: { maxSize?: number, quality?: number, preserveTransparency?: boolean }) => {
     const reader = new FileReader();
     reader.onloadend = () => {
       const img = new Image();
@@ -82,7 +82,7 @@ export function AdminPanel() {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        const max_size = 800; // Max dimension to save space (reduced from 1200)
+        const max_size = options?.maxSize || 800; // Max dimension to save space
 
         if (width > height) {
           if (width > max_size) {
@@ -100,14 +100,18 @@ export function AdminPanel() {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (ctx) {
+          if (options?.preserveTransparency === false) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
+          }
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Preserve transparency for PNG and WebP
-          const mimeType = (file.type === 'image/png' || file.type === 'image/webp') 
+          // Preserve transparency for PNG and WebP unless explicitly disabled
+          const mimeType = (options?.preserveTransparency !== false && (file.type === 'image/png' || file.type === 'image/webp')) 
             ? file.type 
             : 'image/jpeg';
           
-          const quality = mimeType === 'image/jpeg' ? 0.6 : undefined;
+          const quality = (mimeType === 'image/jpeg' || mimeType === 'image/webp') ? (options?.quality || 0.6) : undefined;
           callback(canvas.toDataURL(mimeType, quality));
         } else {
           callback(reader.result as string); // Fallback if canvas fails
@@ -118,9 +122,9 @@ export function AdminPanel() {
     reader.readAsDataURL(file);
   };
 
-  const processFiles = (files: FileList, callback: (base64s: string[]) => void) => {
+  const processFiles = (files: FileList, callback: (base64s: string[]) => void, options?: { maxSize?: number, quality?: number, preserveTransparency?: boolean }) => {
     const promises = Array.from(files).map(file => new Promise<string>((resolve) => {
-      processFile(file, resolve);
+      processFile(file, resolve, options);
     }));
     Promise.all(promises).then(callback);
   };
@@ -700,7 +704,7 @@ export function AdminPanel() {
                                       images: [...(prev.images || []), ...newImages]
                                     };
                                   });
-                                });
+                                }, { maxSize: 800, quality: 0.5, preserveTransparency: false });
                               }
                             }}
                             className="w-full p-2 border rounded"
@@ -929,7 +933,7 @@ export function AdminPanel() {
                         accept="image/*"
                         onChange={(e) => {
                           if (e.target.files && e.target.files[0]) {
-                            processFile(e.target.files[0], (base64) => setSettingsForm({...settingsForm, logoUrl: base64}));
+                            processFile(e.target.files[0], (base64) => setSettingsForm({...settingsForm, logoUrl: base64}), { maxSize: 400 });
                           }
                         }}
                         className="hidden"
@@ -973,7 +977,7 @@ export function AdminPanel() {
                         accept="image/*"
                         onChange={(e) => {
                           if (e.target.files && e.target.files[0]) {
-                            processFile(e.target.files[0], (base64) => setSettingsForm({...settingsForm, footerLogoUrl: base64}));
+                            processFile(e.target.files[0], (base64) => setSettingsForm({...settingsForm, footerLogoUrl: base64}), { maxSize: 400 });
                           }
                         }}
                         className="hidden"
@@ -1079,7 +1083,7 @@ export function AdminPanel() {
                                   ...newImages.map(url => ({ url, title: 'Novo Slide', description: 'Descrição do slide' }))
                                 ]
                               }));
-                            });
+                            }, { maxSize: 600, quality: 0.3, preserveTransparency: false });
                           }
                         }}
                         className="w-full p-2 border rounded"
@@ -1280,7 +1284,7 @@ export function AdminPanel() {
                       accept="image/*"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
-                          processFile(e.target.files[0], (base64) => setAboutForm({...aboutForm, image: base64}));
+                          processFile(e.target.files[0], (base64) => setAboutForm({...aboutForm, image: base64}), { maxSize: 800, quality: 0.5, preserveTransparency: false });
                         }
                       }}
                       className="hidden"
@@ -1382,7 +1386,7 @@ export function AdminPanel() {
                       accept="image/*"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
-                          processFile(e.target.files[0], (base64) => setHistoryForm({...historyForm, image: base64, videoUrl: ''}));
+                          processFile(e.target.files[0], (base64) => setHistoryForm({...historyForm, image: base64, videoUrl: ''}), { maxSize: 800, quality: 0.5, preserveTransparency: false });
                         }
                       }}
                       className="hidden"
@@ -1527,7 +1531,7 @@ export function AdminPanel() {
                           accept="image/*"
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0] && editingProduct) {
-                              processFile(e.target.files[0], (base64) => setEditingProduct({...editingProduct, image: base64}));
+                              processFile(e.target.files[0], (base64) => setEditingProduct({...editingProduct, image: base64}), { maxSize: 600, quality: 0.5, preserveTransparency: false });
                             }
                           }}
                           className="w-full p-2 border rounded"
@@ -1626,7 +1630,7 @@ export function AdminPanel() {
                           accept="image/*"
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0] && editingPartner) {
-                              processFile(e.target.files[0], (base64) => setEditingPartner({...editingPartner, logo: base64}));
+                              processFile(e.target.files[0], (base64) => setEditingPartner({...editingPartner, logo: base64}), { maxSize: 400 });
                             }
                           }}
                           className="w-full p-2 border rounded"
@@ -1711,7 +1715,7 @@ export function AdminPanel() {
                           accept="image/*"
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0] && editingProfessional) {
-                              processFile(e.target.files[0], (base64) => setEditingProfessional({...editingProfessional, image: base64}));
+                              processFile(e.target.files[0], (base64) => setEditingProfessional({...editingProfessional, image: base64}), { maxSize: 400, quality: 0.5, preserveTransparency: false });
                             }
                           }}
                           className="w-full p-2 border rounded"
@@ -1794,7 +1798,7 @@ export function AdminPanel() {
                           accept="image/*"
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0] && editingServiceArea) {
-                              processFile(e.target.files[0], (base64) => setEditingServiceArea({...editingServiceArea, image: base64}));
+                              processFile(e.target.files[0], (base64) => setEditingServiceArea({...editingServiceArea, image: base64}), { maxSize: 600, quality: 0.5, preserveTransparency: false });
                             }
                           }}
                           className="w-full p-2 border rounded"
@@ -1889,7 +1893,7 @@ export function AdminPanel() {
                           accept="image/*"
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0] && editingPost) {
-                              processFile(e.target.files[0], (base64) => setEditingPost({...editingPost, image: base64}));
+                              processFile(e.target.files[0], (base64) => setEditingPost({...editingPost, image: base64}), { maxSize: 800, quality: 0.5, preserveTransparency: false });
                             }
                           }}
                           className="w-full p-2 border rounded"

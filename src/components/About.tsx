@@ -46,12 +46,6 @@ export function About() {
             <p className="text-stone-600 mb-6 text-lg leading-relaxed whitespace-pre-line">
               {about.description}
             </p>
-            <button 
-              onClick={() => simulateLoading()}
-              className="bg-emerald-800 text-white px-8 py-3 rounded-full font-bold hover:bg-emerald-900 transition shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-            >
-              Saiba Mais
-            </button>
           </motion.div>
         </div>
 
