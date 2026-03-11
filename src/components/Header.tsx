@@ -95,12 +95,12 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center gap-4 shrink-0">
-            <Link to="/" onClick={(e) => handleNavClick(e as any, '/')}>
+            <Link to="/" onClick={(e) => handleNavClick(e as any, '/')} className="flex items-center gap-3">
               {settings.logoUrl && settings.logoUrl.trim() !== '' ? (
                 <img 
                   src={settings.logoUrl} 
                   alt="Logo" 
-                  className="h-16 md:h-20 w-auto object-contain" 
+                  className="h-20 md:h-24 w-auto object-contain" 
                   referrerPolicy="no-referrer" 
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
@@ -108,9 +108,13 @@ export function Header() {
                 />
               ) : (
                 <div className="bg-emerald-900 p-2 rounded-lg text-white">
-                  <TreePine size={32} />
+                  <TreePine size={40} />
                 </div>
               )}
+              <div className="flex flex-col">
+                <span className="font-bold text-emerald-900 text-lg md:text-xl leading-tight">Madeireira Pindorama</span>
+                <span className="text-stone-500 text-xs md:text-sm font-medium">Madeiras e Acabamentos</span>
+              </div>
             </Link>
           </div>
 
