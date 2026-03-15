@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Phone, Mail, Facebook, Instagram, MessageCircle } from 'lucide-react';
+import { MapPin, Phone, Mail, Facebook, Instagram, MessageCircle, Clock } from 'lucide-react';
 import { useData } from './DataContext';
 
 export function Footer() {
@@ -26,9 +26,9 @@ export function Footer() {
               {settings.footerDescription || 'Há mais de 20 anos fornecendo madeira de qualidade e soluções para construção civil e marcenaria.'}
             </p>
             <div className="flex gap-4">
-              <a href={settings.facebookUrl} className="text-white/90 hover:text-emerald-300 transition"><Facebook /></a>
-              <a href={settings.instagramUrl} className="text-white/90 hover:text-emerald-300 transition"><Instagram /></a>
-              <a href={settings.whatsappUrl} className="text-white/90 hover:text-emerald-300 transition"><MessageCircle /></a>
+              <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-white/90 hover:text-emerald-300 transition"><Facebook /></a>
+              <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-white/90 hover:text-emerald-300 transition"><Instagram /></a>
+              <a href={settings.whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-white/90 hover:text-emerald-300 transition"><MessageCircle /></a>
             </div>
           </div>
 
@@ -51,7 +51,10 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-white text-lg font-bold mb-6">Horário de Funcionamento</h3>
+            <h3 className="text-white text-lg font-bold mb-6 flex items-center gap-2">
+              <Clock size={20} />
+              Horário de Funcionamento
+            </h3>
             {settings.openingHours ? (
               <p className="whitespace-pre-line text-white/90 leading-relaxed">
                 {settings.openingHours}
