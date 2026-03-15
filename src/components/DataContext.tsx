@@ -7,6 +7,59 @@ import {
 } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  // We don't always want to throw if we want the app to keep running, 
+  // but we should at least log it clearly.
+  return JSON.stringify(errInfo);
+}
+
 interface DataContextType {
   products: Product[];
   partners: Partner[];
@@ -131,9 +184,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const isSyncing = Object.values(syncingStates).some(s => s);
   const lastSyncError = Object.values(syncErrors).find(e => e !== null) || null;
 
+  // Helper to save to cache
+  const saveToCache = (key: string, data: any) => {
+    try {
+      localStorage.setItem(`cache_${key}`, JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      console.warn('Failed to save to cache:', e);
+    }
+  };
+
+  // Helper to load from cache
+  const loadFromCache = (key: string) => {
+    try {
+      const cached = localStorage.getItem(`cache_${key}`);
+      if (cached) {
+        return JSON.parse(cached).data;
+      }
+    } catch (e) {
+      console.warn('Failed to load from cache:', e);
+    }
+    return null;
+  };
+
   // Generic Firestore Hook for Collections
   function useFirestoreCollection<T>(collectionName: string, initialData: T[], enabled: boolean = true) {
-    const [data, setData] = useState<T[]>(initialData);
+    const [data, setData] = useState<T[]>(() => {
+      const cached = loadFromCache(collectionName);
+      return cached || initialData;
+    });
     const [hasSyncedOnce, setHasSyncedOnce] = useState(false);
 
     useEffect(() => {
@@ -147,6 +228,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         unsubscribe = onSnapshot(q, (snapshot) => {
           const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
           setData(items);
+          saveToCache(collectionName, items);
           
           const isFirstSync = !hasSyncedOnce;
           if (isFirstSync) setHasSyncedOnce(true);
@@ -154,15 +236,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
           handleSyncChange(collectionName, snapshot.metadata.hasPendingWrites, null, isFirstSync);
           retryCount = 0; // Reset retry count on success
         }, (error) => {
-          console.error(`Error fetching ${collectionName}:`, error);
+          const errJson = handleFirestoreError(error, OperationType.GET, collectionName);
           
+          // If quota exceeded, we use cache and don't show error as fatal
+          if (error.code === 'resource-exhausted' || error.message.includes('Quota')) {
+            console.warn(`Quota exceeded for ${collectionName}, using cached data.`);
+            const cached = loadFromCache(collectionName);
+            if (cached) setData(cached);
+            handleSyncChange(collectionName, false, null, true); // Don't block with error
+            return;
+          }
+
           // Handle connection errors with retry
           if (error.code === 'unavailable' && retryCount < maxRetries) {
             retryCount++;
             console.log(`Retrying connection for ${collectionName} (${retryCount}/${maxRetries})...`);
             setTimeout(setupListener, 2000 * retryCount); // Exponential backoff
           } else {
-            handleSyncChange(collectionName, false, error.message, true);
+            handleSyncChange(collectionName, false, errJson, true);
           }
         });
       };
@@ -185,23 +276,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // Generic Firestore Hook for Documents
   function useFirestoreDocument<T>(collectionName: string, docId: string, initialData: T) {
-    const [data, setData] = useState<T>(initialData);
+    const cacheKey = `${collectionName}_${docId}`;
+    const [data, setData] = useState<T>(() => {
+      const cached = loadFromCache(cacheKey);
+      return cached || initialData;
+    });
     const [hasSyncedOnce, setHasSyncedOnce] = useState(false);
 
     useEffect(() => {
-      handleSyncChange(`${collectionName}_${docId}`, true);
+      handleSyncChange(cacheKey, true);
       const unsubscribe = onSnapshot(doc(db, collectionName, docId), (docSnap) => {
         if (docSnap.exists()) {
-          setData(docSnap.data() as T);
+          const docData = docSnap.data() as T;
+          setData(docData);
+          saveToCache(cacheKey, docData);
         } 
         
         const isFirstSync = !hasSyncedOnce;
         if (isFirstSync) setHasSyncedOnce(true);
 
-        handleSyncChange(`${collectionName}_${docId}`, docSnap.metadata.hasPendingWrites, null, isFirstSync);
+        handleSyncChange(cacheKey, docSnap.metadata.hasPendingWrites, null, isFirstSync);
       }, (error) => {
-        console.error(`Error fetching ${collectionName}/${docId}:`, error);
-        handleSyncChange(`${collectionName}_${docId}`, false, error.message, true);
+        const errJson = handleFirestoreError(error, OperationType.GET, `${collectionName}/${docId}`);
+        
+        // If quota exceeded, use cache
+        if (error.code === 'resource-exhausted' || error.message.includes('Quota')) {
+          console.warn(`Quota exceeded for ${cacheKey}, using cached data.`);
+          const cached = loadFromCache(cacheKey);
+          if (cached) setData(cached);
+          handleSyncChange(cacheKey, false, null, true);
+          return;
+        }
+
+        handleSyncChange(cacheKey, false, errJson, true);
       });
       return () => unsubscribe();
     }, [collectionName, docId]);
@@ -256,8 +363,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       try {
         await addDoc(collection(db, collectionName), item);
       } catch (error: any) {
-        console.error(`Error adding to ${collectionName}:`, error);
-        handleSyncChange(collectionName, false, `Erro ao adicionar: ${error.message}`);
+        const errJson = handleFirestoreError(error, OperationType.CREATE, collectionName);
+        handleSyncChange(collectionName, false, errJson);
       }
     },
     update: async (item: T) => {
@@ -266,16 +373,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const { id, ...data } = item;
         await updateDoc(doc(db, collectionName, id), data as any);
       } catch (error: any) {
-        console.error(`Error updating ${collectionName}:`, error);
-        handleSyncChange(collectionName, false, `Erro ao atualizar: ${error.message}`);
+        const errJson = handleFirestoreError(error, OperationType.UPDATE, `${collectionName}/${item.id}`);
+        handleSyncChange(collectionName, false, errJson);
       }
     },
     remove: async (id: string) => {
       try {
         await deleteDoc(doc(db, collectionName, id));
       } catch (error: any) {
-        console.error(`Error deleting from ${collectionName}:`, error);
-        handleSyncChange(collectionName, false, `Erro ao excluir: ${error.message}`);
+        const errJson = handleFirestoreError(error, OperationType.DELETE, `${collectionName}/${id}`);
+        handleSyncChange(collectionName, false, errJson);
       }
     }
   });
@@ -291,14 +398,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const postCrud = createCrud<Post>('posts');
 
   const updateSettingsFn = async (newSettings: Settings) => {
-    // Optimistic update is tricky with single doc if we want to revert on error, 
-    // but for now we rely on onSnapshot to fix it if it fails.
-    // setSettings(newSettings); 
     try {
       await setDoc(doc(db, 'settings', 'global'), newSettings);
     } catch (error: any) {
-      console.error('Error updating settings:', error);
-      handleSyncChange('settings', false, `Erro ao salvar configurações: ${error.message}`);
+      const errJson = handleFirestoreError(error, OperationType.WRITE, 'settings/global');
+      handleSyncChange('settings', false, errJson);
     }
   };
 
@@ -306,8 +410,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       await setDoc(doc(db, 'about', 'global'), newAbout);
     } catch (error: any) {
-      console.error('Error updating about:', error);
-      handleSyncChange('about', false, `Erro ao salvar Sobre Nós: ${error.message}`);
+      const errJson = handleFirestoreError(error, OperationType.WRITE, 'about/global');
+      handleSyncChange('about', false, errJson);
     }
   };
 
@@ -315,8 +419,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       await setDoc(doc(db, 'history', 'global'), newHistory);
     } catch (error: any) {
-      console.error('Error updating history:', error);
-      handleSyncChange('history', false, `Erro ao salvar História: ${error.message}`);
+      const errJson = handleFirestoreError(error, OperationType.WRITE, 'history/global');
+      handleSyncChange('history', false, errJson);
     }
   };
 

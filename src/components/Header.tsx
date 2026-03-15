@@ -1,6 +1,6 @@
 import React from 'react';
-import { Menu, X, TreePine, Search, User, Phone, MessageCircle, ChevronDown } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { Menu, X, TreePine, Search, User, Phone, MessageCircle, ChevronDown, Home, Info, Package, Target, Lightbulb, Hammer, Users, UserCheck, Mail } from 'lucide-react';
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLoader } from './LoaderContext';
 import { useData } from './DataContext';
@@ -15,21 +15,22 @@ export function Header() {
   const navigate = useNavigate();
 
   const navItems = [
-    { label: 'Início', href: '/' },
-    { label: 'Sobre Nós', href: '/#sobre' },
-    { label: 'Produtos', href: '/#produtos' },
+    { label: 'Início', href: '/', icon: Home },
+    { label: 'Sobre Nós', href: '/#sobre', icon: Info },
+    { label: 'Produtos', href: '/#produtos', icon: Package },
     { 
       label: 'Serviços', 
       href: '#',
+      icon: Target,
       submenu: [
-        { label: 'Atuação', href: '/atuacao' },
-        { label: 'Dicas', href: '/dicas' },
-        { label: 'Obras', href: '/obras' },
-        { label: 'Parceiros', href: '/parceiros' },
-        { label: 'Profissionais', href: '/profissionais' },
+        { label: 'Atuação', href: '/atuacao', icon: Target },
+        { label: 'Dicas', href: '/dicas', icon: Lightbulb },
+        { label: 'Obras', href: '/obras', icon: Hammer },
+        { label: 'Parceiros', href: '/parceiros', icon: Users },
+        { label: 'Profissionais', href: '/profissionais', icon: UserCheck },
       ]
     },
-    { label: 'Contato', href: '/#contato' },
+    { label: 'Contato', href: '/#contato', icon: Mail },
   ];
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -95,12 +96,12 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center gap-4 shrink-0">
-            <Link to="/" onClick={(e) => handleNavClick(e as any, '/')} className="flex items-center gap-3">
+            <Link to="/" onClick={(e) => handleNavClick(e as any, '/')} className="flex flex-col items-center gap-1">
               {settings.logoUrl && settings.logoUrl.trim() !== '' ? (
                 <img 
                   src={settings.logoUrl} 
                   alt="Logo" 
-                  className="h-20 md:h-24 w-auto object-contain" 
+                  className="h-16 md:h-20 w-auto object-contain" 
                   referrerPolicy="no-referrer" 
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
@@ -108,11 +109,11 @@ export function Header() {
                 />
               ) : (
                 <div className="bg-emerald-900 p-2 rounded-lg text-white">
-                  <TreePine size={40} />
+                  <TreePine size={32} />
                 </div>
               )}
-              <div className="flex flex-col">
-                <span className="font-bold text-emerald-900 text-lg md:text-xl leading-tight">Madeireira Pindorama</span>
+              <div className="flex flex-col items-center text-center">
+                <span className="font-bold text-emerald-900 text-base md:text-lg leading-tight">Madeireira Pindorama</span>
                 <span className="text-stone-500 text-xs md:text-sm font-medium">Madeiras e Acabamentos</span>
               </div>
             </Link>
@@ -125,8 +126,9 @@ export function Header() {
                   {item.submenu ? (
                     <>
                       <button
-                        className="text-stone-700 hover:text-white hover:bg-emerald-700 font-semibold text-base px-3 py-2 rounded-lg transition-colors flex items-center gap-1"
+                        className="text-stone-700 hover:text-white hover:bg-emerald-700 font-semibold text-base px-3 py-2 rounded-lg transition-colors flex items-center gap-2"
                       >
+                        <item.icon size={18} />
                         {item.label}
                         <ChevronDown size={16} className="group-hover:rotate-180 transition-transform" />
                       </button>
@@ -137,8 +139,9 @@ export function Header() {
                               key={sub.label}
                               to={sub.href}
                               onClick={(e) => handleNavClick(e as any, sub.href)}
-                              className="block px-4 py-2 text-sm text-stone-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                              className="flex items-center gap-2 px-4 py-2 text-sm text-stone-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                             >
+                              <sub.icon size={16} />
                               {sub.label}
                             </Link>
                           ))}
@@ -149,8 +152,9 @@ export function Header() {
                     <Link
                       to={item.href}
                       onClick={(e) => handleNavClick(e as any, item.href)}
-                      className="text-stone-700 hover:text-white hover:bg-emerald-700 font-semibold text-base px-3 py-2 rounded-lg transition-colors"
+                      className="text-stone-700 hover:text-white hover:bg-emerald-700 font-semibold text-base px-3 py-2 rounded-lg transition-colors flex items-center gap-2"
                     >
+                      <item.icon size={18} />
                       {item.label}
                     </Link>
                   )}
@@ -168,6 +172,12 @@ export function Header() {
                 <span>{settings.phone}</span>
               </a>
 
+              <button
+                className="lg:hidden p-2 text-stone-600"
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+              >
+                <Search size={24} />
+              </button>
               <button
                 className="lg:hidden p-2 text-stone-600"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -206,7 +216,10 @@ export function Header() {
                       onClick={() => setActiveSubmenu(activeSubmenu === item.label ? null : item.label)}
                       className="w-full flex justify-between items-center px-3 py-2 text-lg font-medium text-stone-600 hover:text-white hover:bg-emerald-700 rounded-md transition-colors duration-200"
                     >
-                      {item.label}
+                      <span className="flex items-center gap-2">
+                        <item.icon size={20} />
+                        {item.label}
+                      </span>
                       <ChevronDown size={20} className={`transition-transform ${activeSubmenu === item.label ? 'rotate-180' : ''}`} />
                     </button>
                     {activeSubmenu === item.label && (
@@ -216,8 +229,9 @@ export function Header() {
                             key={sub.label}
                             to={sub.href}
                             onClick={(e) => handleNavClick(e as any, sub.href)}
-                            className="block px-3 py-2 text-base font-medium text-stone-500 hover:text-emerald-700"
+                            className="flex items-center gap-2 px-3 py-2 text-base font-medium text-stone-500 hover:text-emerald-700"
                           >
+                            <sub.icon size={18} />
                             {sub.label}
                           </Link>
                         ))}
@@ -228,8 +242,9 @@ export function Header() {
                   <Link
                     to={item.href}
                     onClick={(e) => handleNavClick(e as any, item.href)}
-                    className="block px-3 py-2 text-lg font-medium text-stone-600 hover:text-white hover:bg-emerald-700 rounded-md transition-colors duration-200"
+                    className="flex items-center gap-2 px-3 py-2 text-lg font-medium text-stone-600 hover:text-white hover:bg-emerald-700 rounded-md transition-colors duration-200"
                   >
+                    <item.icon size={20} />
                     {item.label}
                   </Link>
                 )}

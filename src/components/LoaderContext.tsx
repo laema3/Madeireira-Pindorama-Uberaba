@@ -31,7 +31,7 @@ export function LoaderProvider({ children }: { children: ReactNode }) {
     setIsSimulating(true);
     setSimulatedProgress(0);
     
-    const duration = 2000;
+    const duration = 400;
     const interval = 20;
     const steps = duration / interval;
     const increment = 100 / steps;
