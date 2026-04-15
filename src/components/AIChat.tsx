@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
 import { useData } from './DataContext';
 
 export function AIChat() {
@@ -31,17 +30,8 @@ export function AIChat() {
     setIsLoading(true);
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        console.error('Gemini API Key is missing in process.env');
-        throw new Error('API Key not found');
-      }
-
-      const ai = new GoogleGenAI({ apiKey });
-      
       // Prepare context about the company
-      const context = `
-        Você é o assistente virtual da Madeireira Pindorama.
+      const context = `Você é o assistente virtual da Madeireira Pindorama.
         Informações da Empresa:
         - Nome: Madeireira Pindorama
         - Endereço: ${settings.address || 'Não informado'}
@@ -55,26 +45,29 @@ export function AIChat() {
         - Seja cordial, prestativo e profissional.
         - Responda em Português do Brasil.
         - Se não souber algo específico, peça para o cliente entrar em contato via WhatsApp: ${settings.whatsappUrl}
-        - Foque em tirar dúvidas sobre madeiras, projetos e produtos da loja.
-      `;
+        - Foque em tirar dúvidas sobre madeiras, projetos e produtos da loja.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-flash-latest",
-        contents: [
-          { role: 'user', parts: [{ text: context }] },
-          ...messages.map(m => ({
-            role: m.role === 'user' ? 'user' : 'model',
-            parts: [{ text: m.content }]
-          })),
-          { role: 'user', parts: [{ text: userMessage }] }
-        ],
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages,
+          userMessage,
+          context
+        })
       });
 
-      const aiResponse = response.text || 'Desculpe, tive um problema ao processar sua pergunta. Pode repetir?';
-      setMessages(prev => [...prev, { role: 'ai', content: aiResponse }]);
-    } catch (error) {
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro na resposta da IA');
+      }
+
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: 'ai', content: data.text }]);
+    } catch (error: any) {
       console.error('AI Chat Error:', error);
-      setMessages(prev => [...prev, { role: 'ai', content: 'Ops! Estou com uma instabilidade técnica no momento. Por favor, tente novamente em instantes ou nos chame no WhatsApp.' }]);
+      const errorMsg = error?.message || 'Erro desconhecido';
+      setMessages(prev => [...prev, { role: 'ai', content: `Ops! Estou com uma instabilidade técnica (${errorMsg}). Por favor, tente novamente em instantes ou nos chame no WhatsApp.` }]);
     } finally {
       setIsLoading(false);
     }
