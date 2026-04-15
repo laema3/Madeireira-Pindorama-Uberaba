@@ -82,6 +82,7 @@ export interface Settings {
   adminPassword?: string;
   heroImages?: string[]; // Legacy
   heroSlides?: HeroSlide[];
+  heroBgUrl?: string;
 }
 
 export interface Work {

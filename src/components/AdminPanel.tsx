@@ -136,27 +136,41 @@ export function AdminPanel() {
 
   // --- Handlers ---
 
-  const handleSaveAbout = () => {
+  const handleSaveAbout = async () => {
     try {
-      updateAbout(aboutForm);
+      await updateAbout(aboutForm);
       showNotification('Alterações em "Sobre Nós" salvas com sucesso!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar Sobre Nós:', error);
-      showNotification('Erro ao salvar alterações.', 'error');
+      let msg = 'Erro ao salvar alterações.';
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.message) msg = errInfo.message;
+      } catch (e) {
+        if (error.message) msg = error.message;
+      }
+      showNotification(msg, 'error');
     }
   };
 
-  const handleSaveHistory = () => {
+  const handleSaveHistory = async () => {
     try {
-      updateHistory(historyForm);
+      await updateHistory(historyForm);
       showNotification('Alterações em "Nossa História" salvas com sucesso!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar História:', error);
-      showNotification('Erro ao salvar alterações.', 'error');
+      let msg = 'Erro ao salvar alterações.';
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.message) msg = errInfo.message;
+      } catch (e) {
+        if (error.message) msg = error.message;
+      }
+      showNotification(msg, 'error');
     }
   };
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
     try {
       // Create a sanitized copy for logging to avoid flooding the console with base64 strings
       const sanitizedSettings = {
@@ -169,11 +183,18 @@ export function AdminPanel() {
         }))
       };
       console.log('Salvando configurações:', sanitizedSettings);
-      updateSettings(settingsForm);
+      await updateSettings(settingsForm);
       showNotification('Configurações salvas com sucesso!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar configurações:', error);
-      showNotification('Erro ao salvar configurações.', 'error');
+      let msg = 'Erro ao salvar configurações.';
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.message) msg = errInfo.message;
+      } catch (e) {
+        if (error.message) msg = error.message;
+      }
+      showNotification(msg, 'error');
     }
   };
 
@@ -214,22 +235,34 @@ export function AdminPanel() {
   };
 
   // Generic Save/Delete Handlers
-  const handleSaveItem = <T extends { id?: string }>(
+  const handleSaveItem = async <T extends { id?: string }>(
     item: Partial<T>,
     setItem: (i: Partial<T> | null) => void,
     add: (i: T) => void,
     update: (i: T) => void,
     confirmMsg: string
   ) => {
-    if (item.id) {
-      update(item as T);
-      setItem(null);
-      showNotification(`${confirmMsg} atualizado(a) com sucesso!`);
-    } else {
-      const newItem = { ...item, id: Date.now().toString() } as T;
-      add(newItem);
-      setItem(null);
-      showNotification(`${confirmMsg} criado(a) com sucesso!`);
+    try {
+      if (item.id) {
+        await update(item as T);
+        setItem(null);
+        showNotification(`${confirmMsg} atualizado(a) com sucesso!`);
+      } else {
+        const newItem = { ...item, id: Date.now().toString() } as T;
+        await add(newItem);
+        setItem(null);
+        showNotification(`${confirmMsg} criado(a) com sucesso!`);
+      }
+    } catch (error: any) {
+      console.error(`Erro ao salvar ${confirmMsg}:`, error);
+      let msg = `Erro ao salvar ${confirmMsg}.`;
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.message) msg = errInfo.message;
+      } catch (e) {
+        if (error.message) msg = error.message;
+      }
+      showNotification(msg, 'error');
     }
   };
 
@@ -242,9 +275,18 @@ export function AdminPanel() {
       try {
         await deleteConfirmation.remove(deleteConfirmation.id);
         showNotification(`${deleteConfirmation.confirmMsg} excluído(a) com sucesso!`);
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Erro ao excluir ${deleteConfirmation.confirmMsg}:`, error);
-        showNotification(`Erro ao excluir ${deleteConfirmation.confirmMsg}.`, 'error');
+        let msg = `Erro ao excluir ${deleteConfirmation.confirmMsg}.`;
+        try {
+          // Try to parse the JSON error from handleFirestoreError
+          const errInfo = JSON.parse(error.message);
+          if (errInfo.message) msg = errInfo.message;
+        } catch (e) {
+          // Not a JSON error or standard error
+          if (error.message) msg = error.message;
+        }
+        showNotification(msg, 'error');
       } finally {
         setDeleteConfirmation(null);
       }
@@ -412,6 +454,17 @@ export function AdminPanel() {
             <h2 className="text-xl font-bold">Painel Admin</h2>
           </div>
           
+          {user && user.email?.toLowerCase() !== 'camillasites@gmail.com' && (
+            <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-lg text-red-200 text-[10px] flex flex-col gap-2">
+              <div className="flex items-center gap-2 font-bold text-white">
+                <AlertCircle size={14} />
+                SEM PERMISSÃO
+              </div>
+              <p>Você está logado como <strong>{user.email}</strong>. Este e-mail não pode salvar ou excluir dados.</p>
+              <p>Por favor, use o e-mail: <strong>camillasites@gmail.com</strong></p>
+            </div>
+          )}
+
           {/* Sync Status Indicator */}
           <div className="flex items-center gap-2 text-[10px] mb-8 opacity-80">
             {isSyncing ? (
@@ -1090,6 +1143,53 @@ export function AdminPanel() {
                     <div>
                       <label className="block text-sm font-medium">Senha Admin</label>
                       <input className="w-full p-2 border rounded" type="text" value={settingsForm.adminPassword} onChange={e => setSettingsForm({...settingsForm, adminPassword: e.target.value})} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-stone-50 p-6 rounded-xl border md:col-span-2">
+                  <h4 className="font-bold mb-4 flex items-center gap-2"><ImageIcon size={18} /> Imagem de Fundo do Banner</h4>
+                  <p className="text-sm text-stone-500 mb-4">Esta é a imagem que fica fixa no fundo da primeira seção do site.</p>
+                  <div className="flex flex-col md:flex-row gap-6 items-start">
+                    <div className="w-full md:w-1/2">
+                      <input 
+                        type="file" 
+                        id="hero-bg-input"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            processFile(e.target.files[0], (base64) => setSettingsForm({...settingsForm, heroBgUrl: base64}), { maxSize: 1200, quality: 0.4 });
+                          }
+                        }}
+                        className="hidden"
+                      />
+                      {settingsForm.heroBgUrl ? (
+                        <div className="relative group aspect-video bg-stone-100 rounded-lg overflow-hidden border border-stone-200">
+                          <img src={settingsForm.heroBgUrl} alt="Hero Background" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
+                            <button 
+                              type="button"
+                              onClick={() => document.getElementById('hero-bg-input')?.click()}
+                              className="bg-white text-emerald-900 px-4 py-2 rounded-md text-sm font-bold"
+                            >
+                              Alterar Imagem
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button 
+                          type="button"
+                          onClick={() => document.getElementById('hero-bg-input')?.click()}
+                          className="w-full aspect-video border-2 border-dashed border-stone-300 rounded-lg flex flex-col items-center justify-center text-stone-500 hover:bg-stone-50 transition"
+                        >
+                          <Plus size={32} />
+                          <span className="text-sm mt-2">Selecionar Imagem de Fundo</span>
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex-1 text-sm text-stone-600 space-y-2">
+                      <p><strong>Dica:</strong> Use uma imagem de alta resolução (mínimo 1920x1080) para melhor resultado.</p>
+                      <p>Esta imagem aparecerá por trás do texto e dos slides principais, com um efeito de transparência escura para garantir a leitura.</p>
                     </div>
                   </div>
                 </div>

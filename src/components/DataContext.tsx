@@ -17,6 +17,7 @@ enum OperationType {
 }
 
 interface FirestoreErrorInfo {
+  message: string;
   error: string;
   operationType: OperationType;
   path: string | null;
@@ -36,8 +37,20 @@ interface FirestoreErrorInfo {
 }
 
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const rawError = error instanceof Error ? error.message : String(error);
+  let ptMessage = 'Ocorreu um erro ao processar os dados no servidor.';
+  
+  if (rawError.includes('Missing or insufficient permissions')) {
+    ptMessage = 'Permissão negada pelo servidor. Certifique-se de estar logado como camillasites@gmail.com e que seu e-mail do Google esteja verificado.';
+  } else if (rawError.includes('Quota exceeded') || rawError.includes('resource-exhausted')) {
+    ptMessage = 'Limite de uso diário do Google excedido. O sistema voltará ao normal em breve.';
+  } else if (rawError.includes('offline') || rawError.includes('unavailable')) {
+    ptMessage = 'Erro de conexão. Verifique sua internet.';
+  }
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    message: ptMessage,
+    error: rawError,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -55,8 +68,6 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  // We don't always want to throw if we want the app to keep running, 
-  // but we should at least log it clearly.
   return JSON.stringify(errInfo);
 }
 
@@ -419,7 +430,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     email: 'contato@madeireirapindorama.com.br',
     adminUser: 'admin',
     adminPassword: 'admin*2026',
-    heroSlides: []
+    heroSlides: [],
+    heroBgUrl: 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?q=80&w=2070&auto=format&fit=crop'
   });
 
   const [about, setAbout] = useFirestoreDocument<AboutData>('about', 'global', {
@@ -456,6 +468,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setData(prev => prev.filter(i => i.id !== id));
         const errJson = handleFirestoreError(error, OperationType.CREATE, collectionName);
         handleSyncChange(collectionName, false, errJson);
+        throw new Error(errJson);
       }
     },
     update: async (item: T) => {
@@ -475,6 +488,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         console.error(`[CRUD] Error updating in ${collectionName}:`, error);
         const errJson = handleFirestoreError(error, OperationType.UPDATE, `${collectionName}/${item.id}`);
         handleSyncChange(collectionName, false, errJson);
+        throw new Error(errJson);
       }
     },
     remove: async (id: string) => {
@@ -547,6 +561,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       const errJson = handleFirestoreError(error, OperationType.WRITE, 'settings/global');
       handleSyncChange('settings', false, errJson);
+      throw new Error(errJson);
     }
   };
 
@@ -556,6 +571,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       const errJson = handleFirestoreError(error, OperationType.WRITE, 'about/global');
       handleSyncChange('about', false, errJson);
+      throw new Error(errJson);
     }
   };
 
@@ -565,6 +581,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       const errJson = handleFirestoreError(error, OperationType.WRITE, 'history/global');
       handleSyncChange('history', false, errJson);
+      throw new Error(errJson);
     }
   };
 

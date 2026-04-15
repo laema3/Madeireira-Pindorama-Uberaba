@@ -21,10 +21,13 @@ export function FloatingActions() {
         <a
           href={settings.whatsappUrl}
           onClick={(e) => handleClick(e, settings.whatsappUrl)}
-          className="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition hover:scale-110 flex items-center justify-center animate-bounce"
+          className="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition hover:scale-110 flex items-center justify-center group relative"
           title="Fale Conosco no WhatsApp"
         >
           <MessageCircle size={28} />
+          <span className="absolute -top-12 right-0 bg-emerald-900 text-white text-[10px] py-1 px-2 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Fale conosco no WhatsApp
+          </span>
         </a>
       </div>
 

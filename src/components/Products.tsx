@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { useData } from './DataContext';
 
 export function Products() {
-  const { products } = useData();
+  const { products, settings } = useData();
 
   return (
     <section id="produtos" className="py-16 bg-white">
@@ -31,7 +31,7 @@ export function Products() {
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       e.currentTarget.src = 'https://placehold.co/600x400?text=Sem+Imagem';
@@ -55,7 +55,16 @@ export function Products() {
                   </span>
                 </div>
                 <p className="text-xs text-stone-500 mb-2 uppercase tracking-wider">{product.brand} - {product.subcategory}</p>
-                <p className="text-stone-600">{product.description}</p>
+                <p className="text-stone-600 mb-6">{product.description}</p>
+                
+                <a 
+                  href={`${settings.whatsappUrl}&text=${encodeURIComponent(`Olá! Gostaria de um orçamento para o produto: ${product.name}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  SOLICITAR ORÇAMENTO
+                </a>
               </div>
             </motion.div>
           ))}

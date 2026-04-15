@@ -31,7 +31,7 @@ export function Posts() {
                 <img 
                   src={post.image} 
                   alt={post.title} 
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                  className="w-full h-full object-contain transition-transform duration-300 hover:scale-105"
                   referrerPolicy="no-referrer"
                   onError={(e) => {
                     e.currentTarget.src = 'https://placehold.co/600x400?text=Sem+Imagem';
@@ -72,7 +72,7 @@ export function Posts() {
               <img 
                 src={selectedPost.image} 
                 alt={selectedPost.title} 
-                className="w-full h-64 md:h-80 object-cover"
+                className="w-full h-64 md:h-80 object-contain bg-stone-100"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   e.currentTarget.src = 'https://placehold.co/800x400?text=Sem+Imagem';

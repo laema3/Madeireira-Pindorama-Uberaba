@@ -53,7 +53,7 @@ export function Works() {
                   <img 
                     src={work.images[0]} 
                     alt={work.title} 
-                    className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
+                    className="w-full h-full object-contain transition duration-500 group-hover:scale-110"
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';

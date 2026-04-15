@@ -52,7 +52,7 @@ export function Hero() {
       {/* Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1581244277943-fe4a9c777189?q=80&w=2070&auto=format&fit=crop")' }}
+        style={{ backgroundImage: `url("${settings.heroBgUrl || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?q=80&w=2070&auto=format&fit=crop'}")` }}
       ></div>
       
       {/* Dark Overlay for Text Readability (Transparency) */}
