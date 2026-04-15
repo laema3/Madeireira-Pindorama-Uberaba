@@ -57,9 +57,22 @@ export function AIChat() {
         })
       });
 
+      const contentType = response.headers.get('content-type');
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro na resposta da IA');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Erro ${response.status}`);
+        } else {
+          const textError = await response.text();
+          console.error('Non-JSON error response:', textError);
+          throw new Error(`Erro do servidor (${response.status}): ${textError.substring(0, 50)}...`);
+        }
+      }
+
+      if (!contentType || !contentType.includes('application/json')) {
+        const textResponse = await response.text();
+        console.error('Expected JSON but got:', textResponse);
+        throw new Error('Resposta do servidor inválida (não é JSON)');
       }
 
       const data = await response.json();

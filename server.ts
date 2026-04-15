@@ -4,6 +4,9 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,11 +28,13 @@ async function startServer() {
 
   // AI Chat API Route
   app.post('/api/chat', async (req, res) => {
+    console.log('--- AI CHAT REQUEST RECEIVED ---');
     try {
       const { messages, userMessage, context } = req.body;
       const apiKey = process.env.GEMINI_API_KEY;
 
       if (!apiKey) {
+        console.error('ERROR: GEMINI_API_KEY is not defined in environment variables');
         return res.status(500).json({ error: 'Configuração de IA ausente no servidor.' });
       }
 
