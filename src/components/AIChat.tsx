@@ -33,6 +33,7 @@ export function AIChat() {
     try {
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
+        console.error('Gemini API Key is missing in process.env');
         throw new Error('API Key not found');
       }
 
@@ -43,12 +44,12 @@ export function AIChat() {
         Você é o assistente virtual da Madeireira Pindorama.
         Informações da Empresa:
         - Nome: Madeireira Pindorama
-        - Endereço: ${settings.address}
-        - Telefone: ${settings.phone}
-        - Email: ${settings.email}
-        - Sobre: ${about.description}
-        - Categorias de Produtos: ${categories.map(c => c.name).join(', ')}
-        - Alguns Produtos: ${products.slice(0, 10).map(p => p.name).join(', ')}
+        - Endereço: ${settings.address || 'Não informado'}
+        - Telefone: ${settings.phone || 'Não informado'}
+        - Email: ${settings.email || 'Não informado'}
+        - Sobre: ${about.description || 'Uma madeireira de tradição e qualidade.'}
+        - Categorias de Produtos: ${categories.map(c => c.name).join(', ') || 'Madeiras, Ferragens, Ferramentas'}
+        - Alguns Produtos: ${products.slice(0, 10).map(p => p.name).join(', ') || 'Vigamento, Tábuas, Ripas'}
         
         Instruções:
         - Seja cordial, prestativo e profissional.
@@ -58,7 +59,7 @@ export function AIChat() {
       `;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-flash-latest",
         contents: [
           { role: 'user', parts: [{ text: context }] },
           ...messages.map(m => ({
