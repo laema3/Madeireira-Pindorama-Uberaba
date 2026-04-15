@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from './DataContext';
 import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post } from '../types';
-import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText, Video, RefreshCw, Download, Upload, Sparkles } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText, Video, RefreshCw, Download, Upload, Sparkles, AlertCircle } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 import { GoogleGenAI } from '@google/genai';
@@ -237,13 +237,25 @@ export function AdminPanel() {
     setDeleteConfirmation({ id, remove, confirmMsg });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteConfirmation) {
-      deleteConfirmation.remove(deleteConfirmation.id);
-      showNotification(`${deleteConfirmation.confirmMsg} excluído(a) com sucesso!`);
-      setDeleteConfirmation(null);
+      try {
+        await deleteConfirmation.remove(deleteConfirmation.id);
+        showNotification(`${deleteConfirmation.confirmMsg} excluído(a) com sucesso!`);
+      } catch (error) {
+        console.error(`Erro ao excluir ${deleteConfirmation.confirmMsg}:`, error);
+        showNotification(`Erro ao excluir ${deleteConfirmation.confirmMsg}.`, 'error');
+      } finally {
+        setDeleteConfirmation(null);
+      }
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      console.log(`[AUTH] User logged in: ${user.email} (Verified: ${user.emailVerified})`);
+    }
+  }, [user]);
 
   const handleGoogleLogin = async () => {
     setIsLoggingIn(true);
@@ -315,6 +327,12 @@ export function AdminPanel() {
           </div>
           <h2 className="text-2xl font-bold text-emerald-900 mb-2">Acesso Administrativo</h2>
           <p className="text-stone-500 mb-8">Faça login para continuar</p>
+          
+          {user && (
+            <div className="mb-4 p-3 bg-stone-50 rounded border border-stone-200 text-xs text-stone-600">
+              Logado como: <strong>{user.email}</strong>
+            </div>
+          )}
           
           <button 
             onClick={handleGoogleLogin} 
@@ -421,29 +439,29 @@ export function AdminPanel() {
             <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'dashboard' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
               <LayoutDashboard size={20} /> Dashboard
             </button>
-            <button onClick={() => setActiveTab('clientes')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'clientes' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <UserCheck size={20} /> Clientes
-            </button>
-            <button onClick={() => setActiveTab('produtos')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'produtos' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <Package size={20} /> Produtos
-            </button>
-            <button onClick={() => setActiveTab('obras')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'obras' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <Hammer size={20} /> Obras
-            </button>
-            <button onClick={() => setActiveTab('profissionais')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'profissionais' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <Briefcase size={20} /> Profissionais
+            <button onClick={() => setActiveTab('atuacao')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'atuacao' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <MapPin size={20} /> Área de Atuação
             </button>
             <button onClick={() => setActiveTab('categorias')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'categorias' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
               <List size={20} /> Categorias
             </button>
+            <button onClick={() => setActiveTab('clientes')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'clientes' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <UserCheck size={20} /> Clientes
+            </button>
+            <button onClick={() => setActiveTab('obras')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'obras' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Hammer size={20} /> Obras
+            </button>
             <button onClick={() => setActiveTab('parceiros')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'parceiros' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
               <Users size={20} /> Parceiros
             </button>
-            <button onClick={() => setActiveTab('atuacao')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'atuacao' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <MapPin size={20} /> Área de Atuação
-            </button>
             <button onClick={() => setActiveTab('postagens')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'postagens' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
               <FileText size={20} /> Postagens
+            </button>
+            <button onClick={() => setActiveTab('produtos')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'produtos' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Package size={20} /> Produtos
+            </button>
+            <button onClick={() => setActiveTab('profissionais')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'profissionais' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Briefcase size={20} /> Profissionais
             </button>
             <button onClick={() => setActiveTab('sobre')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'sobre' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
               <Info size={20} /> Sobre Nós
@@ -454,6 +472,10 @@ export function AdminPanel() {
             <button onClick={() => setActiveTab('sincronizacao')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'sincronizacao' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
               <RefreshCw size={20} /> Sincronização
             </button>
+            <div className="px-4 py-3 mb-4 bg-emerald-800/30 rounded-lg border border-emerald-700/50">
+              <p className="text-[10px] uppercase tracking-wider text-emerald-300 opacity-70 mb-1">Administrador</p>
+              <p className="text-sm font-medium truncate" title={user?.email}>{user?.email}</p>
+            </div>
             <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition hover:bg-red-800/50 text-red-200 hover:text-white mt-4">
               <LogOut size={20} /> Sair
             </button>
@@ -600,6 +622,23 @@ export function AdminPanel() {
                     />
                   </label>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sync Error Alert */}
+          {lastSyncError && (
+            <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded shadow-sm flex items-start gap-3">
+              <AlertCircle className="shrink-0 mt-0.5" size={20} />
+              <div className="flex-1">
+                <p className="font-bold">Erro de Sincronização / Permissão</p>
+                <p className="text-sm opacity-90">Ocorreu um erro ao tentar salvar ou carregar dados. Verifique se você tem permissão de administrador.</p>
+                <details className="mt-2 text-xs cursor-pointer">
+                  <summary className="hover:underline">Ver detalhes técnicos</summary>
+                  <pre className="mt-2 p-2 bg-red-200/50 rounded overflow-x-auto whitespace-pre-wrap font-mono">
+                    {typeof lastSyncError === 'string' ? lastSyncError : JSON.stringify(lastSyncError, null, 2)}
+                  </pre>
+                </details>
               </div>
             </div>
           )}
@@ -1525,17 +1564,25 @@ export function AdminPanel() {
                         </select>
                       </div>
                       <div className="col-span-2">
-                        <label className="block text-sm font-medium">Imagem</label>
-                        <input 
-                          type="file" 
-                          accept="image/*"
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files[0] && editingProduct) {
-                              processFile(e.target.files[0], (base64) => setEditingProduct({...editingProduct, image: base64}), { maxSize: 600, quality: 0.5, preserveTransparency: false });
-                            }
-                          }}
-                          className="w-full p-2 border rounded"
-                        />
+                        <label className="block text-sm font-medium mb-2">Imagem do Produto</label>
+                        <div className="relative border-2 border-dashed border-stone-300 rounded-lg p-4 bg-stone-50 hover:bg-stone-100 transition cursor-pointer flex flex-col items-center justify-center gap-2">
+                          {editingProduct.image ? (
+                            <img src={editingProduct.image} alt="Preview" className="max-h-32 object-contain" />
+                          ) : (
+                            <ImageIcon className="text-stone-400" size={32} />
+                          )}
+                          <span className="text-sm text-stone-500">{editingProduct.image ? 'Clique para alterar' : 'Clique para selecionar imagem'}</span>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0] && editingProduct) {
+                                processFile(e.target.files[0], (base64) => setEditingProduct({...editingProduct, image: base64}), { maxSize: 600, quality: 0.5, preserveTransparency: false });
+                              }
+                            }}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          />
+                        </div>
                       </div>
                       <div className="col-span-2">
                         <label className="block text-sm font-medium">Descrição</label>

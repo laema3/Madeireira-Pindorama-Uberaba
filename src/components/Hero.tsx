@@ -6,29 +6,24 @@ import { useData } from './DataContext';
 
 const DEFAULT_IMAGES = [
   {
-    url: 'https://picsum.photos/seed/lumber1/1920/1080',
+    url: 'https://images.unsplash.com/photo-1622675363204-20482388a81c?q=80&w=2070&auto=format&fit=crop',
+    title: 'Tradição em Marcenaria',
+    description: 'Profissionais qualificados para transformar madeira em arte.'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=2069&auto=format&fit=crop',
     title: 'Qualidade que Constrói Sonhos',
     description: 'As melhores madeiras para sua obra ou reforma.'
   },
   {
-    url: 'https://picsum.photos/seed/lumber2/1920/1080',
+    url: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?q=80&w=2070&auto=format&fit=crop',
     title: 'Sustentabilidade e Confiança',
     description: 'Madeiras certificadas e de origem legal.'
   },
   {
-    url: 'https://picsum.photos/seed/lumber3/1920/1080',
+    url: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?q=80&w=2070&auto=format&fit=crop',
     title: 'Variedade em Acabamentos',
     description: 'Decks, forros e assoalhos com o melhor preço.'
-  },
-  {
-    url: 'https://picsum.photos/seed/lumber4/1920/1080',
-    title: 'Entrega Rápida e Segura',
-    description: 'Logística eficiente para atender sua necessidade.'
-  },
-  {
-    url: 'https://picsum.photos/seed/lumber5/1920/1080',
-    title: 'Parceria com Profissionais',
-    description: 'Soluções completas para marceneiros e carpinteiros.'
   }
 ];
 
@@ -57,7 +52,7 @@ export function Hero() {
       {/* Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=2069&auto=format&fit=crop")' }}
+        style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1581244277943-fe4a9c777189?q=80&w=2070&auto=format&fit=crop")' }}
       ></div>
       
       {/* Dark Overlay for Text Readability (Transparency) */}

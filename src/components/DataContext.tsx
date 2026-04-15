@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work, ServiceArea, Post } from '../types';
 import { db, auth } from '../lib/firebase';
 import { 
@@ -171,9 +171,48 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
+      if (u) {
+        console.log(`[Auth] User logged in: ${u.email} (Verified: ${u.emailVerified})`);
+      } else {
+        console.log('[Auth] User logged out');
+      }
     });
     return () => unsubscribe();
   }, []);
+
+  const pendingDeletionsRef = useRef<Record<string, Set<string>>>({});
+  const [pendingDeletions, setPendingDeletions] = useState<Record<string, Set<string>>>(() => {
+    try {
+      const saved = localStorage.getItem('pending_deletions');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const result: Record<string, Set<string>> = {};
+        for (const key in parsed) {
+          result[key] = new Set(parsed[key]);
+        }
+        return result;
+      }
+    } catch (e) {
+      console.warn('Failed to load pending deletions from cache:', e);
+    }
+    return {};
+  });
+
+  // Sync ref and localStorage with state
+  useEffect(() => {
+    pendingDeletionsRef.current = pendingDeletions;
+    try {
+      const toSave: Record<string, string[]> = {};
+      for (const key in pendingDeletions) {
+        if (pendingDeletions[key].size > 0) {
+          toSave[key] = Array.from(pendingDeletions[key]);
+        }
+      }
+      localStorage.setItem('pending_deletions', JSON.stringify(toSave));
+    } catch (e) {
+      console.warn('Failed to save pending deletions to cache:', e);
+    }
+  }, [pendingDeletions]);
 
   const handleSyncChange = (key: string, syncing: boolean, error: string | null = null, firstSync: boolean = false) => {
     setSyncingStates(prev => ({ ...prev, [key]: syncing }));
@@ -215,9 +254,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const cached = loadFromCache(collectionName);
       return cached || initialData;
     });
-    const [hasSyncedOnce, setHasSyncedOnce] = useState(false);
+    const hasSyncedOnce = React.useRef(false);
 
     useEffect(() => {
+      if (!enabled) {
+        handleSyncChange(collectionName, false, null, true);
+        return;
+      }
+
       handleSyncChange(collectionName, true);
       let unsubscribe: () => void;
       let retryCount = 0;
@@ -226,17 +270,48 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const setupListener = () => {
         const q = query(collection(db, collectionName));
         unsubscribe = onSnapshot(q, (snapshot) => {
-          const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+          let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+          const isFromServer = !snapshot.metadata.fromCache;
+          
+          // Filter out pending deletions
+          const pending = pendingDeletionsRef.current[collectionName];
+          if (pending && pending.size > 0) {
+            const stillPending = new Set(pending);
+            let changed = false;
+
+            // If data is from server, we can remove items from pending if they are no longer in the snapshot
+            if (isFromServer) {
+              for (const id of Array.from(stillPending)) {
+                if (!items.some(item => (item as any).id === id)) {
+                  stillPending.delete(id);
+                  changed = true;
+                }
+              }
+            }
+
+            if (changed) {
+              setPendingDeletions(prev => ({ ...prev, [collectionName]: stillPending }));
+            }
+
+            items = items.filter(item => !stillPending.has((item as any).id));
+          }
+
+          const source = isFromServer ? "SERVER" : "LOCAL CACHE";
+          console.log(`[Firestore] Data received for ${collectionName} from ${source}:`, items.length, "items");
+          
           setData(items);
           saveToCache(collectionName, items);
           
-          const isFirstSync = !hasSyncedOnce;
-          if (isFirstSync) setHasSyncedOnce(true);
+          const isFirst = !hasSyncedOnce.current;
+          if (isFirst) {
+            hasSyncedOnce.current = true;
+          }
           
-          handleSyncChange(collectionName, snapshot.metadata.hasPendingWrites, null, isFirstSync);
+          handleSyncChange(collectionName, snapshot.metadata.hasPendingWrites, null, isFirst);
           retryCount = 0; // Reset retry count on success
         }, (error) => {
           const errJson = handleFirestoreError(error, OperationType.GET, collectionName);
+          const isFirst = !hasSyncedOnce.current;
           
           // If quota exceeded, we use cache and don't show error as fatal
           if (error.code === 'resource-exhausted' || error.message.includes('Quota')) {
@@ -253,18 +328,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
             console.log(`Retrying connection for ${collectionName} (${retryCount}/${maxRetries})...`);
             setTimeout(setupListener, 2000 * retryCount); // Exponential backoff
           } else {
-            handleSyncChange(collectionName, false, errJson, true);
+            handleSyncChange(collectionName, false, errJson, isFirst);
           }
         });
       };
 
-      if (enabled) {
-        setupListener();
-      } else {
-        setData(initialData);
-        // If disabled (like clients for non-admin), mark as done to not block loader
-        handleSyncChange(collectionName, false, null, true);
-      }
+      setupListener();
 
       return () => {
         if (unsubscribe) unsubscribe();
@@ -281,23 +350,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const cached = loadFromCache(cacheKey);
       return cached || initialData;
     });
-    const [hasSyncedOnce, setHasSyncedOnce] = useState(false);
+    const hasSyncedOnce = React.useRef(false);
 
     useEffect(() => {
       handleSyncChange(cacheKey, true);
       const unsubscribe = onSnapshot(doc(db, collectionName, docId), (docSnap) => {
+        const source = docSnap.metadata.fromCache ? "LOCAL CACHE" : "SERVER";
+        const isFirst = !hasSyncedOnce.current;
+
         if (docSnap.exists()) {
           const docData = docSnap.data() as T;
+          console.log(`[Firestore] Doc ${collectionName}/${docId} received from ${source}`);
           setData(docData);
           saveToCache(cacheKey, docData);
-        } 
+        } else {
+          console.log(`[Firestore] Doc ${collectionName}/${docId} DOES NOT EXIST on ${source}`);
+        }
         
-        const isFirstSync = !hasSyncedOnce;
-        if (isFirstSync) setHasSyncedOnce(true);
+        if (isFirst) {
+          hasSyncedOnce.current = true;
+        }
 
-        handleSyncChange(cacheKey, docSnap.metadata.hasPendingWrites, null, isFirstSync);
+        handleSyncChange(cacheKey, docSnap.metadata.hasPendingWrites, null, isFirst);
       }, (error) => {
         const errJson = handleFirestoreError(error, OperationType.GET, `${collectionName}/${docId}`);
+        const isFirst = !hasSyncedOnce.current;
         
         // If quota exceeded, use cache
         if (error.code === 'resource-exhausted' || error.message.includes('Quota')) {
@@ -308,7 +385,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        handleSyncChange(cacheKey, false, errJson, true);
+        handleSyncChange(cacheKey, false, errJson, isFirst);
       });
       return () => unsubscribe();
     }, [collectionName, docId]);
@@ -317,16 +394,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }
 
   // Initialize states with Firestore - Start with empty arrays instead of mock data
-  const [products] = useFirestoreCollection<Product>('products', []);
-  const [partners] = useFirestoreCollection<Partner>('partners', []);
-  const [professionals] = useFirestoreCollection<Professional>('professionals', []);
+  const [products, setProducts] = useFirestoreCollection<Product>('products', []);
+  const [partners, setPartners] = useFirestoreCollection<Partner>('partners', []);
+  const [professionals, setProfessionals] = useFirestoreCollection<Professional>('professionals', []);
   // Only fetch clients if user is logged in (admin)
-  const [clients] = useFirestoreCollection<Client>('clients', [], !!user);
-  const [categories] = useFirestoreCollection<Category>('categories', []);
-  const [subcategories] = useFirestoreCollection<Subcategory>('subcategories', []);
-  const [works] = useFirestoreCollection<Work>('works', []);
-  const [serviceAreas] = useFirestoreCollection<ServiceArea>('service_areas', []);
-  const [posts] = useFirestoreCollection<Post>('posts', []);
+  const [clients, setClients] = useFirestoreCollection<Client>('clients', [], !!user);
+  const [categories, setCategories] = useFirestoreCollection<Category>('categories', []);
+  const [subcategories, setSubcategories] = useFirestoreCollection<Subcategory>('subcategories', []);
+  const [works, setWorks] = useFirestoreCollection<Work>('works', []);
+  const [serviceAreas, setServiceAreas] = useFirestoreCollection<ServiceArea>('service_areas', []);
+  const [posts, setPosts] = useFirestoreCollection<Post>('posts', []);
 
   const [settings, setSettings] = useFirestoreDocument<Settings>('settings', 'global', {
     logoUrl: '',
@@ -358,44 +435,111 @@ export function DataProvider({ children }: { children: ReactNode }) {
   });
 
   // CRUD Operations
-  const createCrud = <T extends { id?: string }>(collectionName: string) => ({
+  const createCrud = <T extends { id?: string }>(collectionName: string, setData: React.Dispatch<React.SetStateAction<T[]>>) => ({
     add: async (item: T) => {
+      const id = item.id || Date.now().toString();
+      const newItem = { ...item, id };
+      
+      console.log(`[CRUD] Adding to ${collectionName}:`, newItem);
+      
+      // Optimistic update
+      setData(prev => [...prev, newItem]);
+      
       try {
-        await addDoc(collection(db, collectionName), item);
+        const { id: _, ...data } = newItem;
+        await setDoc(doc(db, collectionName, id), data as any);
+        console.log(`[CRUD] Successfully added to ${collectionName}`);
+        handleSyncChange(collectionName, false, null); // Clear error on success
       } catch (error: any) {
+        console.error(`[CRUD] Error adding to ${collectionName}:`, error);
+        // Rollback
+        setData(prev => prev.filter(i => i.id !== id));
         const errJson = handleFirestoreError(error, OperationType.CREATE, collectionName);
         handleSyncChange(collectionName, false, errJson);
       }
     },
     update: async (item: T) => {
       if (!item.id) return;
+      
+      console.log(`[CRUD] Updating in ${collectionName}:`, item);
+      
+      // Optimistic update
+      setData(prev => prev.map(i => i.id === item.id ? item : i));
+      
       try {
         const { id, ...data } = item;
-        await updateDoc(doc(db, collectionName, id), data as any);
+        await setDoc(doc(db, collectionName, id), data as any, { merge: true });
+        console.log(`[CRUD] Successfully updated in ${collectionName}`);
+        handleSyncChange(collectionName, false, null); // Clear error on success
       } catch (error: any) {
+        console.error(`[CRUD] Error updating in ${collectionName}:`, error);
         const errJson = handleFirestoreError(error, OperationType.UPDATE, `${collectionName}/${item.id}`);
         handleSyncChange(collectionName, false, errJson);
       }
     },
     remove: async (id: string) => {
+      console.log(`[CRUD] Removing from ${collectionName}:`, id);
+      
+      // Add to pending deletions
+      setPendingDeletions(prev => {
+        const newSet = new Set(prev[collectionName] || []);
+        newSet.add(id);
+        return { ...prev, [collectionName]: newSet };
+      });
+
+      // Capture current state for rollback BEFORE updating
+      let previousData: T[] = [];
+      setData(prev => {
+        previousData = [...prev];
+        return prev.filter(item => item.id !== id);
+      });
+      
       try {
-        await deleteDoc(doc(db, collectionName, id));
+        const docRef = doc(db, collectionName, id);
+        await deleteDoc(docRef);
+        
+        // Update cache immediately
+        const currentCached = loadFromCache(collectionName);
+        if (Array.isArray(currentCached)) {
+          const newCached = currentCached.filter((i: any) => i.id !== id);
+          saveToCache(collectionName, newCached);
+        }
+        
+        console.log(`[CRUD] Successfully removed from ${collectionName} with ID: ${id}`);
+        handleSyncChange(collectionName, false, null);
+        return true; // Success
       } catch (error: any) {
+        console.error(`[CRUD] Error removing from ${collectionName}:`, id, error);
+        
+        // Remove from pending deletions on error since it failed
+        setPendingDeletions(prev => {
+          const newSet = new Set(prev[collectionName] || []);
+          newSet.delete(id);
+          return { ...prev, [collectionName]: newSet };
+        });
+
+        // Rollback on failure
+        if (previousData && previousData.length > 0) {
+          setData(previousData);
+        }
         const errJson = handleFirestoreError(error, OperationType.DELETE, `${collectionName}/${id}`);
         handleSyncChange(collectionName, false, errJson);
+        throw error; // Re-throw to be handled by UI
       }
+      // Note: We no longer clear pendingDeletions in finally. 
+      // It will be cleared by the onSnapshot when the server confirms the deletion.
     }
   });
 
-  const productCrud = createCrud<Product>('products');
-  const partnerCrud = createCrud<Partner>('partners');
-  const clientCrud = createCrud<Client>('clients');
-  const categoryCrud = createCrud<Category>('categories');
-  const subcategoryCrud = createCrud<Subcategory>('subcategories');
-  const workCrud = createCrud<Work>('works');
-  const professionalCrud = createCrud<Professional>('professionals');
-  const serviceAreaCrud = createCrud<ServiceArea>('service_areas');
-  const postCrud = createCrud<Post>('posts');
+  const productCrud = createCrud<Product>('products', setProducts);
+  const partnerCrud = createCrud<Partner>('partners', setPartners);
+  const clientCrud = createCrud<Client>('clients', setClients);
+  const categoryCrud = createCrud<Category>('categories', setCategories);
+  const subcategoryCrud = createCrud<Subcategory>('subcategories', setSubcategories);
+  const workCrud = createCrud<Work>('works', setWorks);
+  const professionalCrud = createCrud<Professional>('professionals', setProfessionals);
+  const serviceAreaCrud = createCrud<ServiceArea>('service_areas', setServiceAreas);
+  const postCrud = createCrud<Post>('posts', setPosts);
 
   const updateSettingsFn = async (newSettings: Settings) => {
     try {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, X, TreePine, Search, User, Phone, MessageCircle, ChevronDown, Home, Info, Package, Target, Lightbulb, Hammer, Users, UserCheck, Mail } from 'lucide-react';
+import { Menu, X, TreePine, Search, Phone, MessageCircle, ChevronDown, Home, Info, Package, Target, Lightbulb, Hammer, Users, UserCheck, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLoader } from './LoaderContext';
@@ -80,16 +80,10 @@ export function Header() {
   };
 
   return (
-    <header className="bg-white/95 backdrop-blur-sm shadow-sm sticky top-0 z-40">
+    <header className="bg-emerald-900 shadow-sm sticky top-0 z-40">
       {/* Top Bar */}
-      <div className="bg-emerald-900 text-white py-1 px-4 hidden sm:block">
-        <div className="max-w-7xl mx-auto flex justify-end items-center text-[10px] uppercase tracking-widest font-bold">
-          <div className="flex gap-4">
-            <button className="hover:text-emerald-200 transition flex items-center gap-1">
-              <User size={10} />
-              <span>Área do Cliente</span>
-            </button>
-          </div>
+      <div className="bg-emerald-950 text-white px-4 hidden sm:block h-8">
+        <div className="max-w-7xl mx-auto flex justify-end items-center h-full text-[10px] uppercase tracking-widest font-bold">
         </div>
       </div>
 
@@ -108,13 +102,13 @@ export function Header() {
                   }}
                 />
               ) : (
-                <div className="bg-emerald-900 p-2 rounded-lg text-white">
+                <div className="bg-white p-2 rounded-lg text-emerald-900">
                   <TreePine size={32} />
                 </div>
               )}
               <div className="flex flex-col items-center text-center">
-                <span className="font-bold text-emerald-900 text-base md:text-lg leading-tight">Madeireira Pindorama</span>
-                <span className="text-stone-500 text-xs md:text-sm font-medium">Madeiras e Acabamentos</span>
+                <span className="font-bold text-white text-base md:text-lg leading-tight">Madeireira Pindorama</span>
+                <span className="text-stone-300 text-xs md:text-sm font-medium">Madeiras e Acabamentos</span>
               </div>
             </Link>
           </div>
@@ -126,22 +120,22 @@ export function Header() {
                   {item.submenu ? (
                     <>
                       <button
-                        className="text-stone-700 hover:text-white hover:bg-emerald-700 font-semibold text-base px-3 py-2 rounded-lg transition-colors flex items-center gap-2"
+                        className="text-white hover:bg-emerald-800 font-semibold text-base px-3 py-2 rounded-lg transition-colors flex items-center gap-2"
                       >
-                        <item.icon size={18} />
+                        <item.icon size={18} className="text-yellow-400" />
                         {item.label}
                         <ChevronDown size={16} className="group-hover:rotate-180 transition-transform" />
                       </button>
-                      <div className="absolute left-0 top-full mt-2 w-48 bg-white border border-stone-100 shadow-xl rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-hidden">
+                      <div className="absolute left-0 top-full mt-2 w-48 bg-emerald-800 border border-emerald-700 shadow-xl rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-hidden">
                         <div className="py-2">
                           {item.submenu.map((sub) => (
                             <Link
                               key={sub.label}
                               to={sub.href}
                               onClick={(e) => handleNavClick(e as any, sub.href)}
-                              className="flex items-center gap-2 px-4 py-2 text-sm text-stone-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                              className="flex items-center gap-2 px-4 py-2 text-sm text-white hover:bg-emerald-700 transition-colors"
                             >
-                              <sub.icon size={16} />
+                              <sub.icon size={16} className="text-yellow-400" />
                               {sub.label}
                             </Link>
                           ))}
@@ -152,9 +146,9 @@ export function Header() {
                     <Link
                       to={item.href}
                       onClick={(e) => handleNavClick(e as any, item.href)}
-                      className="text-stone-700 hover:text-white hover:bg-emerald-700 font-semibold text-base px-3 py-2 rounded-lg transition-colors flex items-center gap-2"
+                      className="text-white hover:bg-emerald-800 font-semibold text-base px-3 py-2 rounded-lg transition-colors flex items-center gap-2"
                     >
-                      <item.icon size={18} />
+                      <item.icon size={18} className="text-yellow-400" />
                       {item.label}
                     </Link>
                   )}
@@ -173,13 +167,13 @@ export function Header() {
               </a>
 
               <button
-                className="lg:hidden p-2 text-stone-600"
+                className="lg:hidden p-2 text-white"
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
               >
                 <Search size={24} />
               </button>
               <button
-                className="lg:hidden p-2 text-stone-600"
+                className="lg:hidden p-2 text-white"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
               >
                 {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -206,7 +200,7 @@ export function Header() {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-stone-100 max-h-[80vh] overflow-y-auto">
+        <div className="lg:hidden bg-emerald-900 border-t border-emerald-800 max-h-[80vh] overflow-y-auto">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             {navItems.map((item) => (
               <div key={item.label}>
@@ -214,24 +208,24 @@ export function Header() {
                   <>
                     <button
                       onClick={() => setActiveSubmenu(activeSubmenu === item.label ? null : item.label)}
-                      className="w-full flex justify-between items-center px-3 py-2 text-lg font-medium text-stone-600 hover:text-white hover:bg-emerald-700 rounded-md transition-colors duration-200"
+                      className="w-full flex justify-between items-center px-3 py-2 text-lg font-medium text-white hover:bg-emerald-800 rounded-md transition-colors duration-200"
                     >
                       <span className="flex items-center gap-2">
-                        <item.icon size={20} />
+                        <item.icon size={20} className="text-yellow-400" />
                         {item.label}
                       </span>
                       <ChevronDown size={20} className={`transition-transform ${activeSubmenu === item.label ? 'rotate-180' : ''}`} />
                     </button>
                     {activeSubmenu === item.label && (
-                      <div className="bg-stone-50 rounded-md mt-1 ml-4 space-y-1">
+                      <div className="bg-emerald-950 rounded-md mt-1 ml-4 space-y-1">
                         {item.submenu.map((sub) => (
                           <Link
                             key={sub.label}
                             to={sub.href}
                             onClick={(e) => handleNavClick(e as any, sub.href)}
-                            className="flex items-center gap-2 px-3 py-2 text-base font-medium text-stone-500 hover:text-emerald-700"
+                            className="flex items-center gap-2 px-3 py-2 text-base font-medium text-stone-300 hover:text-white"
                           >
-                            <sub.icon size={18} />
+                            <sub.icon size={18} className="text-yellow-400" />
                             {sub.label}
                           </Link>
                         ))}
@@ -242,28 +236,24 @@ export function Header() {
                   <Link
                     to={item.href}
                     onClick={(e) => handleNavClick(e as any, item.href)}
-                    className="flex items-center gap-2 px-3 py-2 text-lg font-medium text-stone-600 hover:text-white hover:bg-emerald-700 rounded-md transition-colors duration-200"
+                    className="flex items-center gap-2 px-3 py-2 text-lg font-medium text-white hover:bg-emerald-800 rounded-md transition-colors duration-200"
                   >
-                    <item.icon size={20} />
+                    <item.icon size={20} className="text-yellow-400" />
                     {item.label}
                   </Link>
                 )}
               </div>
             ))}
-            <div className="border-t border-stone-100 mt-4 pt-4 pb-2">
+            <div className="border-t border-emerald-800 mt-4 pt-4 pb-2">
               <div className="flex flex-col gap-3 px-3">
-                <a href={`tel:${settings.phone}`} className="flex items-center gap-3 text-stone-600">
-                  <Phone size={18} />
+                <a href={`tel:${settings.phone}`} className="flex items-center gap-3 text-stone-300">
+                  <Phone size={18} className="text-yellow-400" />
                   <span>{settings.phone}</span>
                 </a>
-                <a href={settings.whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-stone-600">
-                  <MessageCircle size={18} />
+                <a href={settings.whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-stone-300">
+                  <MessageCircle size={18} className="text-yellow-400" />
                   <span>WhatsApp</span>
                 </a>
-                <button className="flex items-center gap-3 text-emerald-700 font-bold mt-2">
-                  <User size={18} />
-                  <span>Login / Cadastrar</span>
-                </button>
               </div>
             </div>
           </div>

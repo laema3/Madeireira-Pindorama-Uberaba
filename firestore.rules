@@ -109,10 +109,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Check if user is admin (using hardcoded email for bootstrapping or custom claim/role if implemented)
+    // Check if user is admin
     function isAdmin() {
       return isAuthenticated() && 
-        (request.auth.token.email == "camillasites@gmail.com");
+        (request.auth.token.email == "camillasites@gmail.com"); 
+        // Note: Simplified for debugging - allowing any authenticated session with this email.
     }
 
     // Validate required fields exist
@@ -152,7 +153,7 @@ service cloud.firestore {
 
     // Validate optional string (if present, must be string and within length)
     function isValidOptionalString(field, minLen, maxLen) {
-      return !('field' in request.resource.data) ||
+      return !(field in request.resource.data) ||
              (request.resource.data[field] is string &&
               request.resource.data[field].size() >= minLen &&
               request.resource.data[field].size() <= maxLen);
@@ -251,6 +252,14 @@ service cloud.firestore {
              data.description is string && data.description.size() < 5000 &&
              data.image is string && isValidUrl(data.image) &&
              (!('videoUrl' in data) || (data.videoUrl is string && isValidUrl(data.videoUrl)));
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+
+    match /_connection_test_/{docId} {
+      allow read: if true;
     }
 
     // ===============================================================
