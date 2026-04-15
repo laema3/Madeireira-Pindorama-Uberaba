@@ -26,41 +26,6 @@ async function startServer() {
 
   app.use(express.json({ limit: '50mb' }));
 
-  // AI Chat API Route
-  app.post('/api/chat', async (req, res) => {
-    console.log('--- AI CHAT REQUEST RECEIVED ---');
-    try {
-      const { messages, userMessage, context } = req.body;
-      const apiKey = process.env.GEMINI_API_KEY;
-
-      if (!apiKey) {
-        console.error('ERROR: GEMINI_API_KEY is not defined in environment variables');
-        return res.status(500).json({ error: 'Configuração de IA ausente no servidor.' });
-      }
-
-      const genAI = new GoogleGenAI({ apiKey });
-      
-      const chatHistory = messages.map((m: any) => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }]
-      }));
-
-      const result = await genAI.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [
-          { role: 'user', parts: [{ text: context }] },
-          ...chatHistory,
-          { role: 'user', parts: [{ text: userMessage }] }
-        ]
-      });
-
-      res.json({ text: result.text });
-    } catch (error: any) {
-      console.error('Server AI Error:', error);
-      res.status(500).json({ error: error.message || 'Erro interno no servidor de IA' });
-    }
-  });
-
   // API Routes
   app.get('/api/data/:key', (req, res) => {
     const row = db.prepare('SELECT value FROM store WHERE key = ?').get(req.params.key) as { value: string } | undefined;

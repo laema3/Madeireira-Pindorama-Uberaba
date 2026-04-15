@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 import { useData } from './DataContext';
 
 export function AIChat() {
@@ -30,6 +31,14 @@ export function AIChat() {
     setIsLoading(true);
 
     try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey || apiKey === 'undefined' || apiKey === '') {
+        console.error('Gemini API Key is missing or empty');
+        throw new Error('Chave de API não configurada');
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      
       // Prepare context about the company
       const context = `Você é o assistente virtual da Madeireira Pindorama.
         Informações da Empresa:
@@ -47,36 +56,22 @@ export function AIChat() {
         - Se não souber algo específico, peça para o cliente entrar em contato via WhatsApp: ${settings.whatsappUrl}
         - Foque em tirar dúvidas sobre madeiras, projetos e produtos da loja.`;
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages,
-          userMessage,
-          context
-        })
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          ...messages.map(m => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            parts: [{ text: m.content }]
+          })),
+          { role: 'user', parts: [{ text: userMessage }] }
+        ],
+        config: {
+          systemInstruction: context
+        }
       });
 
-      const contentType = response.headers.get('content-type');
-      if (!response.ok) {
-        if (contentType && contentType.includes('application/json')) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `Erro ${response.status}`);
-        } else {
-          const textError = await response.text();
-          console.error('Non-JSON error response:', textError);
-          throw new Error(`Erro do servidor (${response.status}): ${textError.substring(0, 50)}...`);
-        }
-      }
-
-      if (!contentType || !contentType.includes('application/json')) {
-        const textResponse = await response.text();
-        console.error('Expected JSON but got:', textResponse);
-        throw new Error('Resposta do servidor inválida (não é JSON)');
-      }
-
-      const data = await response.json();
-      setMessages(prev => [...prev, { role: 'ai', content: data.text }]);
+      const aiResponse = response.text || 'Desculpe, tive um problema ao processar sua pergunta. Pode repetir?';
+      setMessages(prev => [...prev, { role: 'ai', content: aiResponse }]);
     } catch (error: any) {
       console.error('AI Chat Error:', error);
       const errorMsg = error?.message || 'Erro desconhecido';
