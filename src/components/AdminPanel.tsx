@@ -454,14 +454,14 @@ export function AdminPanel() {
             <h2 className="text-xl font-bold">Painel Admin</h2>
           </div>
           
-          {user && user.email?.toLowerCase() !== 'camillasites@gmail.com' && (
+          {user && !['camillasites@gmail.com', 'contato@madeireirapindorama.com.br'].includes(user.email?.toLowerCase() || '') && (
             <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-lg text-red-200 text-[10px] flex flex-col gap-2">
               <div className="flex items-center gap-2 font-bold text-white">
                 <AlertCircle size={14} />
                 SEM PERMISSÃO
               </div>
               <p>Você está logado como <strong>{user.email}</strong>. Este e-mail não pode salvar ou excluir dados.</p>
-              <p>Por favor, use o e-mail: <strong>camillasites@gmail.com</strong></p>
+              <p>Por favor, use o e-mail: <strong>contato@madeireirapindorama.com.br</strong></p>
             </div>
           )}
 

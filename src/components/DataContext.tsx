@@ -41,7 +41,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   let ptMessage = 'Ocorreu um erro ao processar os dados no servidor.';
   
   if (rawError.includes('Missing or insufficient permissions')) {
-    ptMessage = 'Permissão negada pelo servidor. Certifique-se de estar logado como camillasites@gmail.com e que seu e-mail do Google esteja verificado.';
+    ptMessage = 'Permissão negada pelo servidor. Certifique-se de estar logado como camillasites@gmail.com ou contato@madeireirapindorama.com.br e que seu e-mail do Google esteja verificado.';
   } else if (rawError.includes('Quota exceeded') || rawError.includes('resource-exhausted')) {
     ptMessage = 'Limite de uso diário do Google excedido. O sistema voltará ao normal em breve.';
   } else if (rawError.includes('offline') || rawError.includes('unavailable')) {
@@ -428,8 +428,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     address: 'Av. das Araucárias, 1234 - Distrito Industrial',
     phone: '(11) 3333-4444',
     email: 'contato@madeireirapindorama.com.br',
-    adminUser: 'admin',
-    adminPassword: 'admin*2026',
+    adminUser: 'contato@madeireirapindorama.com.br',
+    adminPassword: 'mad*2026',
     heroSlides: [],
     heroBgUrl: 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?q=80&w=2070&auto=format&fit=crop'
   });
