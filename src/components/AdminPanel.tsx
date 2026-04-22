@@ -489,47 +489,41 @@ export function AdminPanel() {
           </div>
           
           <nav className="space-y-2">
-            <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'dashboard' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <LayoutDashboard size={20} /> Dashboard
-            </button>
-            <button onClick={() => setActiveTab('atuacao')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'atuacao' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <MapPin size={20} /> Área de Atuação
-            </button>
-            <button onClick={() => setActiveTab('categorias')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'categorias' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <List size={20} /> Categorias
-            </button>
-            <button onClick={() => setActiveTab('clientes')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'clientes' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <UserCheck size={20} /> Clientes
-            </button>
-            <button onClick={() => setActiveTab('obras')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'obras' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <Hammer size={20} /> Obras
-            </button>
-            <button onClick={() => setActiveTab('parceiros')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'parceiros' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <Users size={20} /> Parceiros
-            </button>
-            <button onClick={() => setActiveTab('postagens')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'postagens' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <FileText size={20} /> Postagens
-            </button>
-            <button onClick={() => setActiveTab('produtos')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'produtos' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <Package size={20} /> Produtos
-            </button>
-            <button onClick={() => setActiveTab('profissionais')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'profissionais' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <Briefcase size={20} /> Profissionais
-            </button>
-            <button onClick={() => setActiveTab('sobre')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'sobre' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <Info size={20} /> Sobre Nós
-            </button>
-            <button onClick={() => setActiveTab('ajustes')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'ajustes' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <SettingsIcon size={20} /> Ajustes
-            </button>
-            <button onClick={() => setActiveTab('sincronizacao')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'sincronizacao' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
-              <RefreshCw size={20} /> Sincronização
-            </button>
-            <div className="px-4 py-3 mb-4 bg-emerald-800/30 rounded-lg border border-emerald-700/50">
+            {[
+              { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+              { id: 'atuacao', label: 'Área de Atuação', icon: <MapPin size={20} /> },
+              { id: 'categorias', label: 'Categorias', icon: <List size={20} /> },
+              { id: 'clientes', label: 'Clientes', icon: <UserCheck size={20} /> },
+              { id: 'obras', label: 'Obras', icon: <Hammer size={20} /> },
+              { id: 'parceiros', label: 'Parceiros', icon: <Users size={20} /> },
+              { id: 'postagens', label: 'Postagens', icon: <FileText size={20} /> },
+              { id: 'produtos', label: 'Produtos', icon: <Package size={20} /> },
+              { id: 'profissionais', label: 'Profissionais', icon: <Briefcase size={20} /> },
+              { id: 'sobre', label: 'Sobre Nós', icon: <Info size={20} /> },
+              { id: 'ajustes', label: 'Ajustes', icon: <SettingsIcon size={20} /> },
+              { id: 'sincronizacao', label: 'Sincronização', icon: <RefreshCw size={20} /> },
+            ].sort((a, b) => {
+              if (a.id === 'dashboard') return -1;
+              if (b.id === 'dashboard') return 1;
+              if (a.id === 'sincronizacao') return 1;
+              if (b.id === 'sincronizacao') return -1;
+              return a.label.localeCompare(b.label);
+            }).map((item) => (
+              <button 
+                key={item.id}
+                onClick={() => setActiveTab(item.id as any)} 
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === item.id ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}
+              >
+                {item.icon} {item.label}
+              </button>
+            ))}
+            
+            <div className="px-4 py-3 mb-4 bg-emerald-800/30 rounded-lg border border-emerald-700/50 mt-4">
               <p className="text-[10px] uppercase tracking-wider text-emerald-300 opacity-70 mb-1">Administrador</p>
               <p className="text-sm font-medium truncate" title={user?.email}>{user?.email}</p>
             </div>
-            <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition hover:bg-red-800/50 text-red-200 hover:text-white mt-4">
+            
+            <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition hover:bg-red-800/50 text-red-200 hover:text-white">
               <LogOut size={20} /> Sair
             </button>
           </nav>

@@ -18,6 +18,7 @@ import { PartnersPage } from './pages/PartnersPage';
 import { PostsPage } from './pages/PostsPage';
 
 import { AIChat } from './components/AIChat';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 
 function AppContent() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -55,6 +56,7 @@ function AppContent() {
         <Footer />
         <FloatingActions />
         <AIChat />
+        <PWAInstallPrompt />
         
         {/* Secret Admin Link in Footer (hidden but accessible) */}
         <div className="fixed bottom-0 left-0 w-full h-2 z-0 opacity-0 hover:opacity-100 pointer-events-none">

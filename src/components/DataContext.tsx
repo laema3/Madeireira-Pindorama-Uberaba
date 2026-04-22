@@ -307,6 +307,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
             items = items.filter(item => !stillPending.has((item as any).id));
           }
 
+          // Sort items alphabetically by name/title
+          if (collectionName === 'categories' || collectionName === 'subcategories' || collectionName === 'products') {
+            items.sort((a: any, b: any) => {
+              const nameA = (a.name || a.title || '').toLowerCase();
+              const nameB = (b.name || b.title || '').toLowerCase();
+              return nameA.localeCompare(nameB);
+            });
+          }
+
           const source = isFromServer ? "SERVER" : "LOCAL CACHE";
           console.log(`[Firestore] Data received for ${collectionName} from ${source}:`, items.length, "items");
           
