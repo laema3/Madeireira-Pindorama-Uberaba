@@ -1,13 +1,95 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from './DataContext';
-import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post } from '../types';
-import { Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, FileText, Video, RefreshCw, Download, Upload, Sparkles, AlertCircle } from 'lucide-react';
+import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post, SystemUser } from '../types';
+import { 
+  Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, 
+  Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, 
+  FileText, Video, RefreshCw, Download, Upload, Sparkles, AlertCircle, TreePine, Home, 
+  Paintbrush, Layers, Boxes, Grid, Truck, HardHat, Ruler, Map, Construction, Shovel, Info as TooltipIcon,
+  Warehouse, Fence, Lamp, Bed, Bath, Utensils, Armchair, DoorOpen, Thermometer, Car, Cctv, 
+  ShieldCheck, Leaf, Sun, Wind, Droplets, Flame, Plug, Mountain, Pocket, Settings2
+} from 'lucide-react';
+
+const CATEGORY_ICONS = [
+  { name: 'Package', icon: <Package size={20} /> },
+  { name: 'TreePine', icon: <TreePine size={20} /> },
+  { name: 'Home', icon: <Home size={20} /> },
+  { name: 'Hammer', icon: <Hammer size={20} /> },
+  { name: 'Paintbrush', icon: <Paintbrush size={20} /> },
+  { name: 'Grid', icon: <Grid size={20} /> },
+  { name: 'Layers', icon: <Layers size={20} /> },
+  { name: 'Boxes', icon: <Boxes size={20} /> },
+  { name: 'Truck', icon: <Truck size={20} /> },
+  { name: 'HardHat', icon: <HardHat size={20} /> },
+  { name: 'Ruler', icon: <Ruler size={20} /> },
+  { name: 'Map', icon: <Map size={20} /> },
+  { name: 'Construction', icon: <Construction size={20} /> },
+  { name: 'Shovel', icon: <Shovel size={20} /> },
+  { name: 'Warehouse', icon: <Warehouse size={20} /> },
+  { name: 'Fence', icon: <Fence size={20} /> },
+  { name: 'Lamp', icon: <Lamp size={20} /> },
+  { name: 'Bed', icon: <Bed size={20} /> },
+  { name: 'Bath', icon: <Bath size={20} /> },
+  { name: 'Utensils', icon: <Utensils size={20} /> },
+  { name: 'Armchair', icon: <Armchair size={20} /> },
+  { name: 'DoorOpen', icon: <DoorOpen size={20} /> },
+  { name: 'Thermometer', icon: <Thermometer size={20} /> },
+  { name: 'Car', icon: <Car size={20} /> },
+  { name: 'Cctv', icon: <Cctv size={20} /> },
+  { name: 'ShieldCheck', icon: <ShieldCheck size={20} /> },
+  { name: 'Leaf', icon: <Leaf size={20} /> },
+  { name: 'Sun', icon: <Sun size={20} /> },
+  { name: 'Wind', icon: <Wind size={20} /> },
+  { name: 'Droplets', icon: <Droplets size={20} /> },
+  { name: 'Flame', icon: <Flame size={20} /> },
+  { name: 'Plug', icon: <Plug size={20} /> },
+  { name: 'Mountain', icon: <Mountain size={20} /> },
+];
+
+const renderIcon = (iconName?: string) => {
+  switch (iconName) {
+    case 'TreePine': return <TreePine size={20} />;
+    case 'Home': return <Home size={20} />;
+    case 'Hammer': return <Hammer size={20} />;
+    case 'Paintbrush': return <Paintbrush size={20} />;
+    case 'Grid': return <Grid size={20} />;
+    case 'Layers': return <Layers size={20} />;
+    case 'Boxes': return <Boxes size={20} />;
+    case 'Truck': return <Truck size={20} />;
+    case 'HardHat': return <HardHat size={20} />;
+    case 'Ruler': return <Ruler size={20} />;
+    case 'Map': return <Map size={20} />;
+    case 'Construction': return <Construction size={20} />;
+    case 'Shovel': return <Shovel size={20} />;
+    case 'Warehouse': return <Warehouse size={20} />;
+    case 'Fence': return <Fence size={20} />;
+    case 'Lamp': return <Lamp size={20} />;
+    case 'Bed': return <Bed size={20} />;
+    case 'Bath': return <Bath size={20} />;
+    case 'Utensils': return <Utensils size={20} />;
+    case 'Armchair': return <Armchair size={20} />;
+    case 'DoorOpen': return <DoorOpen size={20} />;
+    case 'Thermometer': return <Thermometer size={20} />;
+    case 'Car': return <Car size={20} />;
+    case 'Cctv': return <Cctv size={20} />;
+    case 'ShieldCheck': return <ShieldCheck size={20} />;
+    case 'Leaf': return <Leaf size={20} />;
+    case 'Sun': return <Sun size={20} />;
+    case 'Wind': return <Wind size={20} />;
+    case 'Droplets': return <Droplets size={20} />;
+    case 'Flame': return <Flame size={20} />;
+    case 'Plug': return <Plug size={20} />;
+    case 'Mountain': return <Mountain size={20} />;
+    case 'Package':
+    default: return <Package size={20} />;
+  }
+};
 import { auth } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 import { GoogleGenAI } from '@google/genai';
 
 export function AdminPanel() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao' | 'usuarios'>('dashboard');
   const { 
     about, history, updateAbout, updateHistory,
     products, addProduct, updateProduct, deleteProduct,
@@ -20,6 +102,7 @@ export function AdminPanel() {
     professionals, addProfessional, updateProfessional, deleteProfessional,
     serviceAreas, addServiceArea, updateServiceArea, deleteServiceArea,
     posts, addPost, updatePost, deletePost,
+    users: systemUsers, addUser, updateUser, deleteUser,
     isSyncing, lastSyncError, exportData, importData, forceSyncPull
   } = useData();
 
@@ -33,6 +116,7 @@ export function AdminPanel() {
   const [editingProfessional, setEditingProfessional] = useState<Partial<Professional> | null>(null);
   const [editingServiceArea, setEditingServiceArea] = useState<Partial<ServiceArea> | null>(null);
   const [editingPost, setEditingPost] = useState<Partial<Post> | null>(null);
+  const [editingUser, setEditingUser] = useState<Partial<SystemUser> | null>(null);
   
   const [aboutForm, setAboutForm] = useState(about);
   const [historyForm, setHistoryForm] = useState(history);
@@ -55,6 +139,12 @@ export function AdminPanel() {
     });
     return () => unsubscribe();
   }, []);
+
+  const isAdminEmail = ['camillasites@gmail.com', 'contato@madeireirapindorama.com.br'].includes(user?.email?.toLowerCase() || '');
+  const currentUserRole = systemUsers.find(u => u.email.toLowerCase() === user?.email?.toLowerCase())?.role;
+  const canDelete = isAdminEmail || currentUserRole === 'admin';
+  const canSave = isAdminEmail || currentUserRole === 'admin' || currentUserRole === 'editor';
+  const canAccessAdmin = isAdminEmail || !!currentUserRole;
 
   const aboutImageRef = useRef<HTMLInputElement>(null);
   const historyImageRef = useRef<HTMLInputElement>(null);
@@ -242,6 +332,10 @@ export function AdminPanel() {
     update: (i: T) => void,
     confirmMsg: string
   ) => {
+    if (!canSave) {
+      showNotification('Você não tem permissão para salvar dados.', 'error');
+      return;
+    }
     try {
       if (item.id) {
         await update(item as T);
@@ -267,6 +361,10 @@ export function AdminPanel() {
   };
 
   const handleDeleteItem = (id: string, remove: (id: string) => void, confirmMsg: string) => {
+    if (!canDelete) {
+      showNotification('Você não tem permissão para excluir dados.', 'error');
+      return;
+    }
     setDeleteConfirmation({ id, remove, confirmMsg });
   };
 
@@ -454,14 +552,24 @@ export function AdminPanel() {
             <h2 className="text-xl font-bold">Painel Admin</h2>
           </div>
           
-          {user && !['camillasites@gmail.com', 'contato@madeireirapindorama.com.br'].includes(user.email?.toLowerCase() || '') && (
+          {user && !canAccessAdmin && (
             <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-lg text-red-200 text-[10px] flex flex-col gap-2">
               <div className="flex items-center gap-2 font-bold text-white">
                 <AlertCircle size={14} />
-                SEM PERMISSÃO
+                ACESSO NEGADO
               </div>
-              <p>Você está logado como <strong>{user.email}</strong>. Este e-mail não pode salvar ou excluir dados.</p>
-              <p>Por favor, use o e-mail: <strong>contato@madeireirapindorama.com.br</strong></p>
+              <p>Você está logado como <strong>{user.email}</strong>. Este e-mail não está na lista de usuários autorizados.</p>
+              <p>Solicite acesso ao administrador do sistema.</p>
+            </div>
+          )}
+
+          {user && canAccessAdmin && !canSave && (
+            <div className="mb-4 p-3 bg-yellow-900/50 border border-yellow-700 rounded-lg text-yellow-200 text-[10px] flex flex-col gap-2">
+              <div className="flex items-center gap-2 font-bold text-white">
+                <AlertCircle size={14} />
+                MODO VISUALIZAÇÃO
+              </div>
+              <p>Você possui apenas permissão de <strong>Visualizador</strong>. Não é permitido salvar ou excluir dados.</p>
             </div>
           )}
 
@@ -501,8 +609,17 @@ export function AdminPanel() {
               { id: 'profissionais', label: 'Profissionais', icon: <Briefcase size={20} /> },
               { id: 'sobre', label: 'Sobre Nós', icon: <Info size={20} /> },
               { id: 'ajustes', label: 'Ajustes', icon: <SettingsIcon size={20} /> },
+              { id: 'usuarios', label: 'Usuários', icon: <UserCheck size={20} /> },
               { id: 'sincronizacao', label: 'Sincronização', icon: <RefreshCw size={20} /> },
-            ].sort((a, b) => {
+            ].filter(item => {
+              // Only admins can see users and sync
+              const isAdminEmail = ['camillasites@gmail.com', 'contato@madeireirapindorama.com.br'].includes(user?.email?.toLowerCase() || '');
+              const userRole = systemUsers.find(u => u.email.toLowerCase() === user?.email?.toLowerCase())?.role;
+              const isAdmin = isAdminEmail || userRole === 'admin';
+              
+              if ((item.id === 'usuarios' || item.id === 'sincronizacao') && !isAdmin) return false;
+              return true;
+            }).sort((a, b) => {
               if (a.id === 'dashboard') return -1;
               if (b.id === 'dashboard') return 1;
               if (a.id === 'sincronizacao') return 1;
@@ -942,7 +1059,27 @@ export function AdminPanel() {
                 
                 {editingCategory && (
                   <div className="mb-4 p-4 bg-stone-50 rounded-lg border">
-                    <input className="w-full p-2 border rounded mb-2" placeholder="Nome da Categoria" value={editingCategory.name} onChange={e => setEditingCategory({...editingCategory, name: e.target.value})} />
+                    <input className="w-full p-2 border rounded mb-4" placeholder="Nome da Categoria" value={editingCategory.name} onChange={e => setEditingCategory({...editingCategory, name: e.target.value})} />
+                    
+                    <label className="block text-sm font-bold text-stone-700 mb-2">Selecione o Ícone:</label>
+                    <div className="grid grid-cols-7 gap-2 mb-4">
+                      {CATEGORY_ICONS.map((catIcon) => (
+                        <button
+                          key={catIcon.name}
+                          type="button"
+                          onClick={() => setEditingCategory({...editingCategory, icon: catIcon.name})}
+                          className={`p-2 rounded-lg flex items-center justify-center border transition-all ${
+                            editingCategory.icon === catIcon.name 
+                              ? 'bg-emerald-600 text-white border-emerald-700 shadow-inner' 
+                              : 'bg-white text-stone-500 border-stone-200 hover:border-emerald-300 hover:bg-emerald-50'
+                          }`}
+                          title={catIcon.name}
+                        >
+                          {catIcon.icon}
+                        </button>
+                      ))}
+                    </div>
+
                     <div className="flex justify-end gap-2">
                       <button onClick={() => setEditingCategory(null)} className="text-sm text-stone-500">Cancelar</button>
                       <button onClick={() => handleSaveItem(editingCategory, setEditingCategory, addCategory, updateCategory, 'categoria')} className="text-sm bg-emerald-700 text-white px-3 py-1 rounded">Salvar</button>
@@ -953,10 +1090,15 @@ export function AdminPanel() {
                 <ul className="space-y-2">
                   {categories.map(c => (
                     <li key={c.id} className="flex justify-between items-center p-3 bg-white border rounded hover:bg-stone-50">
-                      <span>{c.name}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="text-emerald-700">
+                          {renderIcon(c.icon)}
+                        </div>
+                        <span className="font-medium text-stone-800">{c.name}</span>
+                      </div>
                       <div className="flex gap-2">
-                        <button onClick={() => setEditingCategory(c)} className="text-blue-600"><Edit size={16} /></button>
-                        <button onClick={() => handleDeleteItem(c.id, deleteCategory, 'categoria')} className="text-red-600"><Trash2 size={16} /></button>
+                        <button onClick={() => setEditingCategory(c)} className="text-blue-600 p-1 hover:bg-blue-50 rounded transition-colors"><Edit size={16} /></button>
+                        <button onClick={() => handleDeleteItem(c.id, deleteCategory, 'categoria')} className="text-red-600 p-1 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
                       </div>
                     </li>
                   ))}
@@ -1184,6 +1326,60 @@ export function AdminPanel() {
                     <div className="flex-1 text-sm text-stone-600 space-y-2">
                       <p><strong>Dica:</strong> Use uma imagem de alta resolução (mínimo 1920x1080) para melhor resultado.</p>
                       <p>Esta imagem aparecerá por trás do texto e dos slides principais, com um efeito de transparência escura para garantir a leitura.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-stone-50 p-6 rounded-xl border md:col-span-2">
+                  <h4 className="font-bold mb-4 flex items-center gap-2"><ImageIcon size={18} /> Imagem de Fundo dos Banners das Páginas</h4>
+                  <p className="text-sm text-stone-500 mb-4">Esta imagem aparecerá no topo de todas as páginas internas (Sobre, Produtos, Obras, etc).</p>
+                  <div className="flex flex-col md:flex-row gap-6 items-start">
+                    <div className="w-full md:w-1/2">
+                      <input 
+                        type="file" 
+                        id="page-banner-input"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            processFile(e.target.files[0], (base64) => setSettingsForm({...settingsForm, pageBannerImageUrl: base64}), { maxSize: 1200, quality: 0.4 });
+                          }
+                        }}
+                        className="hidden"
+                      />
+                      {settingsForm.pageBannerImageUrl ? (
+                        <div className="relative group aspect-video bg-stone-100 rounded-lg overflow-hidden border border-stone-200">
+                          <img src={settingsForm.pageBannerImageUrl} alt="Page Banner Background" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
+                            <button 
+                              type="button"
+                              onClick={() => document.getElementById('page-banner-input')?.click()}
+                              className="bg-white text-emerald-900 px-4 py-2 rounded-md text-sm font-bold"
+                            >
+                              Alterar Imagem
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => setSettingsForm({...settingsForm, pageBannerImageUrl: ''})}
+                              className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-bold"
+                            >
+                              Remover
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button 
+                          type="button"
+                          onClick={() => document.getElementById('page-banner-input')?.click()}
+                          className="w-full aspect-video border-2 border-dashed border-stone-300 rounded-lg flex flex-col items-center justify-center text-stone-500 hover:bg-stone-50 transition"
+                        >
+                          <Plus size={32} />
+                          <span className="text-sm mt-2">Selecionar Imagem do Banner</span>
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex-1 text-sm text-stone-600 space-y-2">
+                      <p><strong>Dica:</strong> Uma imagem de madeira ripada escura funciona bem aqui.</p>
+                      <p>Esta imagem substituirá o fundo verde dos títulos nas páginas internas.</p>
                     </div>
                   </div>
                 </div>
@@ -2104,6 +2300,107 @@ export function AdminPanel() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* --- USUÁRIOS --- */}
+          {activeTab === 'usuarios' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-emerald-900">Gerenciar Usuários</h3>
+                  <p className="text-stone-500 text-sm">Adicione e-mails que terão permissão para acessar o painel administrativo.</p>
+                </div>
+                <button 
+                  onClick={() => setEditingUser({ name: '', email: '', role: 'editor' })}
+                  className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2"
+                >
+                  <Plus size={18} /> Novo Usuário
+                </button>
+              </div>
+
+              {editingUser && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 rounded-xl w-full max-w-md">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-xl font-bold">{editingUser.id ? 'Editar Usuário' : 'Novo Usuário autorizado'}</h4>
+                      <button onClick={() => setEditingUser(null)}><X /></button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium">Nome</label>
+                        <input className="w-full p-2 border rounded" placeholder="Nome do colaborador" value={editingUser.name} onChange={e => setEditingUser({...editingUser, name: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Email (Google)</label>
+                        <input type="email" className="w-full p-2 border rounded" placeholder="email@gmail.com" value={editingUser.email} onChange={e => setEditingUser({...editingUser, email: e.target.value})} />
+                        <p className="text-[10px] text-stone-500 mt-1">O usuário deve logar usando este e-mail através do botão Google ou Criar conta com ele.</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">Nível de Acesso</label>
+                        <select className="w-full p-2 border rounded" value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value as any})}>
+                          <option value="admin">Administrador (Pode tudo)</option>
+                          <option value="editor">Editor (Pode salvar, mas não excluir)</option>
+                          <option value="viewer">Visualizador (Apenas vê os dados)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="mt-6 flex justify-end gap-2">
+                      <button onClick={() => setEditingUser(null)} className="px-4 py-2 border rounded hover:bg-gray-100">Cancelar</button>
+                      <button onClick={() => handleSaveItem(editingUser, setEditingUser, addUser, updateUser, 'usuário')} className="px-4 py-2 bg-emerald-700 text-white rounded hover:bg-emerald-800">Salvar Permissão</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-stone-50 border-b">
+                    <tr>
+                      <th className="p-4 font-bold text-stone-600 text-sm">Nome</th>
+                      <th className="p-4 font-bold text-stone-600 text-sm">Email</th>
+                      <th className="p-4 font-bold text-stone-600 text-sm">Nível</th>
+                      <th className="p-4 font-bold text-stone-600 text-sm text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b bg-emerald-50/30">
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold">Sistema (Padrão)</span>
+                          <span className="text-[8px] bg-emerald-100 text-emerald-700 px-1 rounded">FIXO</span>
+                        </div>
+                      </td>
+                      <td className="p-4 text-stone-500">contato@madeireirapindorama.com.br</td>
+                      <td className="p-4"><span className="text-xs bg-emerald-700 text-white px-2 py-1 rounded">PROPRIETÁRIO</span></td>
+                      <td className="p-4 text-right overflow-hidden">
+                        <Lock size={16} className="ml-auto opacity-20" />
+                      </td>
+                    </tr>
+                    {systemUsers.map(u => (
+                      <tr key={u.id} className="border-b hover:bg-stone-50">
+                        <td className="p-4 font-medium">{u.name}</td>
+                        <td className="p-4 text-stone-600">{u.email}</td>
+                        <td className="p-4">
+                          <span className={`text-xs px-2 py-1 rounded font-bold uppercase ${
+                            u.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                            u.role === 'editor' ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {u.role === 'admin' ? 'Administrador' : u.role === 'editor' ? 'Editor' : 'Visualizador'}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={() => setEditingUser(u)} className="p-2 text-stone-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"><Edit size={18} /></button>
+                            <button onClick={() => handleDeleteItem(u.id, deleteUser, 'usuário')} className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><Trash2 size={18} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

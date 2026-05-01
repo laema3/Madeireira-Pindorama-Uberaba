@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
-import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work, ServiceArea, Post } from '../types';
+import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work, ServiceArea, Post, SystemUser } from '../types';
 import { db, auth } from '../lib/firebase';
 import { 
   collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, 
@@ -41,7 +41,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   let ptMessage = 'Ocorreu um erro ao processar os dados no servidor.';
   
   if (rawError.includes('Missing or insufficient permissions')) {
-    ptMessage = 'Permissão negada pelo servidor. Certifique-se de estar logado como camillasites@gmail.com ou contato@madeireirapindorama.com.br e que seu e-mail do Google esteja verificado.';
+    ptMessage = 'Permissão negada pelo servidor. Certifique-se de estar logado como um usuário autorizado e que seu e-mail do Google esteja verificado.';
   } else if (rawError.includes('Quota exceeded') || rawError.includes('resource-exhausted')) {
     ptMessage = 'Limite de uso diário do Google excedido. O sistema voltará ao normal em breve.';
   } else if (rawError.includes('offline') || rawError.includes('unavailable')) {
@@ -135,6 +135,11 @@ interface DataContextType {
   addPost: (post: Post) => void;
   updatePost: (post: Post) => void;
   deletePost: (id: string) => void;
+
+  users: SystemUser[];
+  addUser: (user: SystemUser) => void;
+  updateUser: (user: SystemUser) => void;
+  deleteUser: (id: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -163,7 +168,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, []);
 
-  const totalItemsToLoad = 12; // 9 collections + 3 documents
+  const totalItemsToLoad = 13; // 10 collections + 3 documents
   const itemsLoadedCount = Object.values(initialSyncDone).filter(done => done).length;
   const loadingProgress = Math.round((itemsLoadedCount / totalItemsToLoad) * 100);
   const isInitialLoading = !forceLoaded && itemsLoadedCount < totalItemsToLoad;
@@ -424,6 +429,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [works, setWorks] = useFirestoreCollection<Work>('works', []);
   const [serviceAreas, setServiceAreas] = useFirestoreCollection<ServiceArea>('service_areas', []);
   const [posts, setPosts] = useFirestoreCollection<Post>('posts', []);
+  const [users, setUsers] = useFirestoreCollection<SystemUser>('users', [], !!user);
 
   const [settings, setSettings] = useFirestoreDocument<Settings>('settings', 'global', {
     logoUrl: '',
@@ -563,6 +569,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const professionalCrud = createCrud<Professional>('professionals', setProfessionals);
   const serviceAreaCrud = createCrud<ServiceArea>('service_areas', setServiceAreas);
   const postCrud = createCrud<Post>('posts', setPosts);
+  const baseUserCrud = createCrud<SystemUser>('users', setUsers);
+  const userCrud = {
+    ...baseUserCrud,
+    add: (user: SystemUser) => baseUserCrud.add({ ...user, id: user.email.toLowerCase() })
+  };
 
   const updateSettingsFn = async (newSettings: Settings) => {
     try {
@@ -596,7 +607,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const exportData = () => {
     return JSON.stringify({
-      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts
+      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users
     }, null, 2);
   };
 
@@ -612,7 +623,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   return (
     <DataContext.Provider value={{
-      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts,
+      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users,
       isSyncing, lastSyncError, isOnline, loadingProgress, isInitialLoading,
       exportData, importData, forceSyncPull,
       addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.remove,
@@ -625,7 +636,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addWork: workCrud.add, updateWork: workCrud.update, deleteWork: workCrud.remove,
       addProfessional: professionalCrud.add, updateProfessional: professionalCrud.update, deleteProfessional: professionalCrud.remove,
       addServiceArea: serviceAreaCrud.add, updateServiceArea: serviceAreaCrud.update, deleteServiceArea: serviceAreaCrud.remove,
-      addPost: postCrud.add, updatePost: postCrud.update, deletePost: postCrud.remove
+      addPost: postCrud.add, updatePost: postCrud.update, deletePost: postCrud.remove,
+      addUser: userCrud.add, updateUser: userCrud.update, deleteUser: userCrud.remove,
     }}>
       {children}
     </DataContext.Provider>

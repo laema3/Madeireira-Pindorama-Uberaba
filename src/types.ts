@@ -49,6 +49,7 @@ export interface Client {
 export interface Category {
   id: string;
   name: string;
+  icon?: string;
 }
 
 export interface Subcategory {
@@ -83,6 +84,7 @@ export interface Settings {
   heroImages?: string[]; // Legacy
   heroSlides?: HeroSlide[];
   heroBgUrl?: string;
+  pageBannerImageUrl?: string;
 }
 
 export interface Work {
@@ -105,4 +107,11 @@ export interface Post {
   image: string;
   content: string;
   createdAt?: string;
+}
+
+export interface SystemUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'editor' | 'viewer';
 }

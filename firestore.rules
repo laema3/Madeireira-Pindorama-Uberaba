@@ -112,7 +112,8 @@ service cloud.firestore {
     // Check if user is admin
     function isAdmin() {
       return isAuthenticated() && 
-        (request.auth.token.email.matches("(?i)(camillasites@gmail\\.com|contato@madeireirapindorama\\.com\\.br)") && 
+        ((request.auth.token.email.matches("(?i)(camillasites@gmail\\.com|contato@madeireirapindorama\\.com\\.br)") || 
+          exists(/databases/$(database)/documents/users/$(request.auth.token.email))) && 
          request.auth.token.email_verified == true);
     }
 
@@ -199,7 +200,8 @@ service cloud.firestore {
 
     function isValidCategory(data) {
       return hasRequiredFields(['name']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 50;
+             data.name is string && data.name.size() > 0 && data.name.size() < 50 &&
+             (!('icon' in data) || (data.icon is string && data.icon.size() < 50));
     }
 
     function isValidSubcategory(data) {
@@ -228,6 +230,13 @@ service cloud.firestore {
              data.image is string && isValidUrl(data.image) &&
              data.content is string && data.content.size() < 20000 &&
              data.createdAt is string && isValidDateString(data.createdAt);
+    }
+
+    function isValidSystemUser(data) {
+      return hasRequiredFields(['name', 'email', 'role']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role in ['admin', 'editor', 'viewer'];
     }
 
     function isValidSettings(data) {
@@ -326,6 +335,13 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isAdmin() && isValidPost(request.resource.data);
       allow update: if isAdmin() && isValidPost(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidSystemUser(request.resource.data);
+      allow update: if isAdmin() && isValidSystemUser(request.resource.data);
       allow delete: if isAdmin();
     }
 

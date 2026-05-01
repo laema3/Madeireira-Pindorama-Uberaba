@@ -60,7 +60,8 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "name": { "type": "string" }
+        "name": { "type": "string" },
+        "icon": { "type": "string" }
       },
       "required": ["name"]
     },
@@ -128,6 +129,8 @@
         "email": { "type": "string", "format": "email" },
         "adminUser": { "type": "string" },
         "adminPassword": { "type": "string" },
+        "heroBgUrl": { "type": "string" },
+        "pageBannerImageUrl": { "type": "string" },
         "heroSlides": { 
           "type": "array", 
           "items": { 
@@ -154,6 +157,18 @@
         "videoUrl": { "type": "string" }
       },
       "required": ["title", "description", "image"]
+    },
+    "SystemUser": {
+      "title": "SystemUser",
+      "description": "A user with access to the admin panel.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "editor", "viewer"] }
+      },
+      "required": ["name", "email", "role"]
     }
   },
   "firestore": {
@@ -192,6 +207,10 @@
     "posts/{postId}": {
       "schema": "Post",
       "description": "Collection of posts."
+    },
+    "users/{userId}": {
+      "schema": "SystemUser",
+      "description": "Collection of authorized admin users."
     },
     "settings/global": {
       "schema": "Settings",

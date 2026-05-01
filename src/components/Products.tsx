@@ -1,11 +1,100 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useData } from './DataContext';
-import { Package } from 'lucide-react';
+import { 
+  Package, 
+  TreePine, 
+  Home, 
+  Wrench, 
+  Boxes, 
+  Paintbrush, 
+  Layers, 
+  Hammer, 
+  Grid,
+  Truck,
+  HardHat,
+  Ruler,
+  Map,
+  Construction,
+  Shovel,
+  Warehouse,
+  Fence,
+  Lamp,
+  Bed,
+  Bath,
+  Utensils,
+  Armchair,
+  DoorOpen,
+  Thermometer,
+  Car,
+  Cctv,
+  ShieldCheck,
+  Leaf,
+  Sun,
+  Wind,
+  Droplets,
+  Flame,
+  Plug,
+  Mountain
+} from 'lucide-react';
 
 export function Products() {
   const { products, categories, settings } = useData();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  const getCategoryIcon = (iconName?: string, name?: string) => {
+    // If we have an explicit icon name from the database, use it
+    if (iconName) {
+      switch (iconName) {
+        case 'TreePine': return <TreePine size={24} />;
+        case 'Home': return <Home size={24} />;
+        case 'Hammer': return <Hammer size={24} />;
+        case 'Paintbrush': return <Paintbrush size={24} />;
+        case 'Grid': return <Grid size={24} />;
+        case 'Layers': return <Layers size={24} />;
+        case 'Boxes': return <Boxes size={24} />;
+        case 'Truck': return <Truck size={24} />;
+        case 'HardHat': return <HardHat size={24} />;
+        case 'Ruler': return <Ruler size={24} />;
+        case 'Map': return <Map size={24} />;
+        case 'Construction': return <Construction size={24} />;
+        case 'Shovel': return <Shovel size={24} />;
+        case 'Warehouse': return <Warehouse size={24} />;
+        case 'Fence': return <Fence size={24} />;
+        case 'Lamp': return <Lamp size={24} />;
+        case 'Bed': return <Bed size={24} />;
+        case 'Bath': return <Bath size={24} />;
+        case 'Utensils': return <Utensils size={24} />;
+        case 'Armchair': return <Armchair size={24} />;
+        case 'DoorOpen': return <DoorOpen size={24} />;
+        case 'Thermometer': return <Thermometer size={24} />;
+        case 'Car': return <Car size={24} />;
+        case 'Cctv': return <Cctv size={24} />;
+        case 'ShieldCheck': return <ShieldCheck size={24} />;
+        case 'Leaf': return <Leaf size={24} />;
+        case 'Sun': return <Sun size={24} />;
+        case 'Wind': return <Wind size={24} />;
+        case 'Droplets': return <Droplets size={24} />;
+        case 'Flame': return <Flame size={24} />;
+        case 'Plug': return <Plug size={24} />;
+        case 'Mountain': return <Mountain size={24} />;
+        case 'Package': return <Package size={24} />;
+      }
+    }
+
+    // Fallback based on name (backward compatibility or if no icon selected)
+    if (name) {
+      const lowerName = name.toLowerCase();
+      if (lowerName.includes('madeira')) return <TreePine size={24} />;
+      if (lowerName.includes('telha') || lowerName.includes('cobertura')) return <Home size={24} />;
+      if (lowerName.includes('ferramenta') || lowerName.includes('ferragem')) return <Hammer size={24} />;
+      if (lowerName.includes('acabamento') || lowerName.includes('pintura')) return <Paintbrush size={24} />;
+      if (lowerName.includes('piso') || lowerName.includes('revestimento')) return <Grid size={24} />;
+      if (lowerName.includes('estrutura') || lowerName.includes('viga')) return <Layers size={24} />;
+    }
+
+    return <Package size={24} />;
+  };
 
   const filteredProducts = selectedCategory === 'all' 
     ? products 
@@ -22,29 +111,36 @@ export function Products() {
           </p>
         </div>
 
-        {/* Category Filter */}
-        <div className="mb-12 flex flex-wrap justify-center gap-3">
+        {/* Category Navigation Cards */}
+        <div className="mb-16 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
+            className={`p-6 rounded-xl flex flex-col items-center justify-center gap-3 transition-all border-2 ${
               selectedCategory === 'all'
-                ? 'bg-emerald-700 text-white shadow-md scale-105'
-                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                ? 'bg-emerald-50 border-emerald-600 text-emerald-900 shadow-md transform scale-105'
+                : 'bg-white border-stone-100 text-stone-600 hover:border-emerald-200 hover:bg-emerald-50/30'
             }`}
           >
-            Todos
+            <div className={`p-3 rounded-full ${selectedCategory === 'all' ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-400'}`}>
+              <Package size={24} />
+            </div>
+            <span className="font-bold text-sm uppercase tracking-wider">Todos</span>
           </button>
-          {categories.map((cat) => (
+          
+          {categories && categories.length > 0 && categories.map((cat) => (
             <button
-              key={cat.id}
+              key={cat.id || String(Math.random())}
               onClick={() => setSelectedCategory(cat.name)}
-              className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
+              className={`p-6 rounded-xl flex flex-col items-center justify-center gap-3 transition-all border-2 ${
                 selectedCategory === cat.name
-                  ? 'bg-emerald-700 text-white shadow-md scale-105'
-                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  ? 'bg-emerald-50 border-emerald-600 text-emerald-900 shadow-md transform scale-105'
+                  : 'bg-white border-stone-100 text-stone-600 hover:border-emerald-200 hover:bg-emerald-50/30'
               }`}
             >
-              {cat.name}
+              <div className={`p-3 rounded-full ${selectedCategory === cat.name ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-400'}`}>
+                {getCategoryIcon(cat.icon, cat.name)}
+              </div>
+              <span className="font-bold text-sm uppercase tracking-wider text-center">{cat.name || 'S/ NOME'}</span>
             </button>
           ))}
         </div>
