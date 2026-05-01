@@ -111,10 +111,10 @@ service cloud.firestore {
 
     // Check if user is admin
     function isAdmin() {
+      let isHardcodedAdmin = request.auth.token.email.matches("(?i)(camillasites@gmail\\.com|contato@madeireirapindorama\\.com\\.br)");
       return isAuthenticated() && 
-        ((request.auth.token.email.matches("(?i)(camillasites@gmail\\.com|contato@madeireirapindorama\\.com\\.br)") || 
-          exists(/databases/$(database)/documents/users/$(request.auth.token.email))) && 
-         request.auth.token.email_verified == true);
+        ((isHardcodedAdmin || exists(/databases/$(database)/documents/users/$(request.auth.token.email))) && 
+         (isHardcodedAdmin || request.auth.token.email_verified == true));
     }
 
     // Validate required fields exist
@@ -199,9 +199,8 @@ service cloud.firestore {
     }
 
     function isValidCategory(data) {
-      return hasRequiredFields(['name']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 50 &&
-             (!('icon' in data) || (data.icon is string && data.icon.size() < 50));
+      return (data.name is string && data.name.size() > 0 && data.name.size() < 100) &&
+             (!('icon' in data) || (data.icon is string && data.icon.size() < 100));
     }
 
     function isValidSubcategory(data) {

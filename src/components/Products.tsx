@@ -129,7 +129,7 @@ export function Products() {
           
           {categories && categories.length > 0 && categories.map((cat) => (
             <button
-              key={cat.id || String(Math.random())}
+              key={cat.id || cat.name}
               onClick={() => setSelectedCategory(cat.name)}
               className={`p-6 rounded-xl flex flex-col items-center justify-center gap-3 transition-all border-2 ${
                 selectedCategory === cat.name
