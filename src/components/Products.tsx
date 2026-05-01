@@ -182,7 +182,7 @@ export function Products() {
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-xl font-bold text-emerald-900">{product.name}</h3>
                     <span className="text-emerald-700 font-bold">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price) || 0)}
                     </span>
                   </div>
                   <p className="text-xs text-stone-500 mb-2 uppercase tracking-wider">{product.brand} - {product.subcategory}</p>

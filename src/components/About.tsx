@@ -42,9 +42,9 @@ export function About() {
             transition={{ duration: 0.8 }}
           >
             <h2 className="text-emerald-800 font-bold uppercase tracking-wide mb-2">Sobre Nós</h2>
-            <h3 className="text-4xl font-bold text-emerald-900 mb-6">{about.title}</h3>
+            <h3 className="text-4xl font-bold text-emerald-900 mb-6">{about?.title || 'Conheça a Pindorama'}</h3>
             <p className="text-stone-600 mb-6 text-lg leading-relaxed whitespace-pre-line">
-              {about.description}
+              {about?.description || 'Tradicional madeireira em Pará de Minas.'}
             </p>
           </motion.div>
         </div>
@@ -94,9 +94,9 @@ export function About() {
             className="md:order-1"
           >
             <h2 className="text-emerald-800 font-bold uppercase tracking-wide mb-2">Nossa Trajetória</h2>
-            <h3 className="text-4xl font-bold text-emerald-900 mb-6">{history.title}</h3>
+            <h3 className="text-4xl font-bold text-emerald-900 mb-6">{history?.title || 'Nossa História'}</h3>
             <p className="text-stone-600 mb-6 text-lg leading-relaxed whitespace-pre-line">
-              {history.description}
+              {history?.description || 'Anos de experiência no mercado de madeiras.'}
             </p>
           </motion.div>
         </div>

@@ -31,10 +31,10 @@ export function AIChat() {
     setIsLoading(true);
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY || (import.meta.env && import.meta.env.VITE_GEMINI_API_KEY);
       if (!apiKey || apiKey === 'undefined' || apiKey === '') {
-        console.error('Gemini API Key is missing or empty');
-        throw new Error('Chave de API não configurada');
+        console.error('Chave de API Gemini faltando');
+        throw new Error('Chave de API não configurada corretamente. Verifique as configurações.');
       }
 
       const ai = new GoogleGenAI({ apiKey });

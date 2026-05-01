@@ -56,7 +56,7 @@ export function LoaderProvider({ children }: { children: ReactNode }) {
 
   return (
     <LoaderContext.Provider value={{ simulateLoading, isLoading }}>
-      {!isInitialLoading && children}
+      {children}
       <AnimatePresence>
         {isLoading && (
           <motion.div

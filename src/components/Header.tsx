@@ -91,7 +91,7 @@ export function Header() {
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center gap-4 shrink-0">
             <Link to="/" onClick={(e) => handleNavClick(e as any, '/')} className="flex flex-col items-center gap-1">
-              {settings.logoUrl && settings.logoUrl.trim() !== '' ? (
+              {settings?.logoUrl && settings?.logoUrl.trim() !== '' ? (
                 <img 
                   src={settings.logoUrl} 
                   alt="Logo" 
@@ -159,11 +159,11 @@ export function Header() {
             <div className="flex items-center gap-4">
               {/* Phone Button like in the image */}
               <a 
-                href={`tel:${settings.phone}`}
+                href={`tel:${settings?.phone || ''}`}
                 className="hidden md:flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-emerald-950 font-bold py-2.5 px-6 rounded-full transition shadow-sm"
               >
                 <Phone size={18} />
-                <span>{settings.phone}</span>
+                <span>{settings?.phone || '(00) 0000-0000'}</span>
               </a>
 
               <button
@@ -246,11 +246,11 @@ export function Header() {
             ))}
             <div className="border-t border-emerald-800 mt-4 pt-4 pb-2">
               <div className="flex flex-col gap-3 px-3">
-                <a href={`tel:${settings.phone}`} className="flex items-center gap-3 text-stone-300">
+                <a href={`tel:${settings?.phone || ''}`} className="flex items-center gap-3 text-stone-300">
                   <Phone size={18} className="text-yellow-400" />
-                  <span>{settings.phone}</span>
+                  <span>{settings?.phone || '(00) 0000-0000'}</span>
                 </a>
-                <a href={settings.whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-stone-300">
+                <a href={settings?.whatsappUrl || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-stone-300">
                   <MessageCircle size={18} className="text-yellow-400" />
                   <span>WhatsApp</span>
                 </a>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { useData } from './DataContext';
 import { Phone, Star } from 'lucide-react';
 
@@ -65,13 +66,13 @@ export function Professionals() {
                     className="w-28 h-28 rounded-full object-cover border-4 border-white/20 relative z-10"
                     referrerPolicy="no-referrer"
                     onError={(e) => {
-                      e.currentTarget.src = 'https://placehold.co/200x200?text=' + pro.name.charAt(0);
+                      e.currentTarget.src = 'https://placehold.co/200x200?text=' + (pro.name?.charAt(0) || 'P');
                       e.currentTarget.onerror = null;
                     }}
                   />
                 ) : (
                   <div className="w-28 h-28 rounded-full bg-emerald-800 flex items-center justify-center border-4 border-white/20 text-white font-bold text-3xl relative z-10 uppercase">
-                    {pro.name.charAt(0)}
+                    {pro.name?.charAt(0) || 'P'}
                   </div>
                 )}
               </div>

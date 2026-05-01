@@ -91,7 +91,7 @@ export function Hero() {
                 transition={{ duration: 0.6 }}
               >
                 <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold leading-tight mb-6">
-                  {currentSlide.title.split(' ').map((word, i, arr) => (
+                  {currentSlide.title ? currentSlide.title.split(' ').map((word, i, arr) => (
                     <span key={i}>
                       {i === arr.length - 1 ? (
                         <span className="text-yellow-400">{word}</span>
@@ -99,11 +99,11 @@ export function Hero() {
                         <span>{word} </span>
                       )}
                     </span>
-                  ))}
+                  )) : 'Madeireira Pindorama'}
                 </h1>
                 
                 <p className="text-lg md:text-xl text-stone-300 mb-10 max-w-2xl leading-relaxed">
-                  {currentSlide.description}
+                  {currentSlide.description || 'Tradição e Qualidade em Madeiras'}
                 </p>
 
                 <div className="flex flex-wrap gap-4 mb-12">
