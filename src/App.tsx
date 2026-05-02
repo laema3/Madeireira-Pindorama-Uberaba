@@ -20,6 +20,7 @@ import { PostsPage } from './pages/PostsPage';
 import { AIChat } from './components/AIChat';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { Maintenance } from './components/Maintenance';
+import { FacebookPixel } from './components/FacebookPixel';
 import { useData } from './components/DataContext';
 
 function AppContent() {
@@ -48,6 +49,7 @@ function AppContent() {
 
   return (
     <LoaderProvider>
+      <FacebookPixel />
       <div className="min-h-screen bg-stone-50 font-sans text-stone-900">
         <Header />
         <main>

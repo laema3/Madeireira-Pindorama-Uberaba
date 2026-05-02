@@ -132,6 +132,7 @@
         "heroBgUrl": { "type": "string" },
         "pageBannerImageUrl": { "type": "string" },
         "maintenanceMode": { "type": "boolean" },
+        "facebookPixelId": { "type": "string" },
         "heroSlides": { 
           "type": "array", 
           "items": { 

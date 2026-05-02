@@ -1628,6 +1628,20 @@ export function AdminPanel() {
                 </div>
 
                 <div className="bg-stone-50 p-6 rounded-xl border md:col-span-2">
+                  <h4 className="font-bold mb-4 flex items-center gap-2"><Facebook size={18} /> Marketing & Analytics</h4>
+                  <div>
+                    <label className="block text-sm font-medium">Facebook Pixel ID</label>
+                    <input 
+                      className="w-full p-2 border rounded border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none" 
+                      placeholder="Ex: 123456789012345" 
+                      value={settingsForm.facebookPixelId || ''} 
+                      onChange={e => setSettingsForm({...settingsForm, facebookPixelId: e.target.value})} 
+                    />
+                    <p className="text-[10px] text-stone-500 mt-1">Cole aqui o número de identificação do seu Pixel do Facebook para rastreamento de conversões.</p>
+                  </div>
+                </div>
+
+                <div className="bg-stone-50 p-6 rounded-xl border md:col-span-2">
                   <h4 className="font-bold mb-4 flex items-center gap-2"><Lock size={18} /> Segurança (Acesso Admin)</h4>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
@@ -2301,20 +2315,20 @@ export function AdminPanel() {
                           
                           {/* Compartilhamento */}
                           <a 
-                            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin + '/#produtos')}`}
+                            href="https://www.facebook.com/pages/Madeireira%20Pindorama/1782945151924491/#"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex p-2 text-blue-700 hover:bg-blue-50 rounded"
-                            title="Compartilhar no Facebook"
+                            title="Acessar Facebook para postar"
                           >
                             <Facebook size={18} />
                           </a>
                           <a 
-                            href="https://www.instagram.com/"
+                            href="https://www.instagram.com/madpindorama/"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex p-2 text-pink-600 hover:bg-pink-50 rounded"
-                            title="Postar no Instagram"
+                            title="Acessar Instagram para postar"
                           >
                             <Instagram size={18} />
                           </a>

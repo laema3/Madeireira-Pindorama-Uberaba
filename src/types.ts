@@ -75,7 +75,7 @@ export interface Settings {
   instagramUrl: string;
   whatsappUrl: string;
   googleTagId: string;
-  facebookPixelId: string;
+  facebookPixelId?: string;
   address: string;
   phone: string;
   email: string;
