@@ -2194,7 +2194,7 @@ export function AdminPanel() {
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-bold text-emerald-900">Gerenciar Produtos</h3>
                 <button 
-                  onClick={() => setEditingProduct({ name: '', category: '', subcategory: '', brand: '', price: undefined, description: '', image: '' })}
+                  onClick={() => setEditingProduct({ name: '', category: '', subcategory: '', brand: '', price: undefined, description: '', image: '', images: [] })}
                   className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2"
                 >
                   <Plus size={18} /> Novo Produto
@@ -2251,7 +2251,7 @@ export function AdminPanel() {
                         </select>
                       </div>
                       <div className="col-span-2">
-                        <label className="block text-sm font-medium mb-2">Imagem do Produto</label>
+                        <label className="block text-sm font-medium mb-2">Imagem Principal</label>
                         <div className="relative border-2 border-dashed border-stone-300 rounded-lg p-4 bg-stone-50 hover:bg-stone-100 transition cursor-pointer flex flex-col items-center justify-center gap-2">
                           {editingProduct.image ? (
                             <img src={editingProduct.image} alt="Preview" className="max-h-32 object-contain" />
@@ -2264,13 +2264,60 @@ export function AdminPanel() {
                             accept="image/*"
                             onChange={(e) => {
                               if (e.target.files && e.target.files[0] && editingProduct) {
-                                processFile(e.target.files[0], (base64) => setEditingProduct({...editingProduct, image: base64}), { maxSize: 600, quality: 0.5, preserveTransparency: false });
+                                processFile(e.target.files[0], (base64) => setEditingProduct({...editingProduct, image: base64}), { maxSize: 800, quality: 0.6, preserveTransparency: false });
                               }
                             }}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                           />
                         </div>
                       </div>
+
+                      {/* Additional Images Section */}
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium mb-2">Imagens Adicionais (até 9)</label>
+                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                          {(editingProduct.images || []).map((img, idx) => (
+                            <div key={idx} className="relative aspect-square border rounded overflow-hidden bg-stone-100 group">
+                              <img src={img} alt="" className="w-full h-full object-cover" />
+                              <button 
+                                onClick={() => {
+                                  const newImages = [...(editingProduct.images || [])];
+                                  newImages.splice(idx, 1);
+                                  setEditingProduct({ ...editingProduct, images: newImages });
+                                }}
+                                className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ))}
+                          
+                          {(editingProduct.images?.length || 0) < 9 && (
+                            <div className="relative aspect-square border-2 border-dashed border-stone-300 rounded flex items-center justify-center bg-stone-50 hover:bg-stone-100 transition cursor-pointer">
+                              <Plus className="text-stone-400" size={24} />
+                              <input 
+                                type="file" 
+                                accept="image/*"
+                                multiple
+                                onChange={(e) => {
+                                  if (e.target.files && editingProduct) {
+                                    const remaining = 9 - (editingProduct.images?.length || 0);
+                                    const filesToProcess = Array.from(e.target.files).slice(0, remaining);
+                                    processFiles(filesToProcess as any, (base64s) => {
+                                      setEditingProduct({
+                                        ...editingProduct,
+                                        images: [...(editingProduct.images || []), ...base64s]
+                                      });
+                                    }, { maxSize: 800, quality: 0.6, preserveTransparency: false });
+                                  }
+                                }}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                       <div className="col-span-2">
                         <label className="block text-sm font-medium">Descrição</label>
                         <textarea className="w-full p-2 border rounded" rows={3} value={editingProduct.description} onChange={e => setEditingProduct({...editingProduct, description: e.target.value})} />

@@ -177,6 +177,7 @@ service cloud.firestore {
              (data.subcategory is string && data.subcategory.size() >= 0) &&
              (data.brand is string && data.brand.size() < 100) &&
              (data.image is string && isValidUrl(data.image)) &&
+             (!('images' in data) || isValidList(data.images, 10)) &&
              (data.description is string && data.description.size() < 8000) &&
              (data.price == null || data.price is number && data.price >= 0);
     }

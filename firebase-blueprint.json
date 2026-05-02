@@ -11,6 +11,7 @@
         "subcategory": { "type": "string" },
         "brand": { "type": "string" },
         "image": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
         "description": { "type": "string" },
         "price": { "type": "number" }
       },

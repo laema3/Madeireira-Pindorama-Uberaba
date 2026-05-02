@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useData } from './DataContext';
 import { 
@@ -35,7 +35,9 @@ import {
   Droplets,
   Flame,
   Plug,
-  Mountain
+  Mountain,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const ProductDescription = ({ text }: { text: string }) => {
@@ -61,9 +63,75 @@ const ProductDescription = ({ text }: { text: string }) => {
   );
 };
 
+const ProductImages = ({ mainImage, additionalImages, name }: { mainImage: string, additionalImages?: string[], name: string }) => {
+  const allImages = [mainImage, ...(additionalImages || [])].filter(img => img && img.trim() !== '');
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  if (allImages.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-stone-400">
+        Sem imagem
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-full group/gallery">
+      <img
+        src={allImages[currentIndex]}
+        alt={`${name} - Imagem ${currentIndex + 1}`}
+        className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+        referrerPolicy="no-referrer"
+        onError={(e) => {
+          e.currentTarget.src = 'https://placehold.co/600x400?text=Erro+Imagem';
+          e.currentTarget.onerror = null;
+        }}
+      />
+      
+      {allImages.length > 1 && (
+        <>
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentIndex(prev => (prev === 0 ? allImages.length - 1 : prev - 1));
+            }}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-1 rounded-full opacity-0 group-hover/gallery:opacity-100 transition-opacity"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentIndex(prev => (prev === allImages.length - 1 ? 0 : prev + 1));
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-1 rounded-full opacity-0 group-hover/gallery:opacity-100 transition-opacity"
+          >
+            <ChevronRight size={20} />
+          </button>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            {allImages.map((_, i) => (
+              <div 
+                key={i} 
+                className={`w-1.5 h-1.5 rounded-full ${i === currentIndex ? 'bg-emerald-600' : 'bg-white/50'}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 export function Products() {
   const { products, categories, settings } = useData();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+
+  // Reset page when category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory]);
 
   const getCategoryIcon = (iconName?: string, name?: string) => {
     // If we have an explicit icon name from the database, use it
@@ -123,6 +191,12 @@ export function Products() {
     ? products 
     : products.filter(p => p.category === selectedCategory);
 
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const currentProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <section id="produtos" className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -170,7 +244,7 @@ export function Products() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           <AnimatePresence mode="popLayout">
-            {filteredProducts.map((product, index) => (
+            {currentProducts.map((product, index) => (
               <motion.div
                 key={product.id}
                 layout
@@ -181,23 +255,12 @@ export function Products() {
                 className="group bg-stone-50 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="relative h-64 overflow-hidden bg-stone-200">
-                  {product.image && product.image.trim() !== '' ? (
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://placehold.co/600x400?text=Sem+Imagem';
-                        e.currentTarget.onerror = null;
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-stone-400">
-                      Sem imagem
-                    </div>
-                  )}
-                  <div className="absolute top-4 left-4 bg-emerald-800 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                  <ProductImages 
+                    mainImage={product.image} 
+                    additionalImages={product.images} 
+                    name={product.name} 
+                  />
+                  <div className="absolute top-4 left-4 bg-emerald-800 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide pointer-events-none">
                     {product.category}
                   </div>
                 </div>
@@ -226,6 +289,49 @@ export function Products() {
             ))}
           </AnimatePresence>
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-12 flex items-center justify-center gap-4">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-full border-2 transition-colors ${
+                currentPage === 1
+                  ? 'border-stone-100 text-stone-300 cursor-not-allowed'
+                  : 'border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+              }`}
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <div className="flex items-center gap-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-10 h-10 rounded-full font-bold transition-all ${
+                    currentPage === page
+                      ? 'bg-emerald-600 text-white shadow-md'
+                      : 'text-stone-600 hover:bg-emerald-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded-full border-2 transition-colors ${
+                currentPage === totalPages
+                  ? 'border-stone-100 text-stone-300 cursor-not-allowed'
+                  : 'border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+              }`}
+            >
+              <ChevronRight size={24} />
+            </button>
+          </div>
+        )}
 
         {filteredProducts.length === 0 && (
           <div className="text-center py-20">
