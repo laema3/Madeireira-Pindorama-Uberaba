@@ -1027,7 +1027,18 @@ export function AdminPanel() {
                             </div>
                           </td>
                           <td className="p-4">
-                            <LeadStatusBadge status={l.status} />
+                            <div className="flex items-center gap-2">
+                              <LeadStatusBadge status={l.status} />
+                              {(l.status === 'new' || l.status === 'contacted') && (
+                                <button 
+                                  onClick={() => updateLead({...l, status: l.status === 'new' ? 'contacted' : 'new'})}
+                                  className="p-1 text-stone-400 hover:text-emerald-600 transition"
+                                  title={l.status === 'new' ? "Marcar como Contatado" : "Marcar como Novo"}
+                                >
+                                  <Settings2 size={14} />
+                                </button>
+                              )}
+                            </div>
                           </td>
                           <td className="p-4">
                             <div className="text-sm text-stone-600">
