@@ -8,7 +8,7 @@ export interface Product {
   brand: string;
   image: string;
   description: string;
-  price: number;
+  price?: number;
 }
 
 export interface Partner {

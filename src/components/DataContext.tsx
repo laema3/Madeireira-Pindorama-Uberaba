@@ -470,6 +470,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     image: 'https://picsum.photos/seed/history/800/600'
   });
 
+  // Helper to remove undefined values before sending to Firestore
+  const sanitizeForFirestore = (data: any) => {
+    const sanitized = { ...data };
+    Object.keys(sanitized).forEach(key => {
+      if (sanitized[key] === undefined) {
+        sanitized[key] = null;
+      }
+    });
+    return sanitized;
+  };
+
   // CRUD Operations
   const createCrud = <T extends { id?: string }>(collectionName: string, setData: React.Dispatch<React.SetStateAction<T[]>>) => ({
     add: async (item: T) => {
@@ -483,7 +494,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
       try {
         const { id: _, ...data } = newItem;
-        await setDoc(doc(db, collectionName, id), data as any);
+        const sanitizedData = sanitizeForFirestore(data);
+        await setDoc(doc(db, collectionName, id), sanitizedData as any);
         console.log(`[CRUD] Successfully added to ${collectionName}`);
         handleSyncChange(collectionName, false, null); // Clear error on success
       } catch (error: any) {
@@ -505,7 +517,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
       try {
         const { id, ...data } = item;
-        await setDoc(doc(db, collectionName, id), data as any, { merge: true });
+        const sanitizedData = sanitizeForFirestore(data);
+        await setDoc(doc(db, collectionName, id), sanitizedData as any, { merge: true });
         console.log(`[CRUD] Successfully updated in ${collectionName}`);
         handleSyncChange(collectionName, false, null); // Clear error on success
       } catch (error: any) {
@@ -587,7 +600,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateSettingsFn = async (newSettings: Settings) => {
     try {
-      await setDoc(doc(db, 'settings', 'global'), newSettings);
+      const sanitized = sanitizeForFirestore(newSettings);
+      await setDoc(doc(db, 'settings', 'global'), sanitized as any);
     } catch (error: any) {
       const errJson = handleFirestoreError(error, OperationType.WRITE, 'settings/global');
       handleSyncChange('settings', false, errJson);
@@ -597,7 +611,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateAboutFn = async (newAbout: AboutData) => {
     try {
-      await setDoc(doc(db, 'about', 'global'), newAbout);
+      const sanitized = sanitizeForFirestore(newAbout);
+      await setDoc(doc(db, 'about', 'global'), sanitized as any);
     } catch (error: any) {
       const errJson = handleFirestoreError(error, OperationType.WRITE, 'about/global');
       handleSyncChange('about', false, errJson);
@@ -607,7 +622,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateHistoryFn = async (newHistory: AboutData) => {
     try {
-      await setDoc(doc(db, 'history', 'global'), newHistory);
+      const sanitized = sanitizeForFirestore(newHistory);
+      await setDoc(doc(db, 'history', 'global'), sanitized as any);
     } catch (error: any) {
       const errJson = handleFirestoreError(error, OperationType.WRITE, 'history/global');
       handleSyncChange('history', false, errJson);

@@ -178,7 +178,7 @@ service cloud.firestore {
              (data.brand is string && data.brand.size() < 100) &&
              (data.image is string && isValidUrl(data.image)) &&
              (data.description is string && data.description.size() < 8000) &&
-             (data.price is number && data.price >= 0);
+             (data.price == null || data.price is number && data.price >= 0);
     }
 
     function isValidPartner(data) {
@@ -254,7 +254,9 @@ service cloud.firestore {
              (data.whatsappUrl is string && data.whatsappUrl.size() < 500) &&
              (data.address is string && data.address.size() < 1000) &&
              (data.phone is string && data.phone.size() < 100) &&
-             (data.email is string && data.email.size() < 200);
+             (data.email is string && data.email.size() < 200) &&
+             (!('googleTagId' in data) || data.googleTagId is string) &&
+             (!('facebookPixelId' in data) || data.facebookPixelId == null || data.facebookPixelId is string);
     }
 
     function isValidAboutData(data) {

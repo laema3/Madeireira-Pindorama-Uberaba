@@ -2184,7 +2184,7 @@ export function AdminPanel() {
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-bold text-emerald-900">Gerenciar Produtos</h3>
                 <button 
-                  onClick={() => setEditingProduct({ name: '', category: '', subcategory: '', brand: '', price: 0, description: '', image: '' })}
+                  onClick={() => setEditingProduct({ name: '', category: '', subcategory: '', brand: '', price: undefined, description: '', image: '' })}
                   className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2"
                 >
                   <Plus size={18} /> Novo Produto
@@ -2209,7 +2209,7 @@ export function AdminPanel() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium">Preço (R$)</label>
-                        <input type="number" className="w-full p-2 border rounded" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: Number(e.target.value)})} />
+                        <input type="number" className="w-full p-2 border rounded" value={editingProduct.price ?? ''} onChange={e => setEditingProduct({...editingProduct, price: e.target.value ? Number(e.target.value) : undefined})} placeholder="Opcional" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium">Categoria</label>
@@ -2309,7 +2309,9 @@ export function AdminPanel() {
                         </td>
                         <td className="p-4">{p.brand}</td>
                         <td className="p-4">{p.category} / {p.subcategory}</td>
-                        <td className="p-4">R$ {p.price?.toFixed(2)}</td>
+                        <td className="p-4">
+                          {p.price !== undefined && p.price !== null && p.price > 0 ? `R$ ${p.price.toFixed(2)}` : '-'}
+                        </td>
                         <td className="p-4 text-right space-x-2">
                           <button onClick={() => setEditingProduct(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="Editar"><Edit size={18} /></button>
                           
