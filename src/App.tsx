@@ -19,9 +19,12 @@ import { PostsPage } from './pages/PostsPage';
 
 import { AIChat } from './components/AIChat';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { Maintenance } from './components/Maintenance';
+import { useData } from './components/DataContext';
 
 function AppContent() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const { settings } = useData();
   const location = useLocation();
 
   useEffect(() => {
@@ -37,6 +40,10 @@ function AppContent() {
 
   if (isAdmin) {
     return <AdminPanel />;
+  }
+
+  if (settings.maintenanceMode) {
+    return <Maintenance />;
   }
 
   return (

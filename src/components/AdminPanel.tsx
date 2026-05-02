@@ -105,7 +105,7 @@ import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signI
 import { GoogleGenAI } from '@google/genai';
 
 export function AdminPanel() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao' | 'usuarios' | 'leads'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao' | 'usuarios' | 'leads' | 'manutencao'>('dashboard');
   const { 
     about, history, updateAbout, updateHistory,
     products, addProduct, updateProduct, deleteProduct,
@@ -618,6 +618,7 @@ export function AdminPanel() {
           <nav className="space-y-2">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+              { id: 'manutencao', label: 'Manutenção', icon: <Construction size={20} /> },
               { id: 'leads', label: 'Leads', icon: <Inbox size={20} /> },
               { id: 'atuacao', label: 'Área de Atuação', icon: <MapPin size={20} /> },
               { id: 'categorias', label: 'Categorias & Sub', icon: <List size={20} /> },
@@ -1409,10 +1410,102 @@ export function AdminPanel() {
             </div>
           )}
 
+          {/* --- MANUTENCAO --- */}
+          {activeTab === 'manutencao' && (
+            <div className="space-y-8">
+              <div className="bg-white p-8 rounded-2xl border border-stone-200 shadow-sm">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-4 bg-amber-100 text-amber-700 rounded-2xl">
+                    <Construction size={40} />
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-black text-stone-900 tracking-tight">Modo Manutenção</h3>
+                    <p className="text-stone-500">Controle a visibilidade pública do seu site.</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8 items-center">
+                  <div className="p-6 rounded-2xl border-2 transition-all duration-500 bg-stone-50 border-stone-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-xs font-black uppercase tracking-widest text-stone-400">Status do Site</span>
+                      <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${settingsForm.maintenanceMode ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {settingsForm.maintenanceMode ? 'Em Manutenção' : 'Ativo'}
+                      </div>
+                    </div>
+                    
+                    <h4 className="text-xl font-bold text-stone-800 mb-2">Alternar Visibilidade</h4>
+                    <p className="text-sm text-stone-500 mb-6">Ao ativar, visitantes serão redirecionados para a tela de manutenção personalizada com o logo e fundo de madeira.</p>
+                    
+                    <button 
+                      onClick={() => setSettingsForm({...settingsForm, maintenanceMode: !settingsForm.maintenanceMode})}
+                      className={`w-full py-4 rounded-xl font-bold text-white transition shadow-lg flex items-center justify-center gap-2 ${settingsForm.maintenanceMode ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200' : 'bg-amber-500 hover:bg-amber-600 shadow-amber-200'}`}
+                    >
+                      {settingsForm.maintenanceMode ? (
+                        <><Sparkles size={20} /> ATIVAR SITE (Publicar)</>
+                      ) : (
+                        <><Construction size={20} /> ENTRAR EM MANUTENÇÃO</>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="relative group rounded-2xl overflow-hidden shadow-2xl border border-stone-200 aspect-video">
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center"
+                      style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1516733257386-816766cf241c?auto=format&fit=crop&q=80")' }}
+                    />
+                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-4">
+                      {settingsForm.logoUrl && <img src={settingsForm.logoUrl} alt="Logo" className="h-12 mb-2 opacity-80" />}
+                      <div className="text-white text-center">
+                        <p className="text-xs font-bold opacity-70">SNEAK PEEK</p>
+                        <p className="font-bold">Tela de Manutenção</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex items-start gap-3">
+                  <Info className="text-emerald-600 flex-shrink-0 mt-0.5" size={18} />
+                  <p className="text-sm text-emerald-800 leading-relaxed">
+                    <strong>Importante:</strong> Você (administrador) ainda terá acesso total ao painel de controle mesmo com o modo de manutenção ativado. A tela de manutenção exibirá um botão de login para facilitar seu acesso.
+                  </p>
+                </div>
+
+                <div className="mt-8 flex justify-end">
+                   <button 
+                    onClick={handleSaveSettings}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white px-8 py-3 rounded-xl font-black shadow-xl transition flex items-center gap-2"
+                   >
+                     <Save size={18} /> SALVAR ALTERAÇÃO
+                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* --- AJUSTES --- */}
           {activeTab === 'ajustes' && (
             <div className="space-y-8">
-              <h3 className="text-2xl font-bold text-emerald-900">Configurações do Site</h3>
+              <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-stone-200 shadow-sm">
+                <div>
+                  <h3 className="text-2xl font-bold text-emerald-900">Configurações do Site</h3>
+                  <p className="text-stone-500 text-sm">Gerencie a identidade, segurança e status do seu site.</p>
+                </div>
+                
+                <div className="flex items-center gap-4 bg-stone-50 p-3 rounded-xl border border-stone-200">
+                  <div className="text-right">
+                    <p className={`text-sm font-bold ${settingsForm.maintenanceMode ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      {settingsForm.maintenanceMode ? 'SITE EM MANUTENÇÃO' : 'SITE ATIVO'}
+                    </p>
+                    <p className="text-[10px] text-stone-500 uppercase tracking-widest font-black">Status Global</p>
+                  </div>
+                  <button 
+                    onClick={() => setSettingsForm({...settingsForm, maintenanceMode: !settingsForm.maintenanceMode})}
+                    className={`w-14 h-8 rounded-full relative transition-colors ${settingsForm.maintenanceMode ? 'bg-amber-500' : 'bg-emerald-600'}`}
+                  >
+                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-md ${settingsForm.maintenanceMode ? 'left-7' : 'left-1'}`} />
+                  </button>
+                </div>
+              </div>
               
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="bg-stone-50 p-6 rounded-xl border">

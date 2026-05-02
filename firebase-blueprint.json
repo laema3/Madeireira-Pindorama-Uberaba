@@ -131,6 +131,7 @@
         "adminPassword": { "type": "string" },
         "heroBgUrl": { "type": "string" },
         "pageBannerImageUrl": { "type": "string" },
+        "maintenanceMode": { "type": "boolean" },
         "heroSlides": { 
           "type": "array", 
           "items": { 

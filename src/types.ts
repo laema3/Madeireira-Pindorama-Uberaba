@@ -84,7 +84,8 @@ export interface Settings {
   heroImages?: string[]; // Legacy
   heroSlides?: HeroSlide[];
   heroBgUrl?: string;
-  pageBannerImageUrl?: string;
+  pageBannerImageUrl? : string;
+  maintenanceMode?: boolean;
 }
 
 export interface Work {
