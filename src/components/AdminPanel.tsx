@@ -8,7 +8,7 @@ import {
   Paintbrush, Layers, Boxes, Grid, Truck, HardHat, Ruler, Map, Construction, Shovel, Info as TooltipIcon,
   Warehouse, Fence, Lamp, Bed, Bath, Utensils, Armchair, DoorOpen, Thermometer, Car, Cctv, 
   ShieldCheck, Leaf, Sun, Wind, Droplets, Flame, Plug, Mountain, Pocket, Settings2,
-  Inbox, PhoneCall, CheckCircle2, XCircle, Mail, Phone, Facebook, Instagram
+  Inbox, PhoneCall, CheckCircle2, XCircle, Mail, Phone, Facebook, Instagram, MessageCircle
 } from 'lucide-react';
 
 const CATEGORY_ICONS = [
@@ -91,7 +91,7 @@ const LeadStatusBadge = ({ status }: { status: LeadStatus }) => {
     case 'new': 
       return <span className="bg-blue-100 text-blue-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Inbox size={10} /> Novo</span>;
     case 'contacted': 
-      return <span className="bg-amber-100 text-amber-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><PhoneCall size={10} /> Contatado</span>;
+      return <span className="bg-amber-100 text-amber-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><MessageCircle size={10} /> Contatado</span>;
     case 'qualified': 
       return <span className="bg-emerald-100 text-emerald-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 size={10} /> Qualificado</span>;
     case 'closed': 
@@ -1024,7 +1024,17 @@ export function AdminPanel() {
                             <div className="font-bold text-stone-900">{l.name}</div>
                             <div className="text-xs text-stone-500 flex flex-col gap-1 mt-1">
                               <span className="flex items-center gap-1"><Mail size={12} /> {l.email}</span>
-                              <span className="flex items-center gap-1"><Phone size={12} /> {l.phone}</span>
+                              {l.phone && (
+                                <a 
+                                  href={`https://wa.me/${l.phone.replace(/\D/g, '')}`} 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="flex items-center gap-1 hover:text-emerald-600 transition"
+                                  title="Abrir no WhatsApp"
+                                >
+                                  <MessageCircle size={12} className="text-emerald-600" /> {l.phone}
+                                </a>
+                              )}
                             </div>
                           </td>
                           <td className="p-4">
