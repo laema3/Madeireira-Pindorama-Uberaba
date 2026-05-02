@@ -111,22 +111,17 @@ service cloud.firestore {
 
     // Check if user is admin
     function isAdmin() {
-      if (!isAuthenticated() || !('email' in request.auth.token)) {
-        return false;
-      }
-      
-      let userEmail = request.auth.token.email.lower();
-      let hardcodedAdmins = ["camillasites@gmail.com", "contato@madeireirapindorama.com.br"];
-      let isHardcoded = userEmail in hardcodedAdmins;
-      
-      if (isHardcoded) {
-        return true;
-      }
-      
-      let userDocPath = /databases/$(database)/documents/users/$(userEmail);
-      return exists(userDocPath) && 
-             get(userDocPath).data.role == 'admin' && 
-             request.auth.token.email_verified == true;
+      return isAuthenticated() && 
+             'email' in request.auth.token && 
+             (
+               request.auth.token.email.lower() == "camillasites@gmail.com" || 
+               request.auth.token.email.lower() == "contato@madeireirapindorama.com.br" ||
+               (
+                 exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower())) && 
+                 get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data.role == 'admin' && 
+                 request.auth.token.email_verified == true
+               )
+             );
     }
 
     // Validate required fields exist

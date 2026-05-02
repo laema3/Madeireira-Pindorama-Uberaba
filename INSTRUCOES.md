@@ -24,8 +24,9 @@ O site possui um chat inteligente:
 - **Sincronização:** O sistema salva os dados em tempo real no Google Firebase.
 - **Backup:** Na aba "Sincronização" do painel, você pode baixar um arquivo com todos os dados do site para segurança extra.
 
-## 5. Suporte Técnico
-Se encontrar qualquer problema técnico ou precisar de novas funcionalidades, basta solicitar aqui mesmo no chat da IA Studio.
+## 6. Problemas Comuns
+- **Tela Branca:** Se o site carregar uma tela branca, tente dar um "Refresh" forçado (Ctrl+F5 no Windows ou Cmd+Shift+R no Mac). Isso limpa o cache antigo do navegador que pode estar causando o conflito.
+- **Erro de Permissão:** Se ao salvar algo aparecer "Permissão negada", verifique se você está logado com o e-mail correto e se o seu e-mail do Google está verificado. As permissões foram atualizadas para garantir que apenas administradores autorizados possam alterar os dados.
 
 ---
 *Documento gerado em 01 de Maio de 2026*

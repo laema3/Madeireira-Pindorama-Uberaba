@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pindorama-v2';
+const CACHE_NAME = 'pindorama-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -33,8 +33,9 @@ self.addEventListener('activate', (event) => {
 
 // Fetch: Network First strategy
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests
+  // Only handle GET requests and http/https schemes
   if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith('http')) return;
 
   event.respondWith(
     fetch(event.request)
