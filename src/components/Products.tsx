@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useData } from './DataContext';
 import { 
@@ -128,9 +128,19 @@ export function Products() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
-  // Reset page when category changes
+  const productsGridRef = useRef<HTMLDivElement>(null);
+
+  // Reset page and scroll when category changes
   useEffect(() => {
     setCurrentPage(1);
+    
+    // Only scroll on mobile/tablet (less than lg breakpoint)
+    if (window.innerWidth < 1024 && productsGridRef.current) {
+      // Small delay to ensure any layout shifts are stable
+      setTimeout(() => {
+        productsGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
   }, [selectedCategory]);
 
   const getCategoryIcon = (iconName?: string, name?: string) => {
@@ -242,7 +252,7 @@ export function Products() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div ref={productsGridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           <AnimatePresence mode="popLayout">
             {currentProducts.map((product, index) => (
               <motion.div
