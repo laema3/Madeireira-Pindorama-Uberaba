@@ -8,7 +8,7 @@ import {
   Paintbrush, Layers, Boxes, Grid, Truck, HardHat, Ruler, Map, Construction, Shovel, Info as TooltipIcon,
   Warehouse, Fence, Lamp, Bed, Bath, Utensils, Armchair, DoorOpen, Thermometer, Car, Cctv, 
   ShieldCheck, Leaf, Sun, Wind, Droplets, Flame, Plug, Mountain, Pocket, Settings2,
-  Inbox, PhoneCall, CheckCircle2, XCircle, Mail, Phone
+  Inbox, PhoneCall, CheckCircle2, XCircle, Mail, Phone, Facebook, Instagram
 } from 'lucide-react';
 
 const CATEGORY_ICONS = [
@@ -47,42 +47,42 @@ const CATEGORY_ICONS = [
   { name: 'Mountain', icon: <Mountain size={20} /> },
 ];
 
-const renderIcon = (iconName?: string) => {
+const renderIcon = (iconName?: string, size: number = 20) => {
   switch (iconName) {
-    case 'TreePine': return <TreePine size={20} />;
-    case 'Home': return <Home size={20} />;
-    case 'Hammer': return <Hammer size={20} />;
-    case 'Paintbrush': return <Paintbrush size={20} />;
-    case 'Grid': return <Grid size={20} />;
-    case 'Layers': return <Layers size={20} />;
-    case 'Boxes': return <Boxes size={20} />;
-    case 'Truck': return <Truck size={20} />;
-    case 'HardHat': return <HardHat size={20} />;
-    case 'Ruler': return <Ruler size={20} />;
-    case 'Map': return <Map size={20} />;
-    case 'Construction': return <Construction size={20} />;
-    case 'Shovel': return <Shovel size={20} />;
-    case 'Warehouse': return <Warehouse size={20} />;
-    case 'Fence': return <Fence size={20} />;
-    case 'Lamp': return <Lamp size={20} />;
-    case 'Bed': return <Bed size={20} />;
-    case 'Bath': return <Bath size={20} />;
-    case 'Utensils': return <Utensils size={20} />;
-    case 'Armchair': return <Armchair size={20} />;
-    case 'DoorOpen': return <DoorOpen size={20} />;
-    case 'Thermometer': return <Thermometer size={20} />;
-    case 'Car': return <Car size={20} />;
-    case 'Cctv': return <Cctv size={20} />;
-    case 'ShieldCheck': return <ShieldCheck size={20} />;
-    case 'Leaf': return <Leaf size={20} />;
-    case 'Sun': return <Sun size={20} />;
-    case 'Wind': return <Wind size={20} />;
-    case 'Droplets': return <Droplets size={20} />;
-    case 'Flame': return <Flame size={20} />;
-    case 'Plug': return <Plug size={20} />;
-    case 'Mountain': return <Mountain size={20} />;
+    case 'TreePine': return <TreePine size={size} />;
+    case 'Home': return <Home size={size} />;
+    case 'Hammer': return <Hammer size={size} />;
+    case 'Paintbrush': return <Paintbrush size={size} />;
+    case 'Grid': return <Grid size={size} />;
+    case 'Layers': return <Layers size={size} />;
+    case 'Boxes': return <Boxes size={size} />;
+    case 'Truck': return <Truck size={size} />;
+    case 'HardHat': return <HardHat size={size} />;
+    case 'Ruler': return <Ruler size={size} />;
+    case 'Map': return <Map size={size} />;
+    case 'Construction': return <Construction size={size} />;
+    case 'Shovel': return <Shovel size={size} />;
+    case 'Warehouse': return <Warehouse size={size} />;
+    case 'Fence': return <Fence size={size} />;
+    case 'Lamp': return <Lamp size={size} />;
+    case 'Bed': return <Bed size={size} />;
+    case 'Bath': return <Bath size={size} />;
+    case 'Utensils': return <Utensils size={size} />;
+    case 'Armchair': return <Armchair size={size} />;
+    case 'DoorOpen': return <DoorOpen size={size} />;
+    case 'Thermometer': return <Thermometer size={size} />;
+    case 'Car': return <Car size={size} />;
+    case 'Cctv': return <Cctv size={size} />;
+    case 'ShieldCheck': return <ShieldCheck size={size} />;
+    case 'Leaf': return <Leaf size={size} />;
+    case 'Sun': return <Sun size={size} />;
+    case 'Wind': return <Wind size={size} />;
+    case 'Droplets': return <Droplets size={size} />;
+    case 'Flame': return <Flame size={size} />;
+    case 'Plug': return <Plug size={size} />;
+    case 'Mountain': return <Mountain size={size} />;
     case 'Package':
-    default: return <Package size={20} />;
+    default: return <Package size={size} />;
   }
 };
 
@@ -620,7 +620,7 @@ export function AdminPanel() {
               { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
               { id: 'leads', label: 'Leads', icon: <Inbox size={20} /> },
               { id: 'atuacao', label: 'Área de Atuação', icon: <MapPin size={20} /> },
-              { id: 'categorias', label: 'Categorias', icon: <List size={20} /> },
+              { id: 'categorias', label: 'Categorias & Sub', icon: <List size={20} /> },
               { id: 'clientes', label: 'Clientes', icon: <UserCheck size={20} /> },
               { id: 'obras', label: 'Obras', icon: <Hammer size={20} /> },
               { id: 'parceiros', label: 'Parceiros', icon: <Users size={20} /> },
@@ -1270,97 +1270,141 @@ export function AdminPanel() {
 
           {/* --- CATEGORIAS & SUBCATEGORIAS --- */}
           {activeTab === 'categorias' && (
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Categorias */}
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold text-emerald-900">Categorias</h3>
-                  <button onClick={() => setEditingCategory({ name: '' })} className="bg-emerald-700 text-white px-3 py-1 rounded-md text-sm flex items-center gap-1"><Plus size={16} /> Nova</button>
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+                <div>
+                  <h3 className="text-2xl font-bold text-emerald-900">Categorias & Subcategorias</h3>
+                  <p className="text-sm text-stone-500">Organize seus produtos em categorias principais e subgrupos.</p>
                 </div>
-                
-                {editingCategory && (
-                  <div className="mb-4 p-4 bg-stone-50 rounded-lg border">
-                    <input className="w-full p-2 border rounded mb-4" placeholder="Nome da Categoria" value={editingCategory.name} onChange={e => setEditingCategory({...editingCategory, name: e.target.value})} />
-                    
-                    <label className="block text-sm font-bold text-stone-700 mb-2">Selecione o Ícone:</label>
-                    <div className="grid grid-cols-7 gap-2 mb-4">
-                      {CATEGORY_ICONS.map((catIcon) => (
-                        <button
-                          key={catIcon.name}
-                          type="button"
-                          onClick={() => setEditingCategory({...editingCategory, icon: catIcon.name})}
-                          className={`p-2 rounded-lg flex items-center justify-center border transition-all ${
-                            editingCategory.icon === catIcon.name 
-                              ? 'bg-emerald-600 text-white border-emerald-700 shadow-inner' 
-                              : 'bg-white text-stone-500 border-stone-200 hover:border-emerald-300 hover:bg-emerald-50'
-                          }`}
-                          title={catIcon.name}
-                        >
-                          {catIcon.icon}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => setEditingCategory(null)} className="text-sm text-stone-500">Cancelar</button>
-                      <button onClick={() => handleSaveItem(editingCategory, setEditingCategory, addCategory, updateCategory, 'categoria')} className="text-sm bg-emerald-700 text-white px-3 py-1 rounded">Salvar</button>
-                    </div>
-                  </div>
-                )}
-
-                <ul className="space-y-2">
-                  {categories.map(c => (
-                    <li key={c.id} className="flex justify-between items-center p-3 bg-white border rounded hover:bg-stone-50">
-                      <div className="flex items-center gap-3">
-                        <div className="text-emerald-700">
-                          {renderIcon(c.icon)}
-                        </div>
-                        <span className="font-medium text-stone-800">{c.name}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => setEditingCategory(c)} className="text-blue-600 p-1 hover:bg-blue-50 rounded transition-colors"><Edit size={16} /></button>
-                        <button onClick={() => handleDeleteItem(c.id, deleteCategory, 'categoria')} className="text-red-600 p-1 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
               </div>
 
-              {/* Subcategorias */}
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold text-emerald-900">Subcategorias</h3>
-                  <button onClick={() => setEditingSubcategory({ name: '', categoryId: categories[0]?.id || '' })} className="bg-emerald-700 text-white px-3 py-1 rounded-md text-sm flex items-center gap-1"><Plus size={16} /> Nova</button>
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Categorias */}
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-bold text-emerald-900 flex items-center gap-2"><Layers size={20} /> Categorias Principais</h3>
+                    <button onClick={() => setEditingCategory({ name: '', icon: 'Package' })} className="bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-emerald-800 transition shadow-sm"><Plus size={16} /> Nova</button>
+                  </div>
+                  
+                  {editingCategory && (
+                    <div className="mb-6 p-4 bg-emerald-50 rounded-lg border border-emerald-100 shadow-inner">
+                      <div className="mb-4">
+                        <label className="block text-xs font-bold text-emerald-700 uppercase mb-1">Nome da Categoria</label>
+                        <input className="w-full p-2.5 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ex: Madeiras, Ferragens..." value={editingCategory.name} onChange={e => setEditingCategory({...editingCategory, name: e.target.value})} />
+                      </div>
+                      
+                      <label className="block text-xs font-bold text-emerald-700 uppercase mb-2">Ícone Representativo:</label>
+                      <div className="grid grid-cols-7 gap-2 mb-4 max-h-40 overflow-y-auto p-1">
+                        {CATEGORY_ICONS.map((catIcon) => (
+                          <button
+                            key={catIcon.name}
+                            type="button"
+                            onClick={() => setEditingCategory({...editingCategory, icon: catIcon.name})}
+                            className={`p-2 rounded-lg flex items-center justify-center border transition-all ${
+                              editingCategory.icon === catIcon.name 
+                                ? 'bg-emerald-600 text-white border-emerald-700 shadow-md transform scale-110' 
+                                : 'bg-white text-stone-400 border-stone-200 hover:border-emerald-300 hover:bg-emerald-50'
+                            }`}
+                            title={catIcon.name}
+                          >
+                            {catIcon.icon}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-emerald-100">
+                        <button onClick={() => setEditingCategory(null)} className="px-3 py-1.5 text-sm text-stone-500 font-medium hover:text-stone-700">Cancelar</button>
+                        <button onClick={() => handleSaveItem(editingCategory, setEditingCategory, addCategory, updateCategory, 'categoria')} className="px-4 py-1.5 text-sm bg-emerald-700 text-white rounded-lg font-bold shadow-md hover:bg-emerald-800 transition">Salvar Categoria</button>
+                      </div>
+                    </div>
+                  )}
+
+                  <ul className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                    {categories.length === 0 && <li className="text-center py-8 text-stone-400 italic">Nenhuma categoria cadastrada.</li>}
+                    {categories.map(c => (
+                      <li key={c.id} className="flex justify-between items-center p-4 bg-white border border-stone-100 rounded-xl hover:shadow-md hover:border-emerald-200 transition group">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-700 group-hover:bg-emerald-100 transition">
+                            {renderIcon(c.icon)}
+                          </div>
+                          <div>
+                            <span className="font-bold text-stone-800 block">{c.name}</span>
+                            <span className="text-[10px] text-stone-400 uppercase font-bold tracking-wider">
+                              {subcategories.filter(s => s.categoryId === c.id).length} Subcategorias
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => setEditingCategory(c)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar"><Edit size={16} /></button>
+                          <button onClick={() => handleDeleteItem(c.id, deleteCategory, 'categoria')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Excluir"><Trash2 size={16} /></button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
-                {editingSubcategory && (
-                  <div className="mb-4 p-4 bg-stone-50 rounded-lg border">
-                    <input className="w-full p-2 border rounded mb-2" placeholder="Nome da Subcategoria" value={editingSubcategory.name} onChange={e => setEditingSubcategory({...editingSubcategory, name: e.target.value})} />
-                    <select className="w-full p-2 border rounded mb-2" value={editingSubcategory.categoryId} onChange={e => setEditingSubcategory({...editingSubcategory, categoryId: e.target.value})}>
-                      <option value="">Selecione a Categoria</option>
-                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => setEditingSubcategory(null)} className="text-sm text-stone-500">Cancelar</button>
-                      <button onClick={() => handleSaveItem(editingSubcategory, setEditingSubcategory, addSubcategory, updateSubcategory, 'subcategoria')} className="text-sm bg-emerald-700 text-white px-3 py-1 rounded">Salvar</button>
-                    </div>
+                {/* Subcategorias */}
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-bold text-emerald-900 flex items-center gap-2"><Tag size={20} /> Subcategorias</h3>
+                    <button 
+                      onClick={() => setEditingSubcategory({ name: '', categoryId: categories[0]?.id || '' })} 
+                      disabled={categories.length === 0}
+                      className={`bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-emerald-800 transition shadow-sm ${categories.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <Plus size={16} /> Nova
+                    </button>
                   </div>
-                )}
 
-                <ul className="space-y-2">
-                  {subcategories.map(s => (
-                    <li key={s.id} className="flex justify-between items-center p-3 bg-white border rounded hover:bg-stone-50">
-                      <div>
-                        <span className="font-medium">{s.name}</span>
-                        <span className="text-xs text-stone-500 ml-2">({categories.find(c => c.id === s.categoryId)?.name || 'Sem Categoria'})</span>
+                  {editingSubcategory && (
+                    <div className="mb-6 p-4 bg-stone-50 rounded-lg border border-stone-200 shadow-inner">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold text-stone-600 uppercase mb-1">Nome da Subcategoria</label>
+                          <input className="w-full p-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ex: Pinus, Eucalipto, Decks..." value={editingSubcategory.name} onChange={e => setEditingSubcategory({...editingSubcategory, name: e.target.value})} />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-stone-600 uppercase mb-1">Categoria Vinculada</label>
+                          <select className="w-full p-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white" value={editingSubcategory.categoryId} onChange={e => setEditingSubcategory({...editingSubcategory, categoryId: e.target.value})}>
+                            <option value="">Selecione a Categoria Principal</option>
+                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => setEditingSubcategory(s)} className="text-blue-600"><Edit size={16} /></button>
-                        <button onClick={() => handleDeleteItem(s.id, deleteSubcategory, 'subcategoria')} className="text-red-600"><Trash2 size={16} /></button>
+                      <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-stone-200">
+                        <button onClick={() => setEditingSubcategory(null)} className="px-3 py-1.5 text-sm text-stone-500 font-medium hover:text-stone-700">Cancelar</button>
+                        <button onClick={() => handleSaveItem(editingSubcategory, setEditingSubcategory, addSubcategory, updateSubcategory, 'subcategoria')} className="px-4 py-1.5 text-sm bg-emerald-700 text-white rounded-lg font-bold shadow-md hover:bg-emerald-800 transition">Salvar Subcategoria</button>
                       </div>
-                    </li>
-                  ))}
-                </ul>
+                    </div>
+                  )}
+
+                  <ul className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                    {subcategories.length === 0 && <li className="text-center py-8 text-stone-400 italic">Nenhuma subcategoria cadastrada.</li>}
+                    {subcategories.map(s => {
+                      const parentCat = categories.find(c => c.id === s.categoryId);
+                      return (
+                        <li key={s.id} className="flex justify-between items-center p-4 bg-white border border-stone-100 rounded-xl hover:shadow-md hover:border-emerald-200 transition group">
+                          <div>
+                            <span className="font-bold text-stone-800">{s.name}</span>
+                            {parentCat ? (
+                              <div className="flex items-center gap-1 mt-1">
+                                <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 uppercase">
+                                  {renderIcon(parentCat.icon, 10)} {parentCat.name}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="text-[10px] text-red-400 font-bold mt-1 uppercase">Sem Categoria Vinculada</div>
+                            )}
+                          </div>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setEditingSubcategory(s)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar"><Edit size={16} /></button>
+                            <button onClick={() => handleDeleteItem(s.id, deleteSubcategory, 'subcategoria')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Excluir"><Trash2 size={16} /></button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               </div>
             </div>
           )}
@@ -2062,16 +2106,31 @@ export function AdminPanel() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium">Categoria</label>
-                        <select className="w-full p-2 border rounded" value={editingProduct.category} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})}>
+                        <select 
+                          className="w-full p-2 border rounded" 
+                          value={editingProduct.category} 
+                          onChange={e => setEditingProduct({...editingProduct, category: e.target.value, subcategory: ''})}
+                        >
                           <option value="">Selecione...</option>
                           {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                         </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium">Subcategoria</label>
-                        <select className="w-full p-2 border rounded" value={editingProduct.subcategory} onChange={e => setEditingProduct({...editingProduct, subcategory: e.target.value})}>
+                        <select 
+                          className="w-full p-2 border rounded" 
+                          value={editingProduct.subcategory} 
+                          onChange={e => setEditingProduct({...editingProduct, subcategory: e.target.value})}
+                          disabled={!editingProduct.category}
+                        >
                           <option value="">Selecione...</option>
-                          {subcategories.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                          {subcategories
+                            .filter(s => {
+                              const parentCat = categories.find(c => c.id === s.categoryId);
+                              return parentCat?.name === editingProduct.category;
+                            })
+                            .map(s => <option key={s.id} value={s.name}>{s.name}</option>)
+                          }
                         </select>
                       </div>
                       <div className="col-span-2">
@@ -2145,8 +2204,29 @@ export function AdminPanel() {
                         <td className="p-4">{p.category} / {p.subcategory}</td>
                         <td className="p-4">R$ {p.price?.toFixed(2)}</td>
                         <td className="p-4 text-right space-x-2">
-                          <button onClick={() => setEditingProduct(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><Edit size={18} /></button>
-                          <button onClick={() => handleDeleteItem(p.id, deleteProduct, 'produto')} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={18} /></button>
+                          <button onClick={() => setEditingProduct(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="Editar"><Edit size={18} /></button>
+                          
+                          {/* Compartilhamento */}
+                          <a 
+                            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin + '/#produtos')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex p-2 text-blue-700 hover:bg-blue-50 rounded"
+                            title="Compartilhar no Facebook"
+                          >
+                            <Facebook size={18} />
+                          </a>
+                          <a 
+                            href="https://www.instagram.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex p-2 text-pink-600 hover:bg-pink-50 rounded"
+                            title="Postar no Instagram"
+                          >
+                            <Instagram size={18} />
+                          </a>
+
+                          <button onClick={() => handleDeleteItem(p.id, deleteProduct, 'produto')} className="p-2 text-red-600 hover:bg-red-50 rounded" title="Excluir"><Trash2 size={18} /></button>
                         </td>
                       </tr>
                     ))}
