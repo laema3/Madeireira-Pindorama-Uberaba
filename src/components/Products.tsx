@@ -224,7 +224,7 @@ export function Products() {
             onClick={() => setSelectedCategory('all')}
             className={`p-6 rounded-xl flex flex-col items-center justify-center gap-3 transition-all border-2 ${
               selectedCategory === 'all'
-                ? 'bg-emerald-50 border-emerald-600 text-emerald-900 shadow-md transform scale-105'
+                ? 'bg-emerald-50 border-emerald-600 text-yellow-500 shadow-md transform scale-105'
                 : 'bg-white border-stone-100 text-stone-600 hover:border-emerald-200 hover:bg-emerald-50/30'
             }`}
           >
@@ -240,7 +240,7 @@ export function Products() {
               onClick={() => setSelectedCategory(cat.name)}
               className={`p-6 rounded-xl flex flex-col items-center justify-center gap-3 transition-all border-2 ${
                 selectedCategory === cat.name
-                  ? 'bg-emerald-50 border-emerald-600 text-emerald-900 shadow-md transform scale-105'
+                  ? 'bg-emerald-50 border-emerald-600 text-yellow-500 shadow-md transform scale-105'
                   : 'bg-white border-stone-100 text-stone-600 hover:border-emerald-200 hover:bg-emerald-50/30'
               }`}
             >
