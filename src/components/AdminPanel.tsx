@@ -8,7 +8,13 @@ import {
   Paintbrush, Layers, Boxes, Grid, Truck, HardHat, Ruler, Map, Construction, Shovel, Info as TooltipIcon,
   Warehouse, Fence, Lamp, Bed, Bath, Utensils, Armchair, DoorOpen, Thermometer, Car, Cctv, 
   ShieldCheck, Leaf, Sun, Wind, Droplets, Flame, Plug, Mountain, Pocket, Settings2,
-  Inbox, PhoneCall, CheckCircle2, XCircle, Mail, Phone, Facebook, Instagram, MessageCircle
+  Inbox, PhoneCall, CheckCircle2, XCircle, Mail, Phone, Facebook, Instagram, MessageCircle,
+  Wrench, Lightbulb, Sprout, Zap, Fan, Waves, Clock, Shield, Heart, Smile, Star, Cloud, Moon,
+  Compass, Pin, Wifi, Headphones, Mic, Music, Camera, Tv, Smartphone, Cpu, Mouse, Keyboard, Printer,
+  BrickWall, Cylinder, Pyramid, Square, Circle, Triangle, Scissors, Pipette, Brush, Eraser,
+  Table, Sofa, Microwave, Refrigerator, WashingMachine, Tv2, Speaker, Watch, Luggage, 
+  Dna, FlaskConical, Microscope, Stethoscope, Syringe, GraduationCap, Trophy, Medal, Target, 
+  Rocket, Plane, Ship, Bike, Footprints, Tent, TreeDeciduous, Trees, Flower2
 } from 'lucide-react';
 
 const CATEGORY_ICONS = [
@@ -45,6 +51,34 @@ const CATEGORY_ICONS = [
   { name: 'Flame', icon: <Flame size={20} /> },
   { name: 'Plug', icon: <Plug size={20} /> },
   { name: 'Mountain', icon: <Mountain size={20} /> },
+  { name: 'Wrench', icon: <Wrench size={20} /> },
+  { name: 'Lightbulb', icon: <Lightbulb size={20} /> },
+  { name: 'Sprout', icon: <Sprout size={20} /> },
+  { name: 'Zap', icon: <Zap size={20} /> },
+  { name: 'Fan', icon: <Fan size={20} /> },
+  { name: 'Waves', icon: <Waves size={20} /> },
+  { name: 'Clock', icon: <Clock size={20} /> },
+  { name: 'Shield', icon: <Shield size={20} /> },
+  { name: 'Heart', icon: <Heart size={20} /> },
+  { name: 'Smile', icon: <Smile size={20} /> },
+  { name: 'Star', icon: <Star size={20} /> },
+  { name: 'Cloud', icon: <Cloud size={20} /> },
+  { name: 'Moon', icon: <Moon size={20} /> },
+  { name: 'Flower2', icon: <Flower2 size={20} /> },
+  { name: 'Compass', icon: <Compass size={20} /> },
+  { name: 'Pin', icon: <Pin size={20} /> },
+  { name: 'Wifi', icon: <Wifi size={20} /> },
+  { name: 'Smartphone', icon: <Smartphone size={20} /> },
+  { name: 'Cpu', icon: <Cpu size={20} /> },
+  { name: 'BrickWall', icon: <BrickWall size={20} /> },
+  { name: 'Scissors', icon: <Scissors size={20} /> },
+  { name: 'Brush', icon: <Brush size={20} /> },
+  { name: 'Table', icon: <Table size={20} /> },
+  { name: 'Sofa', icon: <Sofa size={20} /> },
+  { name: 'Trees', icon: <Trees size={20} /> },
+  { name: 'TreeDeciduous', icon: <TreeDeciduous size={20} /> },
+  { name: 'Target', icon: <Target size={20} /> },
+  { name: 'Rocket', icon: <Rocket size={20} /> },
 ];
 
 const renderIcon = (iconName?: string, size: number = 20) => {
@@ -81,6 +115,34 @@ const renderIcon = (iconName?: string, size: number = 20) => {
     case 'Flame': return <Flame size={size} />;
     case 'Plug': return <Plug size={size} />;
     case 'Mountain': return <Mountain size={size} />;
+    case 'Wrench': return <Wrench size={size} />;
+    case 'Lightbulb': return <Lightbulb size={size} />;
+    case 'Sprout': return <Sprout size={size} />;
+    case 'Zap': return <Zap size={size} />;
+    case 'Fan': return <Fan size={size} />;
+    case 'Waves': return <Waves size={size} />;
+    case 'Clock': return <Clock size={size} />;
+    case 'Shield': return <Shield size={size} />;
+    case 'Heart': return <Heart size={size} />;
+    case 'Smile': return <Smile size={size} />;
+    case 'Star': return <Star size={size} />;
+    case 'Cloud': return <Cloud size={size} />;
+    case 'Moon': return <Moon size={size} />;
+    case 'Flower2': return <Flower2 size={size} />;
+    case 'Compass': return <Compass size={size} />;
+    case 'Pin': return <Pin size={size} />;
+    case 'Wifi': return <Wifi size={size} />;
+    case 'Smartphone': return <Smartphone size={size} />;
+    case 'Cpu': return <Cpu size={size} />;
+    case 'BrickWall': return <BrickWall size={size} />;
+    case 'Scissors': return <Scissors size={size} />;
+    case 'Brush': return <Brush size={size} />;
+    case 'Table': return <Table size={size} />;
+    case 'Sofa': return <Sofa size={size} />;
+    case 'Trees': return <Trees size={size} />;
+    case 'TreeDeciduous': return <TreeDeciduous size={size} />;
+    case 'Target': return <Target size={size} />;
+    case 'Rocket': return <Rocket size={size} />;
     case 'Package':
     default: return <Package size={size} />;
   }

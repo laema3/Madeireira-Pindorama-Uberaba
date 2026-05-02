@@ -37,7 +37,34 @@ import {
   Plug,
   Mountain,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Lightbulb,
+  Sprout,
+  Zap,
+  Fan,
+  Waves,
+  Clock,
+  Shield,
+  Heart,
+  Smile,
+  Star,
+  Cloud,
+  Moon,
+  Flower2,
+  Compass,
+  Pin,
+  Wifi,
+  Smartphone,
+  Cpu,
+  BrickWall,
+  Scissors,
+  Brush,
+  Table,
+  Sofa,
+  Trees,
+  TreeDeciduous,
+  Target,
+  Rocket
 } from 'lucide-react';
 
 const ProductDescription = ({ text }: { text: string }) => {
@@ -179,6 +206,34 @@ export function Products() {
         case 'Flame': return <Flame size={24} />;
         case 'Plug': return <Plug size={24} />;
         case 'Mountain': return <Mountain size={24} />;
+        case 'Wrench': return <Wrench size={24} />;
+        case 'Lightbulb': return <Lightbulb size={24} />;
+        case 'Sprout': return <Sprout size={24} />;
+        case 'Zap': return <Zap size={24} />;
+        case 'Fan': return <Fan size={24} />;
+        case 'Waves': return <Waves size={24} />;
+        case 'Clock': return <Clock size={24} />;
+        case 'Shield': return <Shield size={24} />;
+        case 'Heart': return <Heart size={24} />;
+        case 'Smile': return <Smile size={24} />;
+        case 'Star': return <Star size={24} />;
+        case 'Cloud': return <Cloud size={24} />;
+        case 'Moon': return <Moon size={24} />;
+        case 'Flower2': return <Flower2 size={24} />;
+        case 'Compass': return <Compass size={24} />;
+        case 'Pin': return <Pin size={24} />;
+        case 'Wifi': return <Wifi size={24} />;
+        case 'Smartphone': return <Smartphone size={24} />;
+        case 'Cpu': return <Cpu size={24} />;
+        case 'BrickWall': return <BrickWall size={24} />;
+        case 'Scissors': return <Scissors size={24} />;
+        case 'Brush': return <Brush size={24} />;
+        case 'Table': return <Table size={24} />;
+        case 'Sofa': return <Sofa size={24} />;
+        case 'Trees': return <Trees size={24} />;
+        case 'TreeDeciduous': return <TreeDeciduous size={24} />;
+        case 'Target': return <Target size={24} />;
+        case 'Rocket': return <Rocket size={24} />;
         case 'Package': return <Package size={24} />;
       }
     }
