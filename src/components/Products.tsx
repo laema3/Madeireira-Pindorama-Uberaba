@@ -38,6 +38,29 @@ import {
   Mountain
 } from 'lucide-react';
 
+const ProductDescription = ({ text }: { text: string }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const maxLength = 100;
+
+  if (!text || text.length <= maxLength) {
+    return <p className="text-stone-600 mb-6">{text}</p>;
+  }
+
+  return (
+    <div className="mb-6">
+      <p className={`text-stone-600 transition-all duration-300 ${!isExpanded ? 'line-clamp-2' : ''}`}>
+        {text}
+      </p>
+      <button 
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="text-emerald-700 font-bold text-xs mt-1 hover:text-emerald-800 transition-colors uppercase tracking-wider"
+      >
+        {isExpanded ? 'Ver menos' : 'Continuar Lendo...'}
+      </button>
+    </div>
+  );
+};
+
 export function Products() {
   const { products, categories, settings } = useData();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -186,7 +209,7 @@ export function Products() {
                     </span>
                   </div>
                   <p className="text-xs text-stone-500 mb-2 uppercase tracking-wider">{product.brand} - {product.subcategory}</p>
-                  <p className="text-stone-600 mb-6 line-clamp-2">{product.description}</p>
+                  <ProductDescription text={product.description} />
                   
                   <a 
                     href={`${settings.whatsappUrl}&text=${encodeURIComponent(`Olá! Gostaria de um orçamento para o produto: ${product.name}`)}`}
