@@ -1,5 +1,31 @@
 @import "tailwindcss";
 
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #facc15 transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #facc15;
+    border-radius: 20px;
+    border: 2px solid transparent;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #eab308;
+  }
+}
+
 @layer utilities {
   .bg-wood {
     background-image: url('https://images.unsplash.com/photo-1505330622279-bf7d7fc918f4?q=80&w=2070&auto=format&fit=crop');
