@@ -169,6 +169,22 @@
         "role": { "type": "string", "enum": ["admin", "editor", "viewer"] }
       },
       "required": ["name", "email", "role"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "A lead generated from the contact form.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "notes": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "contacted", "qualified", "closed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "phone", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -187,6 +203,10 @@
     "clients/{clientId}": {
       "schema": "Client",
       "description": "Collection of clients."
+    },
+    "leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Collection of leads from contact form."
     },
     "categories/{categoryId}": {
       "schema": "Category",

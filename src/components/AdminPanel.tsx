@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from './DataContext';
-import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post, SystemUser } from '../types';
+import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post, SystemUser, Lead, LeadStatus } from '../types';
 import { 
   Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, 
   Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, 
   FileText, Video, RefreshCw, Download, Upload, Sparkles, AlertCircle, TreePine, Home, 
   Paintbrush, Layers, Boxes, Grid, Truck, HardHat, Ruler, Map, Construction, Shovel, Info as TooltipIcon,
   Warehouse, Fence, Lamp, Bed, Bath, Utensils, Armchair, DoorOpen, Thermometer, Car, Cctv, 
-  ShieldCheck, Leaf, Sun, Wind, Droplets, Flame, Plug, Mountain, Pocket, Settings2
+  ShieldCheck, Leaf, Sun, Wind, Droplets, Flame, Plug, Mountain, Pocket, Settings2,
+  Inbox, PhoneCall, CheckCircle2, XCircle, Mail, Phone
 } from 'lucide-react';
 
 const CATEGORY_ICONS = [
@@ -84,17 +85,33 @@ const renderIcon = (iconName?: string) => {
     default: return <Package size={20} />;
   }
 };
+
+const LeadStatusBadge = ({ status }: { status: LeadStatus }) => {
+  switch (status) {
+    case 'new': 
+      return <span className="bg-blue-100 text-blue-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Inbox size={10} /> Novo</span>;
+    case 'contacted': 
+      return <span className="bg-amber-100 text-amber-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><PhoneCall size={10} /> Contatado</span>;
+    case 'qualified': 
+      return <span className="bg-emerald-100 text-emerald-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 size={10} /> Qualificado</span>;
+    case 'closed': 
+      return <span className="bg-stone-100 text-stone-500 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><XCircle size={10} /> Fechado</span>;
+    default: 
+      return <span className="bg-stone-100 text-stone-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">{status}</span>;
+  }
+};
 import { auth } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 import { GoogleGenAI } from '@google/genai';
 
 export function AdminPanel() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao' | 'usuarios'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao' | 'usuarios' | 'leads'>('dashboard');
   const { 
     about, history, updateAbout, updateHistory,
     products, addProduct, updateProduct, deleteProduct,
     partners, addPartner, updatePartner, deletePartner,
     clients, addClient, updateClient, deleteClient,
+    leads, addLead, updateLead, deleteLead,
     categories, addCategory, updateCategory, deleteCategory,
     subcategories, addSubcategory, updateSubcategory, deleteSubcategory,
     settings, updateSettings,
@@ -117,6 +134,8 @@ export function AdminPanel() {
   const [editingServiceArea, setEditingServiceArea] = useState<Partial<ServiceArea> | null>(null);
   const [editingPost, setEditingPost] = useState<Partial<Post> | null>(null);
   const [editingUser, setEditingUser] = useState<Partial<SystemUser> | null>(null);
+  const [editingLead, setEditingLead] = useState<Partial<Lead> | null>(null);
+  const [leadStatusFilter, setLeadStatusFilter] = useState<LeadStatus | 'all'>('all');
   
   const [aboutForm, setAboutForm] = useState(about);
   const [historyForm, setHistoryForm] = useState(history);
@@ -599,6 +618,7 @@ export function AdminPanel() {
           <nav className="space-y-2">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+              { id: 'leads', label: 'Leads', icon: <Inbox size={20} /> },
               { id: 'atuacao', label: 'Área de Atuação', icon: <MapPin size={20} /> },
               { id: 'categorias', label: 'Categorias', icon: <List size={20} /> },
               { id: 'clientes', label: 'Clientes', icon: <UserCheck size={20} /> },
@@ -826,6 +846,13 @@ export function AdminPanel() {
                   </div>
                   <p className="text-blue-800 font-medium">Clientes Cadastrados</p>
                 </div>
+                <div className="bg-red-50 p-6 rounded-xl border border-red-100">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-red-100 rounded-lg text-red-800"><Inbox /></div>
+                    <span className="text-3xl font-bold text-red-900">{leads.length}</span>
+                  </div>
+                  <p className="text-red-800 font-medium">Novos Leads</p>
+                </div>
                 <div className="bg-amber-50 p-6 rounded-xl border border-amber-100">
                   <div className="flex justify-between items-start mb-4">
                     <div className="p-3 bg-amber-100 rounded-lg text-amber-800"><Users /></div>
@@ -854,6 +881,189 @@ export function AdminPanel() {
                   </div>
                   <p className="text-teal-800 font-medium">Profissionais Indicados</p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- LEADS --- */}
+          {activeTab === 'leads' && (
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-emerald-900">Gestão de Leads</h3>
+                  <p className="text-sm text-stone-500">Contatos recebidos através do formulário do site.</p>
+                </div>
+                
+                <div className="flex items-center gap-2 bg-white p-1 border rounded-lg shadow-sm">
+                  <button 
+                    onClick={() => setLeadStatusFilter('all')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${leadStatusFilter === 'all' ? 'bg-emerald-100 text-emerald-800' : 'text-stone-600 hover:bg-stone-50'}`}
+                  >
+                    Todos
+                  </button>
+                  <button 
+                    onClick={() => setLeadStatusFilter('new')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${leadStatusFilter === 'new' ? 'bg-blue-100 text-blue-800' : 'text-stone-600 hover:bg-stone-50'}`}
+                  >
+                    Novos
+                  </button>
+                  <button 
+                    onClick={() => setLeadStatusFilter('contacted')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${leadStatusFilter === 'contacted' ? 'bg-amber-100 text-amber-800' : 'text-stone-600 hover:bg-stone-50'}`}
+                  >
+                    Contatados
+                  </button>
+                </div>
+              </div>
+
+              {editingLead && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-2xl">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-xl font-bold text-emerald-900">Detalhes do Lead</h4>
+                      <button onClick={() => setEditingLead(null)} className="text-stone-400 hover:text-stone-600"><X /></button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Status</label>
+                          <select 
+                            className="w-full p-2.5 border border-stone-200 rounded-lg bg-stone-50 focus:ring-2 focus:ring-emerald-500 outline-none"
+                            value={editingLead.status}
+                            onChange={e => setEditingLead({...editingLead, status: e.target.value as LeadStatus})}
+                          >
+                            <option value="new">Novo</option>
+                            <option value="contacted">Contatado</option>
+                            <option value="qualified">Qualificado</option>
+                            <option value="closed">Fechado</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Data</label>
+                          <div className="p-2.5 bg-stone-100 rounded-lg text-sm text-stone-600 border border-stone-200">
+                            {editingLead.createdAt ? new Date(editingLead.createdAt).toLocaleDateString('pt-BR') : '-'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Nome</label>
+                        <input 
+                          className="w-full p-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" 
+                          value={editingLead.name} 
+                          onChange={e => setEditingLead({...editingLead, name: e.target.value})} 
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-stone-500 uppercase mb-1">E-mail</label>
+                          <input 
+                            className="w-full p-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" 
+                            value={editingLead.email} 
+                            onChange={e => setEditingLead({...editingLead, email: e.target.value})} 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Telefone</label>
+                          <input 
+                            className="w-full p-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" 
+                            value={editingLead.phone} 
+                            onChange={e => setEditingLead({...editingLead, phone: e.target.value})} 
+                        />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Mensagem / Notas</label>
+                        <textarea 
+                          className="w-full p-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none min-h-[100px]" 
+                          value={editingLead.notes} 
+                          onChange={e => setEditingLead({...editingLead, notes: e.target.value})} 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-8 flex justify-end gap-3">
+                      <button 
+                        onClick={() => setEditingLead(null)} 
+                        className="px-6 py-2.5 border border-stone-300 rounded-lg text-stone-700 hover:bg-stone-50 font-medium transition"
+                      >
+                        Cancelar
+                      </button>
+                      <button 
+                        onClick={() => handleSaveItem(editingLead, setEditingLead, addLead, updateLead, 'Lead')} 
+                        className="px-6 py-2.5 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 font-bold shadow-md transition"
+                      >
+                        Salvar Alterações
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-stone-50 border-b border-stone-200 text-stone-500 text-xs uppercase font-bold">
+                      <th className="p-4">Lead / Contato</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4">Data</th>
+                      <th className="p-4 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {leads
+                      .filter(l => leadStatusFilter === 'all' || l.status === leadStatusFilter)
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                      .map(l => (
+                        <tr key={l.id} className="hover:bg-stone-50 transition group">
+                          <td className="p-4">
+                            <div className="font-bold text-stone-900">{l.name}</div>
+                            <div className="text-xs text-stone-500 flex flex-col gap-1 mt-1">
+                              <span className="flex items-center gap-1"><Mail size={12} /> {l.email}</span>
+                              <span className="flex items-center gap-1"><Phone size={12} /> {l.phone}</span>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <LeadStatusBadge status={l.status} />
+                          </td>
+                          <td className="p-4">
+                            <div className="text-sm text-stone-600">
+                              {new Date(l.createdAt).toLocaleDateString('pt-BR')}
+                            </div>
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => setEditingLead(l)} 
+                                className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                                title="Ver detalhes / Editar"
+                              >
+                                <Edit size={18} />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteItem(l.id, deleteLead, 'Lead')} 
+                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                title="Excluir"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    {leads.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="p-12 text-center text-stone-400">
+                          <Inbox size={48} className="mx-auto mb-4 opacity-20" />
+                          Nenhum lead recebido ainda.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

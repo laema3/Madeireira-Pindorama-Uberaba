@@ -115,3 +115,16 @@ export interface SystemUser {
   email: string;
   role: 'admin' | 'editor' | 'viewer';
 }
+
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'closed';
+
+export interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address?: string;
+  notes?: string;
+  status: LeadStatus;
+  createdAt: string;
+}

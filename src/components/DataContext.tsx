@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
-import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work, ServiceArea, Post, SystemUser } from '../types';
+import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work, ServiceArea, Post, SystemUser, Lead } from '../types';
 import { db, auth } from '../lib/firebase';
 import { 
   collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, 
@@ -84,6 +84,7 @@ interface DataContextType {
   works: Work[];
   serviceAreas: ServiceArea[];
   posts: Post[];
+  leads: Lead[];
   
   isSyncing: boolean;
   isInitialLoading: boolean;
@@ -135,6 +136,10 @@ interface DataContextType {
   addPost: (post: Post) => void;
   updatePost: (post: Post) => void;
   deletePost: (id: string) => void;
+
+  addLead: (lead: Lead) => void;
+  updateLead: (lead: Lead) => void;
+  deleteLead: (id: string) => void;
 
   users: SystemUser[];
   addUser: (user: SystemUser) => void;
@@ -268,7 +273,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   function useFirestoreCollection<T>(collectionName: string, initialData: T[], enabled: boolean = true) {
     const [data, setData] = useState<T[]>(() => {
       const cached = loadFromCache(collectionName);
-      return cached || initialData;
+      if (Array.isArray(cached)) {
+        return cached;
+      }
+      return initialData;
     });
     const hasSyncedOnce = React.useRef(false);
 
@@ -429,6 +437,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [works, setWorks] = useFirestoreCollection<Work>('works', []);
   const [serviceAreas, setServiceAreas] = useFirestoreCollection<ServiceArea>('service_areas', []);
   const [posts, setPosts] = useFirestoreCollection<Post>('posts', []);
+  const [leads, setLeads] = useFirestoreCollection<Lead>('leads', [], !!user);
   const [users, setUsers] = useFirestoreCollection<SystemUser>('users', [], !!user);
 
   const [settings, setSettings] = useFirestoreDocument<Settings>('settings', 'global', {
@@ -569,6 +578,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const professionalCrud = createCrud<Professional>('professionals', setProfessionals);
   const serviceAreaCrud = createCrud<ServiceArea>('service_areas', setServiceAreas);
   const postCrud = createCrud<Post>('posts', setPosts);
+  const leadCrud = createCrud<Lead>('leads', setLeads);
   const baseUserCrud = createCrud<SystemUser>('users', setUsers);
   const userCrud = {
     ...baseUserCrud,
@@ -607,7 +617,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const exportData = () => {
     return JSON.stringify({
-      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users
+      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads
     }, null, 2);
   };
 
@@ -623,7 +633,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   return (
     <DataContext.Provider value={{
-      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users,
+      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads,
       isSyncing, lastSyncError, isOnline, loadingProgress, isInitialLoading,
       exportData, importData, forceSyncPull,
       addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.remove,
@@ -638,6 +648,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addServiceArea: serviceAreaCrud.add, updateServiceArea: serviceAreaCrud.update, deleteServiceArea: serviceAreaCrud.remove,
       addPost: postCrud.add, updatePost: postCrud.update, deletePost: postCrud.remove,
       addUser: userCrud.add, updateUser: userCrud.update, deleteUser: userCrud.remove,
+      addLead: leadCrud.add, updateLead: leadCrud.update, deleteLead: leadCrud.remove,
     }}>
       {children}
     </DataContext.Provider>

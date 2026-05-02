@@ -2,7 +2,7 @@
   "name": "Madeireira Pindorama",
   "short_name": "Pindorama",
   "description": "Qualidade e tradição em madeiras.",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#064e3b",
   "theme_color": "#064e3b",

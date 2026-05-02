@@ -6,7 +6,7 @@ import { useData } from './DataContext';
 
 export function ContactForm() {
   const { simulateLoading } = useLoader();
-  const { addClient, settings } = useData();
+  const { addLead, settings } = useData();
   const [formState, setFormState] = useState({
     name: '',
     email: '',
@@ -18,14 +18,16 @@ export function ContactForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     simulateLoading(() => {
-      // Add to clients list
-      addClient({
+      // Add to leads collection
+      addLead({
         id: Date.now().toString(),
         name: formState.name,
         email: formState.email,
         phone: formState.phone,
         address: 'Contato via Site',
-        notes: formState.message
+        notes: formState.message,
+        status: 'new',
+        createdAt: new Date().toISOString()
       });
 
       setIsSubmitted(true);
