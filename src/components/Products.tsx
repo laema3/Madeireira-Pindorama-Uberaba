@@ -170,86 +170,86 @@ export function Products() {
     }
   }, [selectedCategory]);
 
-  const getCategoryIcon = (iconName?: string, name?: string) => {
+  const getCategoryIcon = (iconName?: string, name?: string, size: number = 24) => {
     // If we have an explicit icon name from the database, use it
     if (iconName) {
       switch (iconName) {
-        case 'TreePine': return <TreePine size={24} />;
-        case 'Home': return <Home size={24} />;
-        case 'Hammer': return <Hammer size={24} />;
-        case 'Paintbrush': return <Paintbrush size={24} />;
-        case 'Grid': return <Grid size={24} />;
-        case 'Layers': return <Layers size={24} />;
-        case 'Boxes': return <Boxes size={24} />;
-        case 'Truck': return <Truck size={24} />;
-        case 'HardHat': return <HardHat size={24} />;
-        case 'Ruler': return <Ruler size={24} />;
-        case 'Map': return <Map size={24} />;
-        case 'Construction': return <Construction size={24} />;
-        case 'Shovel': return <Shovel size={24} />;
-        case 'Warehouse': return <Warehouse size={24} />;
-        case 'Fence': return <Fence size={24} />;
-        case 'Lamp': return <Lamp size={24} />;
-        case 'Bed': return <Bed size={24} />;
-        case 'Bath': return <Bath size={24} />;
-        case 'Utensils': return <Utensils size={24} />;
-        case 'Armchair': return <Armchair size={24} />;
-        case 'DoorOpen': return <DoorOpen size={24} />;
-        case 'Thermometer': return <Thermometer size={24} />;
-        case 'Car': return <Car size={24} />;
-        case 'Cctv': return <Cctv size={24} />;
-        case 'ShieldCheck': return <ShieldCheck size={24} />;
-        case 'Leaf': return <Leaf size={24} />;
-        case 'Sun': return <Sun size={24} />;
-        case 'Wind': return <Wind size={24} />;
-        case 'Droplets': return <Droplets size={24} />;
-        case 'Flame': return <Flame size={24} />;
-        case 'Plug': return <Plug size={24} />;
-        case 'Mountain': return <Mountain size={24} />;
-        case 'Wrench': return <Wrench size={24} />;
-        case 'Lightbulb': return <Lightbulb size={24} />;
-        case 'Sprout': return <Sprout size={24} />;
-        case 'Zap': return <Zap size={24} />;
-        case 'Fan': return <Fan size={24} />;
-        case 'Waves': return <Waves size={24} />;
-        case 'Clock': return <Clock size={24} />;
-        case 'Shield': return <Shield size={24} />;
-        case 'Heart': return <Heart size={24} />;
-        case 'Smile': return <Smile size={24} />;
-        case 'Star': return <Star size={24} />;
-        case 'Cloud': return <Cloud size={24} />;
-        case 'Moon': return <Moon size={24} />;
-        case 'Flower2': return <Flower2 size={24} />;
-        case 'Compass': return <Compass size={24} />;
-        case 'Pin': return <Pin size={24} />;
-        case 'Wifi': return <Wifi size={24} />;
-        case 'Smartphone': return <Smartphone size={24} />;
-        case 'Cpu': return <Cpu size={24} />;
-        case 'BrickWall': return <BrickWall size={24} />;
-        case 'Scissors': return <Scissors size={24} />;
-        case 'Brush': return <Brush size={24} />;
-        case 'Table': return <Table size={24} />;
-        case 'Sofa': return <Sofa size={24} />;
-        case 'Trees': return <Trees size={24} />;
-        case 'TreeDeciduous': return <TreeDeciduous size={24} />;
-        case 'Target': return <Target size={24} />;
-        case 'Rocket': return <Rocket size={24} />;
-        case 'Package': return <Package size={24} />;
+        case 'TreePine': return <TreePine size={size} />;
+        case 'Home': return <Home size={size} />;
+        case 'Hammer': return <Hammer size={size} />;
+        case 'Paintbrush': return <Paintbrush size={size} />;
+        case 'Grid': return <Grid size={size} />;
+        case 'Layers': return <Layers size={size} />;
+        case 'Boxes': return <Boxes size={size} />;
+        case 'Truck': return <Truck size={size} />;
+        case 'HardHat': return <HardHat size={size} />;
+        case 'Ruler': return <Ruler size={size} />;
+        case 'Map': return <Map size={size} />;
+        case 'Construction': return <Construction size={size} />;
+        case 'Shovel': return <Shovel size={size} />;
+        case 'Warehouse': return <Warehouse size={size} />;
+        case 'Fence': return <Fence size={size} />;
+        case 'Lamp': return <Lamp size={size} />;
+        case 'Bed': return <Bed size={size} />;
+        case 'Bath': return <Bath size={size} />;
+        case 'Utensils': return <Utensils size={size} />;
+        case 'Armchair': return <Armchair size={size} />;
+        case 'DoorOpen': return <DoorOpen size={size} />;
+        case 'Thermometer': return <Thermometer size={size} />;
+        case 'Car': return <Car size={size} />;
+        case 'Cctv': return <Cctv size={size} />;
+        case 'ShieldCheck': return <ShieldCheck size={size} />;
+        case 'Leaf': return <Leaf size={size} />;
+        case 'Sun': return <Sun size={size} />;
+        case 'Wind': return <Wind size={size} />;
+        case 'Droplets': return <Droplets size={size} />;
+        case 'Flame': return <Flame size={size} />;
+        case 'Plug': return <Plug size={size} />;
+        case 'Mountain': return <Mountain size={size} />;
+        case 'Wrench': return <Wrench size={size} />;
+        case 'Lightbulb': return <Lightbulb size={size} />;
+        case 'Sprout': return <Sprout size={size} />;
+        case 'Zap': return <Zap size={size} />;
+        case 'Fan': return <Fan size={size} />;
+        case 'Waves': return <Waves size={size} />;
+        case 'Clock': return <Clock size={size} />;
+        case 'Shield': return <Shield size={size} />;
+        case 'Heart': return <Heart size={size} />;
+        case 'Smile': return <Smile size={size} />;
+        case 'Star': return <Star size={size} />;
+        case 'Cloud': return <Cloud size={size} />;
+        case 'Moon': return <Moon size={size} />;
+        case 'Flower2': return <Flower2 size={size} />;
+        case 'Compass': return <Compass size={size} />;
+        case 'Pin': return <Pin size={size} />;
+        case 'Wifi': return <Wifi size={size} />;
+        case 'Smartphone': return <Smartphone size={size} />;
+        case 'Cpu': return <Cpu size={size} />;
+        case 'BrickWall': return <BrickWall size={size} />;
+        case 'Scissors': return <Scissors size={size} />;
+        case 'Brush': return <Brush size={size} />;
+        case 'Table': return <Table size={size} />;
+        case 'Sofa': return <Sofa size={size} />;
+        case 'Trees': return <Trees size={size} />;
+        case 'TreeDeciduous': return <TreeDeciduous size={size} />;
+        case 'Target': return <Target size={size} />;
+        case 'Rocket': return <Rocket size={size} />;
+        case 'Package': return <Package size={size} />;
       }
     }
 
     // Fallback based on name (backward compatibility or if no icon selected)
     if (name) {
       const lowerName = name.toLowerCase();
-      if (lowerName.includes('madeira')) return <TreePine size={24} />;
-      if (lowerName.includes('telha') || lowerName.includes('cobertura')) return <Home size={24} />;
-      if (lowerName.includes('ferramenta') || lowerName.includes('ferragem')) return <Hammer size={24} />;
-      if (lowerName.includes('acabamento') || lowerName.includes('pintura')) return <Paintbrush size={24} />;
-      if (lowerName.includes('piso') || lowerName.includes('revestimento')) return <Grid size={24} />;
-      if (lowerName.includes('estrutura') || lowerName.includes('viga')) return <Layers size={24} />;
+      if (lowerName.includes('madeira')) return <TreePine size={size} />;
+      if (lowerName.includes('telha') || lowerName.includes('cobertura')) return <Home size={size} />;
+      if (lowerName.includes('ferramenta') || lowerName.includes('ferragem')) return <Hammer size={size} />;
+      if (lowerName.includes('acabamento') || lowerName.includes('pintura')) return <Paintbrush size={size} />;
+      if (lowerName.includes('piso') || lowerName.includes('revestimento')) return <Grid size={size} />;
+      if (lowerName.includes('estrutura') || lowerName.includes('viga')) return <Layers size={size} />;
     }
 
-    return <Package size={24} />;
+    return <Package size={size} />;
   };
 
   const filteredProducts = selectedCategory === 'all' 
@@ -273,38 +273,40 @@ export function Products() {
           </p>
         </div>
 
-        {/* Category Navigation Cards */}
-        <div className="mb-16 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <button
-            onClick={() => setSelectedCategory('all')}
-            className={`p-6 rounded-xl flex flex-col items-center justify-center gap-3 transition-all border-2 ${
-              selectedCategory === 'all'
-                ? 'bg-emerald-50 border-emerald-600 text-yellow-500 shadow-md transform scale-105'
-                : 'bg-white border-stone-100 text-stone-600 hover:border-emerald-200 hover:bg-emerald-50/30'
-            }`}
-          >
-            <div className={`p-3 rounded-full ${selectedCategory === 'all' ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-400'}`}>
-              <Package size={24} />
-            </div>
-            <span className="font-bold text-sm uppercase tracking-wider">Todos</span>
-          </button>
-          
-          {categories && categories.length > 0 && categories.map((cat) => (
+        {/* Category Tabs */}
+        <div className="mb-12 overflow-x-auto no-scrollbar scroll-smooth flex justify-center">
+          <div className="flex items-center gap-2 min-w-max pb-2">
             <button
-              key={cat.id || cat.name}
-              onClick={() => setSelectedCategory(cat.name)}
-              className={`p-6 rounded-xl flex flex-col items-center justify-center gap-3 transition-all border-2 ${
-                selectedCategory === cat.name
-                  ? 'bg-emerald-50 border-emerald-600 text-yellow-500 shadow-md transform scale-105'
-                  : 'bg-white border-stone-100 text-stone-600 hover:border-emerald-200 hover:bg-emerald-50/30'
+              onClick={() => setSelectedCategory('all')}
+              className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-all border-2 whitespace-nowrap ${
+                selectedCategory === 'all'
+                  ? 'bg-emerald-50 border-emerald-600 text-yellow-500 shadow-sm transform scale-105'
+                  : 'bg-white border-stone-100 text-stone-600 hover:border-emerald-200'
               }`}
             >
-              <div className={`p-3 rounded-full ${selectedCategory === cat.name ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-400'}`}>
-                {getCategoryIcon(cat.icon, cat.name)}
+              <div className={`p-2 rounded-full ${selectedCategory === 'all' ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-400'}`}>
+                <Package size={18} />
               </div>
-              <span className="font-bold text-sm uppercase tracking-wider text-center">{cat.name || 'S/ NOME'}</span>
+              <span className="font-bold text-sm uppercase tracking-wider">Todos</span>
             </button>
-          ))}
+            
+            {categories && categories.length > 0 && categories.map((cat) => (
+              <button
+                key={cat.id || cat.name}
+                onClick={() => setSelectedCategory(cat.name)}
+                className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-all border-2 whitespace-nowrap ${
+                  selectedCategory === cat.name
+                    ? 'bg-emerald-50 border-emerald-600 text-yellow-500 shadow-sm transform scale-105'
+                    : 'bg-white border-stone-100 text-stone-600 hover:border-emerald-200'
+                }`}
+              >
+                <div className={`p-2 rounded-full ${selectedCategory === cat.name ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-400'}`}>
+                  {getCategoryIcon(cat.icon, cat.name, 18)}
+                </div>
+                <span className="font-bold text-sm uppercase tracking-wider">{cat.name || 'S/ NOME'}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div ref={productsGridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
