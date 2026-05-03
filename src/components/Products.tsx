@@ -272,7 +272,7 @@ export function Products() {
   );
 
   return (
-    <section id="produtos" className="py-16 bg-white">
+    <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-emerald-900 mb-4">Nossos Produtos</h2>
@@ -282,6 +282,8 @@ export function Products() {
           </p>
         </div>
 
+        <div id="produtos" className="scroll-mt-24"></div>
+
         {/* Category Tabs */}
         <div className="mb-12 flex justify-center">
           <div className="inline-flex flex-wrap justify-center border-b border-stone-200">
@@ -289,13 +291,13 @@ export function Products() {
               onClick={() => setSelectedCategory('all')}
               className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all relative ${
                 selectedCategory === 'all'
-                  ? 'text-emerald-700'
-                  : 'text-stone-400 hover:text-stone-600'
+                  ? 'text-yellow-600'
+                  : 'text-stone-400 hover:text-yellow-500'
               }`}
             >
               Todos
               {selectedCategory === 'all' && (
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-emerald-600 rounded-t-full"></div>
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-yellow-500 rounded-t-full"></div>
               )}
             </button>
             
@@ -308,16 +310,18 @@ export function Products() {
                   onClick={() => setSelectedCategory(cat.name)}
                   className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all relative ${
                     isSelected
-                      ? 'text-emerald-700'
-                      : 'text-stone-400 hover:text-stone-600'
+                      ? 'text-yellow-600'
+                      : 'text-stone-400 hover:text-yellow-500'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    {getCategoryIcon(cat.icon, cat.name, 16)}
+                    <span className={isSelected ? 'text-yellow-500' : 'text-stone-400 group-hover:text-yellow-500'}>
+                      {getCategoryIcon(cat.icon, cat.name, 16)}
+                    </span>
                     {cat.name}
                   </div>
                   {isSelected && (
-                    <div className="absolute bottom-0 left-0 w-full h-1 bg-emerald-600 rounded-t-full"></div>
+                    <div className="absolute bottom-0 left-0 w-full h-1 bg-yellow-500 rounded-t-full"></div>
                   )}
                 </button>
               );
