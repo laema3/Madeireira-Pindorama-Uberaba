@@ -282,16 +282,13 @@ export function Products() {
           </p>
         </div>
 
-        <div id="produtos" className="scroll-mt-24"></div>
-
-        {/* Category Tabs */}
         <div className="mb-12 flex justify-center">
           <div className="inline-flex flex-wrap justify-center border-b border-stone-200">
             <button
               onClick={() => setSelectedCategory('all')}
               className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all relative ${
                 selectedCategory === 'all'
-                  ? 'text-yellow-600'
+                  ? 'text-yellow-500'
                   : 'text-stone-400 hover:text-yellow-500'
               }`}
             >
@@ -310,7 +307,7 @@ export function Products() {
                   onClick={() => setSelectedCategory(cat.name)}
                   className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all relative ${
                     isSelected
-                      ? 'text-yellow-600'
+                      ? 'text-yellow-500'
                       : 'text-stone-400 hover:text-yellow-500'
                   }`}
                 >
@@ -329,7 +326,7 @@ export function Products() {
           </div>
         </div>
 
-        <div ref={productsGridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div id="produtos" ref={productsGridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 scroll-mt-32">
           {currentProducts.map((product, idx) => (
             product && (
               <div
