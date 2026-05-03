@@ -155,7 +155,7 @@ export function Products() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
-  const whatsappBaseUrl = settings?.whatsappUrl || 'https://wa.me/5511999999999';
+  const whatsappBaseUrl = settings?.whatsappUrl || 'https://wa.me/5534999728054';
 
   const productsGridRef = useRef<HTMLDivElement>(null);
 
@@ -352,7 +352,7 @@ export function Products() {
                 <ProductDescription text={product.description} />
                 
                 <a 
-                  href={`${whatsappBaseUrl}&text=${encodeURIComponent(`Olá! Gostaria de um orçamento para o produto: ${product.name}`)}`}
+                  href={`${whatsappBaseUrl}?text=${encodeURIComponent(`Olá! Gostaria de um orçamento para o produto: ${product.name}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
