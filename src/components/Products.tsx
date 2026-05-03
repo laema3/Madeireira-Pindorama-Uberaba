@@ -63,7 +63,8 @@ import {
   Trees,
   TreeDeciduous,
   Target,
-  Rocket
+  Rocket,
+  List
 } from 'lucide-react';
 
 const ProductDescription = ({ text }: { text: string }) => {
@@ -282,20 +283,18 @@ export function Products() {
           </p>
         </div>
 
-        <div className="mb-12 flex justify-center">
-          <div className="inline-flex flex-wrap justify-center border-b border-stone-200">
+        <div className="mb-0 flex justify-center">
+          <div className="flex flex-wrap justify-center gap-1">
             <button
               onClick={() => setSelectedCategory('all')}
-              className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all relative ${
+              className={`px-6 py-4 text-xs font-bold uppercase tracking-widest transition-all rounded-t-xl border-t border-l border-r flex items-center gap-2 ${
                 selectedCategory === 'all'
-                  ? 'text-yellow-500'
-                  : 'text-stone-400 hover:text-yellow-500'
+                  ? 'bg-emerald-800 border-emerald-800 text-yellow-400 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]'
+                  : 'bg-stone-50 border-stone-100 text-emerald-800 hover:bg-emerald-50'
               }`}
             >
+              <List size={16} className={selectedCategory === 'all' ? 'text-emerald-300' : 'text-emerald-700'} />
               Todos
-              {selectedCategory === 'all' && (
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-yellow-500 rounded-t-full"></div>
-              )}
             </button>
             
             {Array.isArray(categories) && categories.map((cat: any) => {
@@ -305,28 +304,25 @@ export function Products() {
                 <button
                   key={cat.id || cat.name}
                   onClick={() => setSelectedCategory(cat.name)}
-                  className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all relative ${
+                  className={`px-6 py-4 text-xs font-bold uppercase tracking-widest transition-all rounded-t-xl border-t border-l border-r flex items-center gap-2 ${
                     isSelected
-                      ? 'text-yellow-500'
-                      : 'text-stone-400 hover:text-yellow-500'
+                      ? 'bg-emerald-800 border-emerald-800 text-yellow-400 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]'
+                      : 'bg-stone-50 border-stone-100 text-emerald-800 hover:bg-emerald-50'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <span className={isSelected ? 'text-yellow-500' : 'text-stone-400 group-hover:text-yellow-500'}>
+                    <span className={isSelected ? 'text-emerald-300' : 'text-emerald-700'}>
                       {getCategoryIcon(cat.icon, cat.name, 16)}
                     </span>
                     {cat.name}
                   </div>
-                  {isSelected && (
-                    <div className="absolute bottom-0 left-0 w-full h-1 bg-yellow-500 rounded-t-full"></div>
-                  )}
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div id="produtos" ref={productsGridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 scroll-mt-32">
+        <div id="produtos" ref={productsGridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 scroll-mt-32 border-t-8 border-emerald-800 pt-12">
           {currentProducts.map((product, idx) => (
             product && (
               <div
