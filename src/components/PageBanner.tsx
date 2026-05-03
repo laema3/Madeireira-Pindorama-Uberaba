@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'motion/react';
 import { useData } from './DataContext';
 
 interface PageBannerProps {
@@ -24,13 +23,11 @@ export function PageBanner({ title }: PageBannerProps) {
         <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
       </div>
       <div className="max-w-7xl mx-auto w-full relative z-30">
-        <motion.h1 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-6xl md:text-8xl font-bold text-white uppercase tracking-tighter drop-shadow-lg"
+        <h1 
+          className="text-6xl md:text-8xl font-bold text-white uppercase tracking-tighter drop-shadow-lg animate-in fade-in slide-in-from-bottom-5 duration-700"
         >
           {title}
-        </motion.h1>
+        </h1>
       </div>
     </div>
   );

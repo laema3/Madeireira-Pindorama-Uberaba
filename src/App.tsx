@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { FloatingActions } from './components/FloatingActions';
-import { LoaderProvider } from './components/LoaderContext';
+import { LoaderProvider, GlobalLoader } from './components/LoaderContext';
 import { DataProvider } from './components/DataContext';
 import { AdminPanel } from './components/AdminPanel';
 import { FaviconManager } from './components/FaviconManager';
@@ -20,15 +20,29 @@ import { PostsPage } from './pages/PostsPage';
 import { AIChat } from './components/AIChat';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { Maintenance } from './components/Maintenance';
-import { FacebookPixel } from './components/FacebookPixel';
+import { Tracker } from './components/Tracker';
 import { useData } from './components/DataContext';
 
 function AppContent() {
   const [isAdmin, setIsAdmin] = useState(false);
-  const { settings } = useData();
+  const data = useData();
   const location = useLocation();
+  
+  if (!data) {
+    console.error("AppContent: Data context is missing!");
+    return <div>Erro de Contexto</div>;
+  }
+
+  const { settings, isInitialLoading, loadingProgress } = data;
 
   useEffect(() => {
+    console.log("AppContent: Status Check", { 
+      pathname: location.pathname, 
+      isAdmin, 
+      maintenanceMode: settings?.maintenanceMode,
+      isInitialLoading,
+      loadingProgress
+    });
     document.title = "Madeireira Pindorama";
     const checkHash = () => {
       setIsAdmin(window.location.hash === '#admin');
@@ -43,13 +57,14 @@ function AppContent() {
     return <AdminPanel />;
   }
 
-  if (settings.maintenanceMode) {
+  if (settings?.maintenanceMode) {
     return <Maintenance />;
   }
 
   return (
-    <LoaderProvider>
-      <FacebookPixel />
+    <>
+      <GlobalLoader />
+      <Tracker />
       <div className="min-h-screen bg-stone-50 font-sans text-stone-900">
         <Header />
         <main>
@@ -72,7 +87,7 @@ function AppContent() {
           <a href="#admin" className="pointer-events-auto absolute bottom-0 right-0 p-1 text-xs text-gray-300">Admin</a>
         </div>
       </div>
-    </LoaderProvider>
+    </>
   );
 }
 
@@ -80,9 +95,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <DataProvider>
-        <FaviconManager />
-        <ConnectionStatus />
-        <AppContent />
+        <LoaderProvider>
+          <FaviconManager />
+          <ConnectionStatus />
+          <AppContent />
+        </LoaderProvider>
       </DataProvider>
     </BrowserRouter>
   );

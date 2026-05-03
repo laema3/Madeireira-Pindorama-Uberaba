@@ -3,7 +3,8 @@ import { useData } from './DataContext';
 
 export function Location() {
   const { settings } = useData();
-  const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(settings.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  const address = settings?.address || 'Av. das Araucárias, 1234 - Distrito Industrial';
+  const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
 
   return (
     <section className="bg-stone-100">

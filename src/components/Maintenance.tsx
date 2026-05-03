@@ -1,7 +1,6 @@
 import React from 'react';
 import { useData } from './DataContext';
 import { Lock, LogIn } from 'lucide-react';
-import { motion } from 'motion/react';
 
 export function Maintenance() {
   const { settings } = useData();
@@ -21,14 +20,12 @@ export function Maintenance() {
       <div className="absolute inset-0 bg-gradient-to-b from-stone-900/60 to-emerald-950/80" />
 
       {/* Content */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-xl text-center bg-white/5 backdrop-blur-md p-8 md:p-12 rounded-3xl border border-white/10 shadow-2xl"
+      <div 
+        className="relative z-10 w-full max-w-xl text-center bg-white/5 backdrop-blur-md p-8 md:p-12 rounded-3xl border border-white/10 shadow-2xl animate-in fade-in zoom-in duration-700"
       >
         {/* Logo */}
         <div className="mb-8">
-          {settings.logoUrl ? (
+          {settings?.logoUrl ? (
             <img 
               src={settings.logoUrl} 
               alt="Logo" 
@@ -68,13 +65,13 @@ export function Maintenance() {
         {/* Footer info */}
         <div className="mt-12 pt-8 border-t border-white/5 space-y-2">
           <p className="text-stone-400 text-sm">
-            {settings.address}
+            {settings?.address}
           </p>
           <p className="text-emerald-400/80 font-mono text-xs">
             QUALIDADE E TRADIÇÃO EM MADEIRAS
           </p>
         </div>
-      </motion.div>
+      </div>
 
       {/* Decorative floating chips */}
       <div className="absolute top-10 left-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl" />

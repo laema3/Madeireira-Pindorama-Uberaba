@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { Quote, Star } from 'lucide-react';
 
 const testimonials = [
@@ -72,14 +71,9 @@ export function Testimonials() {
         </div>
 
         <div className="relative h-[300px] md:h-[250px] flex items-center justify-center">
-          <AnimatePresence mode="wait">
-            <motion.div
+            <div
               key={currentIndex}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.5 }}
-              className="text-center"
+              className="text-center transition-opacity duration-500"
             >
               <div className="flex justify-center mb-6">
                 <div className="bg-yellow-400/20 p-3 rounded-full">
@@ -100,8 +94,7 @@ export function Testimonials() {
                 <h4 className="text-white font-bold text-lg">{testimonials[currentIndex].name}</h4>
                 <span className="text-emerald-300 text-sm uppercase tracking-widest">{testimonials[currentIndex].role}</span>
               </div>
-            </motion.div>
-          </AnimatePresence>
+            </div>
         </div>
 
         {/* Indicators */}

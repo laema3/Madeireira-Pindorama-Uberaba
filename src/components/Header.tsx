@@ -91,7 +91,7 @@ export function Header() {
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center gap-4 shrink-0">
             <Link to="/" onClick={(e) => handleNavClick(e as any, '/')} className="flex flex-col items-center gap-1">
-              {settings?.logoUrl && settings?.logoUrl.trim() !== '' ? (
+              {settings?.logoUrl && settings.logoUrl.trim() !== '' ? (
                 <img 
                   src={settings.logoUrl} 
                   alt="Logo" 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Send, CheckCircle, Clock, MapPin, Phone, Mail } from 'lucide-react';
-import { motion } from 'motion/react';
 import { useLoader } from './LoaderContext';
 import { useData } from './DataContext';
 
@@ -91,10 +90,8 @@ export function ContactForm() {
 
           <div>
             {isSubmitted ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-emerald-50 border border-emerald-200 rounded-xl p-8 text-center"
+              <div
+                className="bg-emerald-50 border border-emerald-200 rounded-xl p-8 text-center animate-in fade-in zoom-in duration-300"
               >
                 <div className="flex justify-center mb-4">
                   <CheckCircle size={48} className="text-emerald-600" />
@@ -103,7 +100,7 @@ export function ContactForm() {
                 <p className="text-emerald-800">
                   Obrigado pelo contato. Nossa equipe retornará em breve.
                 </p>
-              </motion.div>
+              </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6 bg-stone-50 p-8 rounded-2xl shadow-sm border border-stone-100">
                 <div className="grid md:grid-cols-2 gap-6">

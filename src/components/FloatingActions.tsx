@@ -19,8 +19,11 @@ export function FloatingActions() {
       {/* WhatsApp on the Right (Replacing AI Agent) */}
       <div className="fixed bottom-6 right-6 z-50">
         <a
-          href={settings.whatsappUrl}
-          onClick={(e) => handleClick(e, settings.whatsappUrl)}
+          href={settings?.whatsappUrl || '#'}
+          onClick={(e) => {
+            if (!settings?.whatsappUrl) return;
+            handleClick(e, settings.whatsappUrl);
+          }}
           className="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition hover:scale-110 flex items-center justify-center group relative"
           title="Fale Conosco no WhatsApp"
         >
@@ -34,9 +37,10 @@ export function FloatingActions() {
       {/* Phone on the Left */}
       <div className="fixed bottom-6 left-6 z-50">
         <a
-          href={`tel:${settings.phone.replace(/\D/g, '')}`}
+          href={settings?.phone ? `tel:${settings.phone.replace(/\D/g, '')}` : '#'}
           onClick={(e) => {
             e.preventDefault();
+            if (!settings?.phone) return;
             simulateLoading(() => {
               window.location.href = `tel:${settings.phone.replace(/\D/g, '')}`;
             });

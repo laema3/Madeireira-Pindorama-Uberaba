@@ -168,6 +168,7 @@ import { GoogleGenAI } from '@google/genai';
 
 export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao' | 'usuarios' | 'leads' | 'manutencao'>('dashboard');
+  const [internalProductTab, setInternalProductTab] = useState('all');
   const { 
     about, history, updateAbout, updateHistory,
     products, addProduct, updateProduct, deleteProduct,
@@ -2254,13 +2255,43 @@ export function AdminPanel() {
           {activeTab === 'produtos' && (
             <div>
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-emerald-900">Gerenciar Produtos</h3>
+                <div>
+                  <h3 className="text-2xl font-bold text-emerald-900">Gerenciar Produtos</h3>
+                  <p className="text-stone-500 text-sm">Visualize e edite seu catálogo de produtos</p>
+                </div>
                 <button 
                   onClick={() => setEditingProduct({ name: '', category: '', subcategory: '', brand: '', price: undefined, description: '', image: '', images: [] })}
-                  className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2"
+                  className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2 shadow-sm"
                 >
                   <Plus size={18} /> Novo Produto
                 </button>
+              </div>
+
+              {/* Internal Product Tabs by Category */}
+              <div className="mb-6 overflow-x-auto no-scrollbar border-b border-stone-200">
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setInternalProductTab('all')}
+                    className={`pb-4 px-2 text-sm font-bold transition-all relative whitespace-nowrap ${
+                      internalProductTab === 'all' ? 'text-emerald-700' : 'text-stone-400 hover:text-stone-600'
+                    }`}
+                  >
+                    Todos os Produtos
+                    {internalProductTab === 'all' && <div className="absolute bottom-0 left-0 w-full h-1 bg-emerald-600 rounded-t-full"></div>}
+                  </button>
+                  {categories.map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setInternalProductTab(cat.name)}
+                      className={`pb-4 px-2 text-sm font-bold transition-all relative whitespace-nowrap ${
+                        internalProductTab === cat.name ? 'text-emerald-700' : 'text-stone-400 hover:text-stone-600'
+                      }`}
+                    >
+                      {cat.name}
+                      {internalProductTab === cat.name && <div className="absolute bottom-0 left-0 w-full h-1 bg-emerald-600 rounded-t-full"></div>}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {editingProduct && (
@@ -2405,7 +2436,9 @@ export function AdminPanel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {products.map(p => (
+                    {products
+                      .filter(p => internalProductTab === 'all' || p.category === internalProductTab)
+                      .map(p => (
                       <tr key={p.id} className="border-t hover:bg-stone-50">
                         <td className="p-4 flex items-center gap-3">
                           {p.image && p.image.trim() !== '' ? (

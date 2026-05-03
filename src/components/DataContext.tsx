@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback, useMemo } from 'react';
 import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work, ServiceArea, Post, SystemUser, Lead } from '../types';
+
 import { db, auth } from '../lib/firebase';
 import { 
   collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, 
@@ -57,7 +58,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
       emailVerified: auth.currentUser?.emailVerified,
       isAnonymous: auth.currentUser?.isAnonymous,
       tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData.map(provider => ({
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
         providerId: provider.providerId,
         displayName: provider.displayName,
         email: provider.email,
@@ -147,7 +148,7 @@ interface DataContextType {
   deleteUser: (id: string) => void;
 }
 
-const DataContext = createContext<DataContextType | undefined>(undefined);
+export const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function useData() {
   const context = useContext(DataContext);
@@ -155,6 +156,212 @@ export function useData() {
     throw new Error('useData must be used within a DataProvider');
   }
   return context;
+}
+
+// Generic Firestore Hook for Collections
+function useFirestoreCollection<T>(
+  collectionName: string, 
+  initialData: T[], 
+  handleSyncChange: (key: string, syncing: boolean, error?: string | null, firstSync?: boolean) => void,
+  saveToCache: (key: string, data: any) => void,
+  loadFromCache: (key: string) => any,
+  pendingDeletionsRef: React.MutableRefObject<Record<string, Set<string>>>,
+  setPendingDeletions: React.Dispatch<React.SetStateAction<Record<string, Set<string>>>>,
+  enabled: boolean = true
+) {
+  const [data, setData] = useState<T[]>(() => {
+    try {
+      const cached = loadFromCache(collectionName);
+      if (Array.isArray(cached)) return cached;
+    } catch (e) {
+      console.warn(`Failed to load ${collectionName} from cache`, e);
+    }
+    return initialData;
+  });
+  
+  const hasSyncedOnce = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!enabled) {
+      handleSyncChange(collectionName, false, null, true);
+      return;
+    }
+
+    handleSyncChange(collectionName, true);
+    let unsubscribe: (() => void) | undefined;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    const setupListener = () => {
+      if (!mountedRef.current) return;
+
+      try {
+        const q = query(collection(db, collectionName));
+        unsubscribe = onSnapshot(q, (snapshot) => {
+          if (!mountedRef.current) return;
+
+          let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+          const isFromServer = !snapshot.metadata.fromCache;
+          
+          // Filter out pending deletions
+          const pending = pendingDeletionsRef.current[collectionName];
+          if (pending && pending.size > 0) {
+            const stillPending = new Set(pending);
+            let changed = false;
+
+            if (isFromServer) {
+              for (const id of Array.from(stillPending)) {
+                if (!items.some(item => (item as any).id === id)) {
+                  stillPending.delete(id);
+                  changed = true;
+                }
+              }
+            }
+
+            if (changed) {
+              setPendingDeletions(prev => ({ ...prev, [collectionName]: stillPending }));
+            }
+
+            items = items.filter(item => !stillPending.has((item as any).id));
+          }
+
+          // Sort items
+          if (['categories', 'subcategories', 'products'].includes(collectionName)) {
+            items.sort((a: any, b: any) => {
+              const nameA = String(a.name || a.title || '').toLowerCase();
+              const nameB = String(b.name || b.title || '').toLowerCase();
+              return nameA.localeCompare(nameB);
+            });
+          }
+
+          setData(items);
+          saveToCache(collectionName, items);
+          
+          const isFirst = !hasSyncedOnce.current;
+          if (isFirst) {
+            hasSyncedOnce.current = true;
+          }
+          
+          handleSyncChange(collectionName, snapshot.metadata.hasPendingWrites, null, isFirst);
+          retryCount = 0; 
+        }, (error) => {
+          if (!mountedRef.current) return;
+
+          const errJson = handleFirestoreError(error, OperationType.GET, collectionName);
+          const isFirst = !hasSyncedOnce.current;
+          
+          if (error.code === 'resource-exhausted' || error.message.includes('Quota')) {
+            const cached = loadFromCache(collectionName);
+            if (cached) setData(cached);
+            handleSyncChange(collectionName, false, null, true);
+            return;
+          }
+
+          if (error.code === 'unavailable' && retryCount < maxRetries) {
+            retryCount++;
+            setTimeout(setupListener, 2000 * retryCount);
+          } else {
+            handleSyncChange(collectionName, false, errJson, isFirst);
+          }
+        });
+      } catch (err) {
+        console.error(`Error setting up listener for ${collectionName}:`, err);
+        handleSyncChange(collectionName, false, null, true); // Don't block forever
+      }
+    };
+
+    setupListener();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [collectionName, enabled, handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions]);
+
+  return [data, setData] as const;
+}
+
+// Generic Firestore Hook for Documents
+function useFirestoreDocument<T>(
+  collectionName: string, 
+  docId: string, 
+  initialData: T,
+  handleSyncChange: (key: string, syncing: boolean, error?: string | null, firstSync?: boolean) => void,
+  saveToCache: (key: string, data: any) => void,
+  loadFromCache: (key: string) => any
+) {
+  const cacheKey = useMemo(() => `${collectionName}_${docId}`, [collectionName, docId]);
+  const [data, setData] = useState<T>(() => {
+    try {
+      const cached = loadFromCache(cacheKey);
+      if (cached) return cached;
+    } catch (e) {}
+    return initialData;
+  });
+  
+  const hasSyncedOnce = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!mountedRef.current) return;
+    
+    handleSyncChange(cacheKey, true);
+    
+    let unsubscribe: () => void;
+    
+    try {
+      unsubscribe = onSnapshot(doc(db, collectionName, docId), (docSnap) => {
+        if (!mountedRef.current) return;
+        
+        const isFirst = !hasSyncedOnce.current;
+
+        if (docSnap.exists()) {
+          const docData = docSnap.data() as T;
+          setData(docData);
+          saveToCache(cacheKey, docData);
+        }
+        
+        if (isFirst) {
+          hasSyncedOnce.current = true;
+        }
+
+        handleSyncChange(cacheKey, docSnap.metadata.hasPendingWrites, null, isFirst);
+      }, (error) => {
+        if (!mountedRef.current) return;
+        
+        const errJson = handleFirestoreError(error, OperationType.GET, `${collectionName}/${docId}`);
+        const isFirst = !hasSyncedOnce.current;
+        
+        if (error.code === 'resource-exhausted' || error.message.includes('Quota')) {
+          const cached = loadFromCache(cacheKey);
+          if (cached) setData(cached);
+          handleSyncChange(cacheKey, false, null, true);
+          return;
+        }
+
+        handleSyncChange(cacheKey, false, errJson, isFirst);
+      });
+    } catch (err) {
+      console.error(`Error setting up document listener for ${cacheKey}:`, err);
+      handleSyncChange(cacheKey, false, null, true);
+    }
+    
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [collectionName, docId, cacheKey, handleSyncChange, saveToCache, loadFromCache]);
+
+  return [data, setData] as const;
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
@@ -166,17 +373,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const [forceLoaded, setForceLoaded] = useState(false);
 
+  const totalItemsToLoad = 14; 
+  const itemsLoadedCount = Object.values(initialSyncDone).filter(done => done).length;
+  const loadingProgress = Math.min(100, Math.round((itemsLoadedCount / totalItemsToLoad) * 100));
+  
+  // More aggressive timeouts for the initial loader
+  const [hasTimedOutShort, setHasTimedOutShort] = useState(false);
+  
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setForceLoaded(true);
-    }, 5000);
-    return () => clearTimeout(timer);
+    // If after 3 seconds we have at least 1 item, or after 6 seconds regardless, show the app
+    const shortTimer = setTimeout(() => setHasTimedOutShort(true), 3000);
+    const forceTimer = setTimeout(() => setForceLoaded(true), 6000);
+    return () => {
+      clearTimeout(shortTimer);
+      clearTimeout(forceTimer);
+    };
   }, []);
 
-  const totalItemsToLoad = 13; // 10 collections + 3 documents
-  const itemsLoadedCount = Object.values(initialSyncDone).filter(done => done).length;
-  const loadingProgress = Math.round((itemsLoadedCount / totalItemsToLoad) * 100);
-  const isInitialLoading = !forceLoaded && itemsLoadedCount < totalItemsToLoad;
+  const isInitialLoading = !forceLoaded && !(hasTimedOutShort || itemsLoadedCount >= totalItemsToLoad);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -235,17 +449,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [pendingDeletions]);
 
-  const handleSyncChange = (key: string, syncing: boolean, error: string | null = null, firstSync: boolean = false) => {
+  const handleSyncChange = useCallback((key: string, syncing: boolean, error: string | null = null, firstSync: boolean = false) => {
     setSyncingStates(prev => ({ ...prev, [key]: syncing }));
     if (firstSync) setInitialSyncDone(prev => ({ ...prev, [key]: true }));
     if (error) setSyncErrors(prev => ({ ...prev, [key]: error }));
-  };
+  }, []);
 
   const isSyncing = Object.values(syncingStates).some(s => s);
   const lastSyncError = Object.values(syncErrors).find(e => e !== null) || null;
 
   // Helper to save to cache
-  const saveToCache = (key: string, data: any) => {
+  const saveToCache = useCallback((key: string, data: any) => {
     try {
       localStorage.setItem(`cache_${key}`, JSON.stringify({
         data,
@@ -254,10 +468,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.warn('Failed to save to cache:', e);
     }
-  };
+  }, []);
 
   // Helper to load from cache
-  const loadFromCache = (key: string) => {
+  const loadFromCache = useCallback((key: string) => {
     try {
       const cached = localStorage.getItem(`cache_${key}`);
       if (cached) {
@@ -267,178 +481,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.warn('Failed to load from cache:', e);
     }
     return null;
-  };
+  }, []);
 
-  // Generic Firestore Hook for Collections
-  function useFirestoreCollection<T>(collectionName: string, initialData: T[], enabled: boolean = true) {
-    const [data, setData] = useState<T[]>(() => {
-      const cached = loadFromCache(collectionName);
-      if (Array.isArray(cached)) {
-        return cached;
-      }
-      return initialData;
-    });
-    const hasSyncedOnce = React.useRef(false);
 
-    useEffect(() => {
-      if (!enabled) {
-        handleSyncChange(collectionName, false, null, true);
-        return;
-      }
-
-      handleSyncChange(collectionName, true);
-      let unsubscribe: () => void;
-      let retryCount = 0;
-      const maxRetries = 3;
-
-      const setupListener = () => {
-        const q = query(collection(db, collectionName));
-        unsubscribe = onSnapshot(q, (snapshot) => {
-          let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
-          const isFromServer = !snapshot.metadata.fromCache;
-          
-          // Filter out pending deletions
-          const pending = pendingDeletionsRef.current[collectionName];
-          if (pending && pending.size > 0) {
-            const stillPending = new Set(pending);
-            let changed = false;
-
-            // If data is from server, we can remove items from pending if they are no longer in the snapshot
-            if (isFromServer) {
-              for (const id of Array.from(stillPending)) {
-                if (!items.some(item => (item as any).id === id)) {
-                  stillPending.delete(id);
-                  changed = true;
-                }
-              }
-            }
-
-            if (changed) {
-              setPendingDeletions(prev => ({ ...prev, [collectionName]: stillPending }));
-            }
-
-            items = items.filter(item => !stillPending.has((item as any).id));
-          }
-
-          // Sort items alphabetically by name/title
-          if (collectionName === 'categories' || collectionName === 'subcategories' || collectionName === 'products') {
-            items.sort((a: any, b: any) => {
-              const nameA = (a.name || a.title || '').toLowerCase();
-              const nameB = (b.name || b.title || '').toLowerCase();
-              return nameA.localeCompare(nameB);
-            });
-          }
-
-          const source = isFromServer ? "SERVER" : "LOCAL CACHE";
-          console.log(`[Firestore] Data received for ${collectionName} from ${source}:`, items.length, "items");
-          
-          setData(items);
-          saveToCache(collectionName, items);
-          
-          const isFirst = !hasSyncedOnce.current;
-          if (isFirst) {
-            hasSyncedOnce.current = true;
-          }
-          
-          handleSyncChange(collectionName, snapshot.metadata.hasPendingWrites, null, isFirst);
-          retryCount = 0; // Reset retry count on success
-        }, (error) => {
-          const errJson = handleFirestoreError(error, OperationType.GET, collectionName);
-          const isFirst = !hasSyncedOnce.current;
-          
-          // If quota exceeded, we use cache and don't show error as fatal
-          if (error.code === 'resource-exhausted' || error.message.includes('Quota')) {
-            console.warn(`Quota exceeded for ${collectionName}, using cached data.`);
-            const cached = loadFromCache(collectionName);
-            if (cached) setData(cached);
-            handleSyncChange(collectionName, false, null, true); // Don't block with error
-            return;
-          }
-
-          // Handle connection errors with retry
-          if (error.code === 'unavailable' && retryCount < maxRetries) {
-            retryCount++;
-            console.log(`Retrying connection for ${collectionName} (${retryCount}/${maxRetries})...`);
-            setTimeout(setupListener, 2000 * retryCount); // Exponential backoff
-          } else {
-            handleSyncChange(collectionName, false, errJson, isFirst);
-          }
-        });
-      };
-
-      setupListener();
-
-      return () => {
-        if (unsubscribe) unsubscribe();
-      };
-    }, [collectionName, enabled]);
-
-    return [data, setData] as const;
-  }
-
-  // Generic Firestore Hook for Documents
-  function useFirestoreDocument<T>(collectionName: string, docId: string, initialData: T) {
-    const cacheKey = `${collectionName}_${docId}`;
-    const [data, setData] = useState<T>(() => {
-      const cached = loadFromCache(cacheKey);
-      return cached || initialData;
-    });
-    const hasSyncedOnce = React.useRef(false);
-
-    useEffect(() => {
-      handleSyncChange(cacheKey, true);
-      const unsubscribe = onSnapshot(doc(db, collectionName, docId), (docSnap) => {
-        const source = docSnap.metadata.fromCache ? "LOCAL CACHE" : "SERVER";
-        const isFirst = !hasSyncedOnce.current;
-
-        if (docSnap.exists()) {
-          const docData = docSnap.data() as T;
-          console.log(`[Firestore] Doc ${collectionName}/${docId} received from ${source}`);
-          setData(docData);
-          saveToCache(cacheKey, docData);
-        } else {
-          console.log(`[Firestore] Doc ${collectionName}/${docId} DOES NOT EXIST on ${source}`);
-        }
-        
-        if (isFirst) {
-          hasSyncedOnce.current = true;
-        }
-
-        handleSyncChange(cacheKey, docSnap.metadata.hasPendingWrites, null, isFirst);
-      }, (error) => {
-        const errJson = handleFirestoreError(error, OperationType.GET, `${collectionName}/${docId}`);
-        const isFirst = !hasSyncedOnce.current;
-        
-        // If quota exceeded, use cache
-        if (error.code === 'resource-exhausted' || error.message.includes('Quota')) {
-          console.warn(`Quota exceeded for ${cacheKey}, using cached data.`);
-          const cached = loadFromCache(cacheKey);
-          if (cached) setData(cached);
-          handleSyncChange(cacheKey, false, null, true);
-          return;
-        }
-
-        handleSyncChange(cacheKey, false, errJson, isFirst);
-      });
-      return () => unsubscribe();
-    }, [collectionName, docId]);
-
-    return [data, setData] as const;
-  }
-
-  // Initialize states with Firestore - Start with empty arrays instead of mock data
-  const [products, setProducts] = useFirestoreCollection<Product>('products', []);
-  const [partners, setPartners] = useFirestoreCollection<Partner>('partners', []);
-  const [professionals, setProfessionals] = useFirestoreCollection<Professional>('professionals', []);
-  // Only fetch clients if user is logged in (admin)
-  const [clients, setClients] = useFirestoreCollection<Client>('clients', [], !!user);
-  const [categories, setCategories] = useFirestoreCollection<Category>('categories', []);
-  const [subcategories, setSubcategories] = useFirestoreCollection<Subcategory>('subcategories', []);
-  const [works, setWorks] = useFirestoreCollection<Work>('works', []);
-  const [serviceAreas, setServiceAreas] = useFirestoreCollection<ServiceArea>('service_areas', []);
-  const [posts, setPosts] = useFirestoreCollection<Post>('posts', []);
-  const [leads, setLeads] = useFirestoreCollection<Lead>('leads', [], !!user);
-  const [users, setUsers] = useFirestoreCollection<SystemUser>('users', [], !!user);
+  // Initialize states with Firestore
+  const [products, setProducts] = useFirestoreCollection<Product>('products', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions);
+  const [partners, setPartners] = useFirestoreCollection<Partner>('partners', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions);
+  const [professionals, setProfessionals] = useFirestoreCollection<Professional>('professionals', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions);
+  const [clients, setClients] = useFirestoreCollection<Client>('clients', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions, !!user);
+  const [categories, setCategories] = useFirestoreCollection<Category>('categories', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions);
+  const [subcategories, setSubcategories] = useFirestoreCollection<Subcategory>('subcategories', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions);
+  const [works, setWorks] = useFirestoreCollection<Work>('works', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions);
+  const [serviceAreas, setServiceAreas] = useFirestoreCollection<ServiceArea>('service_areas', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions);
+  const [posts, setPosts] = useFirestoreCollection<Post>('posts', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions);
+  const [leads, setLeads] = useFirestoreCollection<Lead>('leads', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions, !!user);
+  const [users, setUsers] = useFirestoreCollection<SystemUser>('users', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions, !!user);
 
   const [settings, setSettings] = useFirestoreDocument<Settings>('settings', 'global', {
     logoUrl: '',
@@ -455,20 +512,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     adminUser: 'contato@madeireirapindorama.com.br',
     adminPassword: 'mad*2026',
     heroSlides: [],
-    heroBgUrl: 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?q=80&w=2070&auto=format&fit=crop'
-  });
+    heroBgUrl: 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?q=80&w=2070&auto=format&fit=crop',
+    maintenanceMode: false
+  }, handleSyncChange, saveToCache, loadFromCache);
 
   const [about, setAbout] = useFirestoreDocument<AboutData>('about', 'global', {
     title: 'Tradição e Qualidade em Madeiras',
     description: 'A Madeireira Pindorama nasceu com o propósito de oferecer o que há de melhor em madeiras nobres.',
     image: 'https://picsum.photos/seed/lumberyard/800/600'
-  });
+  }, handleSyncChange, saveToCache, loadFromCache);
 
   const [history, setHistory] = useFirestoreDocument<AboutData>('history', 'global', {
     title: 'Nossa História',
     description: 'Fundada em 1995, começamos como uma pequena serraria familiar.',
     image: 'https://picsum.photos/seed/history/800/600'
-  });
+  }, handleSyncChange, saveToCache, loadFromCache);
 
   // Helper to remove undefined values before sending to Firestore
   const sanitizeForFirestore = (data: any) => {
@@ -481,8 +539,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return sanitized;
   };
 
-  // CRUD Operations
-  const createCrud = <T extends { id?: string }>(collectionName: string, setData: React.Dispatch<React.SetStateAction<T[]>>) => ({
+  // CRUD Operations Factory
+  const createCrud = useCallback(<T extends { id?: string }>(collectionName: string, setData: React.Dispatch<React.SetStateAction<T[]>>) => ({
     add: async (item: T) => {
       const id = item.id || Date.now().toString();
       const newItem = { ...item, id };
@@ -577,28 +635,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
         handleSyncChange(collectionName, false, errJson);
         throw error; // Re-throw to be handled by UI
       }
-      // Note: We no longer clear pendingDeletions in finally. 
-      // It will be cleared by the onSnapshot when the server confirms the deletion.
     }
-  });
+  }), [handleSyncChange, loadFromCache, saveToCache]);
 
-  const productCrud = createCrud<Product>('products', setProducts);
-  const partnerCrud = createCrud<Partner>('partners', setPartners);
-  const clientCrud = createCrud<Client>('clients', setClients);
-  const categoryCrud = createCrud<Category>('categories', setCategories);
-  const subcategoryCrud = createCrud<Subcategory>('subcategories', setSubcategories);
-  const workCrud = createCrud<Work>('works', setWorks);
-  const professionalCrud = createCrud<Professional>('professionals', setProfessionals);
-  const serviceAreaCrud = createCrud<ServiceArea>('service_areas', setServiceAreas);
-  const postCrud = createCrud<Post>('posts', setPosts);
-  const leadCrud = createCrud<Lead>('leads', setLeads);
-  const baseUserCrud = createCrud<SystemUser>('users', setUsers);
-  const userCrud = {
+  const productCrud = useMemo(() => createCrud<Product>('products', setProducts), [createCrud, setProducts]);
+  const partnerCrud = useMemo(() => createCrud<Partner>('partners', setPartners), [createCrud, setPartners]);
+  const clientCrud = useMemo(() => createCrud<Client>('clients', setClients), [createCrud, setClients]);
+  const categoryCrud = useMemo(() => createCrud<Category>('categories', setCategories), [createCrud, setCategories]);
+  const subcategoryCrud = useMemo(() => createCrud<Subcategory>('subcategories', setSubcategories), [createCrud, setSubcategories]);
+  const workCrud = useMemo(() => createCrud<Work>('works', setWorks), [createCrud, setWorks]);
+  const professionalCrud = useMemo(() => createCrud<Professional>('professionals', setProfessionals), [createCrud, setProfessionals]);
+  const serviceAreaCrud = useMemo(() => createCrud<ServiceArea>('service_areas', setServiceAreas), [createCrud, setServiceAreas]);
+  const postCrud = useMemo(() => createCrud<Post>('posts', setPosts), [createCrud, setPosts]);
+  const leadCrud = useMemo(() => createCrud<Lead>('leads', setLeads), [createCrud, setLeads]);
+  const baseUserCrud = useMemo(() => createCrud<SystemUser>('users', setUsers), [createCrud, setUsers]);
+  
+  const userCrud = useMemo(() => ({
     ...baseUserCrud,
     add: (user: SystemUser) => baseUserCrud.add({ ...user, id: user.email.toLowerCase() })
-  };
+  }), [baseUserCrud]);
 
-  const updateSettingsFn = async (newSettings: Settings) => {
+  const updateSettingsFn = useCallback(async (newSettings: Settings) => {
     try {
       const sanitized = sanitizeForFirestore(newSettings);
       await setDoc(doc(db, 'settings', 'global'), sanitized as any);
@@ -607,9 +664,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       handleSyncChange('settings', false, errJson);
       throw new Error(errJson);
     }
-  };
+  }, [handleSyncChange]);
 
-  const updateAboutFn = async (newAbout: AboutData) => {
+  const updateAboutFn = useCallback(async (newAbout: AboutData) => {
     try {
       const sanitized = sanitizeForFirestore(newAbout);
       await setDoc(doc(db, 'about', 'global'), sanitized as any);
@@ -618,9 +675,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       handleSyncChange('about', false, errJson);
       throw new Error(errJson);
     }
-  };
+  }, [handleSyncChange]);
 
-  const updateHistoryFn = async (newHistory: AboutData) => {
+  const updateHistoryFn = useCallback(async (newHistory: AboutData) => {
     try {
       const sanitized = sanitizeForFirestore(newHistory);
       await setDoc(doc(db, 'history', 'global'), sanitized as any);
@@ -629,43 +686,60 @@ export function DataProvider({ children }: { children: ReactNode }) {
       handleSyncChange('history', false, errJson);
       throw new Error(errJson);
     }
-  };
+  }, [handleSyncChange]);
 
-  const exportData = () => {
+  const exportData = useCallback(() => {
     return JSON.stringify({
       products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads
     }, null, 2);
-  };
+  }, [products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads]);
 
-  const importData = async (jsonData: string) => {
+  const importData = useCallback(async (jsonData: string) => {
     // Import logic would be complex with Firestore (batch writes), skipping for now or implementing basic
     console.warn("Import not fully implemented for Firestore yet");
     return false;
-  };
+  }, []);
 
-  const forceSyncPull = () => {
+  const forceSyncPull = useCallback(() => {
     window.location.reload();
-  };
+  }, []);
+
+  useEffect(() => {
+    console.log("DataProvider: Loading status", { 
+      itemsLoadedCount, 
+      totalItemsToLoad, 
+      isInitialLoading, 
+      hasTimedOutShort,
+      online: isOnline
+    });
+  }, [itemsLoadedCount, totalItemsToLoad, isInitialLoading, hasTimedOutShort, isOnline]);
+
+  const value = useMemo(() => ({
+    products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads,
+    isSyncing, lastSyncError, isOnline, loadingProgress, isInitialLoading,
+    exportData, importData, forceSyncPull,
+    addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.remove,
+    addPartner: partnerCrud.add, updatePartner: partnerCrud.update, deletePartner: partnerCrud.remove,
+    updateAbout: updateAboutFn, updateHistory: updateHistoryFn,
+    addClient: clientCrud.add, updateClient: clientCrud.update, deleteClient: clientCrud.remove,
+    addCategory: categoryCrud.add, updateCategory: categoryCrud.update, deleteCategory: categoryCrud.remove,
+    addSubcategory: subcategoryCrud.add, updateSubcategory: subcategoryCrud.update, deleteSubcategory: subcategoryCrud.remove,
+    updateSettings: updateSettingsFn,
+    addWork: workCrud.add, updateWork: workCrud.update, deleteWork: workCrud.remove,
+    addProfessional: professionalCrud.add, updateProfessional: professionalCrud.update, deleteProfessional: professionalCrud.remove,
+    addServiceArea: serviceAreaCrud.add, updateServiceArea: serviceAreaCrud.update, deleteServiceArea: serviceAreaCrud.remove,
+    addPost: postCrud.add, updatePost: postCrud.update, deletePost: postCrud.remove,
+    addUser: userCrud.add, updateUser: userCrud.update, deleteUser: userCrud.remove,
+    addLead: leadCrud.add, updateLead: leadCrud.update, deleteLead: leadCrud.remove,
+  }), [
+    products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads,
+    isSyncing, lastSyncError, isOnline, loadingProgress, isInitialLoading,
+    exportData, importData, forceSyncPull,
+    productCrud, partnerCrud, updateAboutFn, updateHistoryFn, clientCrud, categoryCrud, subcategoryCrud, updateSettingsFn, workCrud, professionalCrud, serviceAreaCrud, postCrud, userCrud, leadCrud
+  ]);
 
   return (
-    <DataContext.Provider value={{
-      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads,
-      isSyncing, lastSyncError, isOnline, loadingProgress, isInitialLoading,
-      exportData, importData, forceSyncPull,
-      addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.remove,
-      addPartner: partnerCrud.add, updatePartner: partnerCrud.update, deletePartner: partnerCrud.remove,
-      updateAbout: updateAboutFn, updateHistory: updateHistoryFn,
-      addClient: clientCrud.add, updateClient: clientCrud.update, deleteClient: clientCrud.remove,
-      addCategory: categoryCrud.add, updateCategory: categoryCrud.update, deleteCategory: categoryCrud.remove,
-      addSubcategory: subcategoryCrud.add, updateSubcategory: subcategoryCrud.update, deleteSubcategory: subcategoryCrud.remove,
-      updateSettings: updateSettingsFn,
-      addWork: workCrud.add, updateWork: workCrud.update, deleteWork: workCrud.remove,
-      addProfessional: professionalCrud.add, updateProfessional: professionalCrud.update, deleteProfessional: professionalCrud.remove,
-      addServiceArea: serviceAreaCrud.add, updateServiceArea: serviceAreaCrud.update, deleteServiceArea: serviceAreaCrud.remove,
-      addPost: postCrud.add, updatePost: postCrud.update, deletePost: postCrud.remove,
-      addUser: userCrud.add, updateUser: userCrud.update, deleteUser: userCrud.remove,
-      addLead: leadCrud.add, updateLead: leadCrud.update, deleteLead: leadCrud.remove,
-    }}>
+    <DataContext.Provider value={value}>
       {children}
     </DataContext.Provider>
   );

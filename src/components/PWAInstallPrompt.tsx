@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { X, Download, Share, PlusSquare } from 'lucide-react';
 
 export function PWAInstallPrompt() {
@@ -74,13 +73,10 @@ export function PWAInstallPrompt() {
   };
 
   return (
-    <AnimatePresence>
+    <>
       {isVisible && (
-        <motion.div
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-96 bg-white rounded-2xl shadow-2xl border-t-4 border-emerald-600 z-[100] p-5"
+        <div
+          className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-96 bg-white rounded-2xl shadow-2xl border-t-4 border-emerald-600 z-[100] p-5 animate-in slide-in-from-bottom-10 duration-500"
         >
           <button 
             onClick={handleClose}
@@ -116,8 +112,8 @@ export function PWAInstallPrompt() {
               )}
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 }

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, MessageCircle, TreePine } from 'lucide-react';
 import { useLoader } from './LoaderContext';
 import { useData } from './DataContext';
@@ -32,8 +31,8 @@ export function Hero() {
   const { simulateLoading } = useLoader();
   const { settings } = useData();
 
-  const heroImages = settings.heroSlides && settings.heroSlides.length > 0
-    ? settings.heroSlides.filter(slide => slide.url && slide.url.trim() !== '')
+  const heroImages = settings?.heroSlides && settings.heroSlides.length > 0
+    ? settings.heroSlides.filter(slide => slide?.url && slide.url.trim() !== '')
     : DEFAULT_IMAGES;
 
   useEffect(() => {
@@ -50,20 +49,14 @@ export function Hero() {
   return (
     <div className="relative min-h-[600px] md:h-[750px] w-full overflow-hidden bg-[#2a2a2a] flex items-center">
       {/* Background Slider */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={`bg-${index}`}
-          initial={{ opacity: 0, scale: 1.1 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1.2 }}
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url("${currentSlide.url}")` }}
-        >
-          {/* Dark Overlay for Text Readability */}
-          <div className="absolute inset-0 bg-black/60 md:bg-black/50 lg:bg-gradient-to-r lg:from-black/90 lg:to-black/30"></div>
-        </motion.div>
-      </AnimatePresence>
+      <div
+        key={`bg-${index}`}
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000"
+        style={{ backgroundImage: `url("${currentSlide.url}")` }}
+      >
+        {/* Dark Overlay for Text Readability */}
+        <div className="absolute inset-0 bg-black/60 md:bg-black/50 lg:bg-gradient-to-r lg:from-black/90 lg:to-black/30"></div>
+      </div>
       
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
@@ -72,23 +65,16 @@ export function Hero() {
         <div className="max-w-4xl">
           {/* Content */}
           <div className="text-white">
-            <motion.div
-              key={`badge-${index}`}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+            <div
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/5 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-8"
             >
               <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
               Líder em Qualidade e Tradição
-            </motion.div>
+            </div>
 
-            <AnimatePresence mode="wait">
-              <motion.div
+              <div
                 key={`content-${index}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.6 }}
+                className="transition-all duration-500"
               >
                 <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold leading-tight mb-6">
                   {currentSlide.title ? currentSlide.title.split(' ').map((word, i, arr) => (
@@ -108,7 +94,7 @@ export function Hero() {
 
                 <div className="flex flex-wrap gap-4 mb-12">
                   <a 
-                    href={settings.whatsappUrl}
+                    href={settings?.whatsappUrl || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-yellow-400 hover:bg-yellow-500 text-emerald-950 font-bold py-4 px-8 rounded-xl transition flex items-center gap-3 shadow-lg shadow-yellow-400/10"
@@ -149,8 +135,7 @@ export function Hero() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
-            </AnimatePresence>
+              </div>
           </div>
         </div>
       </div>

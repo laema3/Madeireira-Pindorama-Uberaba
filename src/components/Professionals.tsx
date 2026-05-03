@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'motion/react';
 import { useData } from './DataContext';
 import { Phone, Star } from 'lucide-react';
 
@@ -22,40 +21,20 @@ export function Professionals() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-16">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-bold text-white mb-4"
-          >
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Profissionais Indicados
-          </motion.h2>
-          <motion.div 
-            initial={{ width: 0 }}
-            whileInView={{ width: 96 }}
-            viewport={{ once: true }}
-            className="h-1.5 bg-yellow-400 mx-auto rounded-full mb-6"
-          ></motion.div>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-stone-300 max-w-2xl mx-auto text-lg"
-          >
+          </h2>
+          <div className="h-1.5 bg-yellow-400 mx-auto rounded-full mb-6 w-24"></div>
+          <p className="text-stone-300 max-w-2xl mx-auto text-lg">
             Encontre os melhores especialistas para o seu projeto. Qualidade garantida pela Pindorama.
-          </motion.p>
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {professionals && professionals.map((pro, index) => (
-            <motion.div 
+            <div 
               key={pro.id} 
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              whileHover={{ y: -10 }}
-              className="bg-white/10 backdrop-blur-md border border-white/10 p-8 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-6 group transition-all hover:bg-white/20"
+              className="bg-white/10 backdrop-blur-md border border-white/10 p-8 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-6 group transition-all hover:bg-white/20 hover:-translate-y-2 duration-300"
             >
               <div className="relative">
                 <div className="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-0 group-hover:opacity-40 transition-opacity"></div>
@@ -88,7 +67,7 @@ export function Professionals() {
                   <span className="font-mono text-lg">{pro.contact}</span>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>

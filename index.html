@@ -12,38 +12,16 @@
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <title>Madeireira Pindorama</title>
     <script>
-      // Global error handler to catch module load errors
       window.addEventListener('error', function(e) {
-        console.error('Global Error Caught:', e);
-        if (e.target && (e.target.src || e.target.href)) {
-          console.error('Failed to load resource:', e.target.src || e.target.href);
-          // If it's a critical JS/CSS file failure, try one forced reload
-          if (!window.hasReloaded) {
-            window.hasReloaded = true;
-            console.log('Attempting forced reload due to resource failure...');
-            setTimeout(() => {
-              window.location.reload(true);
-            }, 2000);
-          }
-        }
-      }, true);
-
-      // Handle unhandled promise rejections
-      window.addEventListener('unhandledrejection', function(e) {
-        console.error('Unhandled Promise Rejection:', e.reason);
+        console.error('Diagnostic error:', e.message, e.filename, e.lineno);
+        var debug = document.getElementById('debug-info');
+        if (debug) debug.innerHTML += '<div>Error: ' + e.message + '</div>';
       });
     </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js');
-        });
-      }
-    </script>
   </body>
 </html>
 

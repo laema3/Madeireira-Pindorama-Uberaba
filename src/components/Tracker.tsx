@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { useData } from './DataContext';
 
-export function FacebookPixel() {
+export function Tracker() {
   const { settings } = useData();
-  const pixelId = settings.facebookPixelId;
+  const pixelId = settings?.facebookPixelId;
 
   useEffect(() => {
     if (!pixelId) return;

@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { useData } from './DataContext';
@@ -31,29 +30,29 @@ export function AIChat() {
     setIsLoading(true);
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY || (import.meta.env && import.meta.env.VITE_GEMINI_API_KEY);
-      if (!apiKey || apiKey === 'undefined' || apiKey === '') {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
         console.error('Chave de API Gemini faltando');
-        throw new Error('Chave de API não configurada corretamente. Verifique as configurações.');
+        throw new Error('Chave de API não configurada corretamente.');
       }
 
       const ai = new GoogleGenAI({ apiKey });
       
       // Prepare context about the company
-      const context = `Você é o assistente virtual da Madeireira Pindorama.
+      const systemInstruction = `Você é o assistente virtual da Madeireira Pindorama.
         Informações da Empresa:
         - Nome: Madeireira Pindorama
-        - Endereço: ${settings.address || 'Não informado'}
-        - Telefone: ${settings.phone || 'Não informado'}
-        - Email: ${settings.email || 'Não informado'}
-        - Sobre: ${about.description || 'Uma madeireira de tradição e qualidade.'}
-        - Categorias de Produtos: ${categories.map(c => c.name).join(', ') || 'Madeiras, Ferragens, Ferramentas'}
-        - Alguns Produtos: ${products.slice(0, 10).map(p => p.name).join(', ') || 'Vigamento, Tábuas, Ripas'}
+        - Endereço: ${settings?.address || 'Não informado'}
+        - Telefone: ${settings?.phone || 'Não informado'}
+        - Email: ${settings?.email || 'Não informado'}
+        - Sobre: ${about?.description || 'Uma madeireira de tradição e qualidade.'}
+        - Categorias de Produtos: ${categories?.map(c => c.name).join(', ') || 'Madeiras, Ferragens, Ferramentas'}
+        - Alguns Produtos: ${products?.slice(0, 10).map(p => p.name).join(', ') || 'Vigamento, Tábuas, Ripas'}
         
         Instruções:
         - Seja cordial, prestativo e profissional.
         - Responda em Português do Brasil.
-        - Se não souber algo específico, peça para o cliente entrar em contato via WhatsApp: ${settings.whatsappUrl}
+        - Se não souber algo específico, peça para o cliente entrar em contato via WhatsApp: ${settings?.whatsappUrl || 'via site'}
         - Foque em tirar dúvidas sobre madeiras, projetos e produtos da loja.`;
 
       const response = await ai.models.generateContent({
@@ -66,7 +65,7 @@ export function AIChat() {
           { role: 'user', parts: [{ text: userMessage }] }
         ],
         config: {
-          systemInstruction: context
+          systemInstruction
         }
       });
 
@@ -99,15 +98,11 @@ export function AIChat() {
       </div>
 
       {/* Chat Window */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 w-[350px] md:w-[400px] h-[500px] bg-white rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden border border-stone-200"
-          >
-            {/* Header */}
+      {isOpen && (
+        <div
+          className="fixed bottom-24 right-6 w-[350px] md:w-[400px] h-[500px] bg-white rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden border border-stone-200 animate-in fade-in slide-in-from-bottom-5 duration-300"
+        >
+          {/* Header */}
             <div className="bg-emerald-900 p-4 text-white flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center text-emerald-950">
@@ -179,9 +174,8 @@ export function AIChat() {
                 Powered by Gemini AI
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
-    </>
+      </>
   );
 }

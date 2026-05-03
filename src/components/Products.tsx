@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { useData } from './DataContext';
 import { 
   Package, 
@@ -150,12 +149,20 @@ const ProductImages = ({ mainImage, additionalImages, name }: { mainImage: strin
 };
 
 export function Products() {
-  const { products, categories, settings } = useData();
+  const { products = [], categories = [], settings } = useData() || {};
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
+  const whatsappBaseUrl = settings?.whatsappUrl || 'https://wa.me/5511999999999';
+
   const productsGridRef = useRef<HTMLDivElement>(null);
+
+  console.log("Products: Rendering", { 
+    productsCount: products?.length, 
+    categoriesCount: categories?.length, 
+    selectedCategory 
+  });
 
   // Reset page and scroll when category changes
   useEffect(() => {
@@ -252,9 +259,11 @@ export function Products() {
     return <Package size={size} />;
   };
 
-  const filteredProducts = selectedCategory === 'all' 
-    ? products 
-    : products.filter(p => p.category === selectedCategory);
+  const filteredProducts = products.filter(p => {
+    if (!p) return false;
+    if (selectedCategory === 'all') return true;
+    return p.category === selectedCategory;
+  }) || [];
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const currentProducts = filteredProducts.slice(
@@ -274,87 +283,89 @@ export function Products() {
         </div>
 
         {/* Category Tabs */}
-        <div className="mb-12 overflow-x-auto no-scrollbar scroll-smooth flex justify-center">
-          <div className="flex items-center gap-2 min-w-max pb-2">
+        <div className="mb-12 flex justify-center">
+          <div className="inline-flex flex-wrap justify-center border-b border-stone-200">
             <button
               onClick={() => setSelectedCategory('all')}
-              className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-all border-2 whitespace-nowrap ${
+              className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all relative ${
                 selectedCategory === 'all'
-                  ? 'bg-emerald-50 border-emerald-600 text-yellow-500 shadow-sm transform scale-105'
-                  : 'bg-white border-stone-100 text-stone-600 hover:border-emerald-200'
+                  ? 'text-emerald-700'
+                  : 'text-stone-400 hover:text-stone-600'
               }`}
             >
-              <div className={`p-2 rounded-full ${selectedCategory === 'all' ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-400'}`}>
-                <Package size={18} />
-              </div>
-              <span className="font-bold text-sm uppercase tracking-wider">Todos</span>
+              Todos
+              {selectedCategory === 'all' && (
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-emerald-600 rounded-t-full"></div>
+              )}
             </button>
             
-            {categories && categories.length > 0 && categories.map((cat) => (
-              <button
-                key={cat.id || cat.name}
-                onClick={() => setSelectedCategory(cat.name)}
-                className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-all border-2 whitespace-nowrap ${
-                  selectedCategory === cat.name
-                    ? 'bg-emerald-50 border-emerald-600 text-yellow-500 shadow-sm transform scale-105'
-                    : 'bg-white border-stone-100 text-stone-600 hover:border-emerald-200'
-                }`}
-              >
-                <div className={`p-2 rounded-full ${selectedCategory === cat.name ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-400'}`}>
-                  {getCategoryIcon(cat.icon, cat.name, 18)}
-                </div>
-                <span className="font-bold text-sm uppercase tracking-wider">{cat.name || 'S/ NOME'}</span>
-              </button>
-            ))}
+            {Array.isArray(categories) && categories.map((cat: any) => {
+              if (!cat || !cat.name) return null;
+              const isSelected = selectedCategory === cat.name;
+              return (
+                <button
+                  key={cat.id || cat.name}
+                  onClick={() => setSelectedCategory(cat.name)}
+                  className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all relative ${
+                    isSelected
+                      ? 'text-emerald-700'
+                      : 'text-stone-400 hover:text-stone-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {getCategoryIcon(cat.icon, cat.name, 16)}
+                    {cat.name}
+                  </div>
+                  {isSelected && (
+                    <div className="absolute bottom-0 left-0 w-full h-1 bg-emerald-600 rounded-t-full"></div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         <div ref={productsGridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          <AnimatePresence mode="popLayout">
-            {currentProducts.map((product, index) => (
-              <motion.div
-                key={product.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
+          {currentProducts.map((product, idx) => (
+            product && (
+              <div
+                key={product.id || idx}
                 className="group bg-stone-50 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
-                <div className="relative h-64 overflow-hidden bg-stone-200">
-                  <ProductImages 
-                    mainImage={product.image} 
-                    additionalImages={product.images} 
-                    name={product.name} 
-                  />
-                  <div className="absolute top-4 left-4 bg-emerald-800 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide pointer-events-none">
-                    {product.category}
-                  </div>
+              <div className="relative h-64 overflow-hidden bg-stone-200">
+                <ProductImages 
+                  mainImage={product.image} 
+                  additionalImages={product.images} 
+                  name={product.name} 
+                />
+                <div className="absolute top-4 left-4 bg-emerald-800 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide pointer-events-none">
+                  {product.category}
                 </div>
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-bold text-emerald-900">{product.name}</h3>
-                    {product.price !== undefined && product.price !== null && product.price > 0 && (
-                      <span className="text-emerald-700 font-bold">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price))}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-stone-500 mb-2 uppercase tracking-wider">{product.brand} - {product.subcategory}</p>
-                  <ProductDescription text={product.description} />
-                  
-                  <a 
-                    href={`${settings.whatsappUrl}&text=${encodeURIComponent(`Olá! Gostaria de um orçamento para o produto: ${product.name}`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    SOLICITAR ORÇAMENTO
-                  </a>
+              </div>
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-xl font-bold text-emerald-900">{product.name}</h3>
+                  {product.price !== undefined && product.price !== null && product.price > 0 && (
+                    <span className="text-emerald-700 font-bold">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price))}
+                    </span>
+                  )}
                 </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+                <p className="text-xs text-stone-500 mb-2 uppercase tracking-wider">{product.brand} - {product.subcategory}</p>
+                <ProductDescription text={product.description} />
+                
+                <a 
+                  href={`${whatsappBaseUrl}&text=${encodeURIComponent(`Olá! Gostaria de um orçamento para o produto: ${product.name}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  SOLICITAR ORÇAMENTO
+                </a>
+              </div>
+            </div>
+          )
+        ))}
         </div>
 
         {/* Pagination Controls */}

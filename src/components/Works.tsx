@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from './DataContext';
 import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 
 export function Works() {
   const { works } = useData();
@@ -42,10 +41,9 @@ export function Works() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {works.map((work) => (
-            <motion.div 
+            <div 
               key={work.id}
-              whileHover={{ y: -5 }}
-              className="bg-white rounded-xl overflow-hidden shadow-lg cursor-pointer group"
+              className="bg-white rounded-xl overflow-hidden shadow-lg cursor-pointer group hover:-translate-y-1 transition-transform duration-300"
               onClick={() => openGallery(work.id)}
             >
               <div className="relative h-64 overflow-hidden bg-stone-200">
@@ -78,52 +76,42 @@ export function Works() {
                   Ver {(work.images?.length || 0)} fotos
                 </p>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
 
       {/* Gallery Modal */}
-      <AnimatePresence>
-        {selectedWork && currentWork && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+      {selectedWork && currentWork && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 transition-opacity duration-300"
+          onClick={closeGallery}
+        >
+          <button 
+            className="absolute top-4 right-4 text-white hover:text-emerald-400 z-50"
             onClick={closeGallery}
           >
-            <button 
-              className="absolute top-4 right-4 text-white hover:text-emerald-400 z-50"
-              onClick={closeGallery}
-            >
-              <X size={32} />
-            </button>
+            <X size={32} />
+          </button>
 
-            <div className="relative w-full max-w-5xl aspect-video" onClick={e => e.stopPropagation()}>
-              <AnimatePresence mode='wait'>
-                {currentWork.images && currentWork.images[currentImageIndex] && currentWork.images[currentImageIndex].trim() !== '' ? (
-                  <motion.img 
-                    key={currentImageIndex}
-                    src={currentWork.images[currentImageIndex]} 
-                    alt={`${currentWork.title || 'Obra'} - ${currentImageIndex + 1}`}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className="w-full h-full object-contain rounded-lg"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://placehold.co/800x600?text=Imagem+Indisponivel';
-                      e.currentTarget.onerror = null;
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-stone-500 bg-stone-100 rounded-lg">
-                    Imagem não disponível
-                  </div>
-                )}
-              </AnimatePresence>
+          <div className="relative w-full max-w-5xl aspect-video" onClick={e => e.stopPropagation()}>
+              {currentWork.images && currentWork.images[currentImageIndex] && currentWork.images[currentImageIndex].trim() !== '' ? (
+                <img 
+                  key={currentImageIndex}
+                  src={currentWork.images[currentImageIndex]} 
+                  alt={`${currentWork.title || 'Obra'} - ${currentImageIndex + 1}`}
+                  className="w-full h-full object-contain rounded-lg transition-opacity duration-300"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://placehold.co/800x600?text=Imagem+Indisponivel';
+                    e.currentTarget.onerror = null;
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-stone-500 bg-stone-100 rounded-lg">
+                  Imagem não disponível
+                </div>
+              )}
 
               {currentWork.images && currentWork.images.length > 1 && (
                 <>
@@ -151,9 +139,8 @@ export function Works() {
               <h3 className="text-2xl font-bold">{currentWork.title || 'Obra'}</h3>
               <p className="text-stone-300">{currentWork.description || 'Descrição não disponível'}</p>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
-    </section>
+      </section>
   );
 }

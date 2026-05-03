@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { Hammer } from 'lucide-react';
 import { useData } from './DataContext';
 
 interface LoaderContextType {
   simulateLoading: (callback?: () => void) => void;
   isLoading: boolean;
+  progress: number;
 }
 
 const LoaderContext = createContext<LoaderContextType | undefined>(undefined);
@@ -21,9 +21,8 @@ export function useLoader() {
 export function LoaderProvider({ children }: { children: ReactNode }) {
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulatedProgress, setSimulatedProgress] = useState(0);
-  const { isInitialLoading, loadingProgress } = useData();
 
-  const simulateLoading = (callback?: () => void) => {
+  const simulateLoading = useCallback((callback?: () => void) => {
     if (isSimulating) {
       if (callback) callback();
       return;
@@ -49,63 +48,55 @@ export function LoaderProvider({ children }: { children: ReactNode }) {
       }
       setSimulatedProgress(currentProgress);
     }, interval);
-  };
+  }, [isSimulating]);
 
-  const isLoading = isInitialLoading || isSimulating;
-  const displayProgress = isInitialLoading ? loadingProgress : Math.round(simulatedProgress);
+  const value = useMemo(() => ({ 
+    simulateLoading, 
+    isLoading: isSimulating,
+    progress: Math.round(simulatedProgress)
+  }), [simulateLoading, isSimulating, simulatedProgress]);
 
   return (
-    <LoaderContext.Provider value={{ simulateLoading, isLoading }}>
+    <LoaderContext.Provider value={value}>
       {children}
-      <AnimatePresence>
-        {isLoading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-stone-900 flex flex-col items-center justify-center"
-          >
-            <div className="relative flex flex-col items-center">
-              <motion.div
-                animate={{ rotate: [0, -45, 0] }}
-                transition={{ 
-                  duration: 0.5, 
-                  repeat: Infinity, 
-                  ease: "easeInOut" 
-                }}
-                className="bg-white p-8 rounded-full shadow-2xl mb-8"
-              >
-                <Hammer size={64} className="text-emerald-800" />
-              </motion.div>
-
-              <div className="w-64 h-2 bg-stone-800 rounded-full overflow-hidden mb-4">
-                <motion.div 
-                  className="h-full bg-emerald-500"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${displayProgress}%` }}
-                  transition={{ duration: 0.1 }}
-                />
-              </div>
-
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-white font-bold text-2xl tracking-widest"
-              >
-                {displayProgress}%
-              </motion.p>
-              
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mt-2 text-stone-400 text-sm uppercase tracking-widest"
-              >
-                {isInitialLoading ? 'Sincronizando Dados...' : 'Carregando Página...'}
-              </motion.p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </LoaderContext.Provider>
+  );
+}
+
+export function GlobalLoader() {
+  const { isInitialLoading, loadingProgress } = useData();
+  const { isLoading: isSimulating, progress: simulatedProgress } = useLoader();
+  
+  const isActuallyLoading = isInitialLoading || isSimulating;
+  const rawProgress = isInitialLoading ? loadingProgress : simulatedProgress;
+  const displayProgress = typeof rawProgress === 'number' && !isNaN(rawProgress) 
+    ? Math.max(0, Math.min(100, rawProgress)) 
+    : 0;
+
+  if (!isActuallyLoading) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-stone-900 flex flex-col items-center justify-center transition-opacity duration-500">
+      <div className="relative flex flex-col items-center">
+        <div className="bg-white p-8 rounded-full shadow-2xl mb-8 animate-bounce">
+          <Hammer size={64} className="text-emerald-800" />
+        </div>
+
+        <div className="w-64 h-2 bg-stone-800 rounded-full overflow-hidden mb-4">
+          <div 
+            className="h-full bg-emerald-500 transition-all duration-300"
+            style={{ width: `${displayProgress}%` }}
+          />
+        </div>
+
+        <div className="text-white font-bold text-2xl tracking-widest">
+          {displayProgress}%
+        </div>
+        
+        <div className="mt-2 text-stone-400 text-sm uppercase tracking-widest">
+          {isInitialLoading ? 'Sincronizando Dados...' : 'Carregando Página...'}
+        </div>
+      </div>
+    </div>
   );
 }
