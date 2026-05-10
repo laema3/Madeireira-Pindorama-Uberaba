@@ -80,6 +80,34 @@ export function AIChat() {
     }
   };
 
+  // Helper to render message content with potential WhatsApp links converted to buttons
+  const renderMessageContent = (content: string) => {
+    // Regex to find whatsapp URL
+    const whatsappRegex = /(https:\/\/wa\.me\/\d+)/g;
+    const parts = content.split(whatsappRegex);
+    
+    return (
+      <>
+        {parts.map((part, index) => {
+          if (part.match(whatsappRegex)) {
+            return (
+              <a 
+                key={index}
+                href={part}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block mt-3 bg-emerald-600 text-center text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-700 transition"
+              >
+                Abrir WhatsApp
+              </a>
+            );
+          }
+          return <span key={index}>{part}</span>;
+        })}
+      </>
+    );
+  };
+
   return (
     <>
       {/* Floating Button */}
@@ -130,7 +158,7 @@ export function AIChat() {
                       ? 'bg-emerald-600 text-white rounded-tr-none' 
                       : 'bg-white text-stone-800 shadow-sm border border-stone-100 rounded-tl-none'
                   }`}>
-                    {m.content}
+                    {renderMessageContent(m.content)}
                   </div>
                 </div>
               ))}
