@@ -1322,6 +1322,7 @@ export function AdminPanel() {
                     <th className="p-4">Nome</th>
                     <th className="p-4">Email</th>
                     <th className="p-4">Telefone</th>
+                    <th className="p-4">Mensagem</th>
                     <th className="p-4 text-right">Ações</th>
                   </tr>
                 </thead>
@@ -1331,6 +1332,7 @@ export function AdminPanel() {
                       <td className="p-4 font-medium">{c.name}</td>
                       <td className="p-4">{c.email}</td>
                       <td className="p-4">{c.phone}</td>
+                      <td className="p-4 text-sm max-w-xs truncate">{c.notes}</td>
                       <td className="p-4 text-right space-x-2">
                         <button onClick={() => setEditingClient(c)} className="text-blue-600"><Edit size={18} /></button>
                         <button onClick={() => handleDeleteItem(c.id, deleteClient, 'cliente')} className="text-red-600"><Trash2 size={18} /></button>

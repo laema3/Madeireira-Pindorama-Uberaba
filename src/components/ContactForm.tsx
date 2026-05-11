@@ -5,7 +5,7 @@ import { useData } from './DataContext';
 
 export function ContactForm() {
   const { simulateLoading } = useLoader();
-  const { addLead, settings } = useData();
+  const { addLead, addClient, settings } = useData();
   const [formState, setFormState] = useState({
     name: '',
     email: '',
@@ -27,6 +27,16 @@ export function ContactForm() {
         notes: formState.message,
         status: 'new',
         createdAt: new Date().toISOString()
+      });
+
+      // Add to clients collection
+      addClient({
+        id: Date.now().toString(),
+        name: formState.name,
+        email: formState.email,
+        phone: formState.phone,
+        address: 'Contato via Site',
+        notes: formState.message
       });
 
       setIsSubmitted(true);
