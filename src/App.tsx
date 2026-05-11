@@ -11,6 +11,7 @@ import { ConnectionStatus } from './components/ConnectionStatus';
 
 // Pages
 import { Home } from './pages/Home';
+import { ProductsPage } from './pages/ProductsPage';
 import { WorksPage } from './pages/WorksPage';
 import { ProfessionalsPage } from './pages/ProfessionalsPage';
 import { ServiceAreasPage } from './pages/ServiceAreasPage';
@@ -70,6 +71,7 @@ function AppContent() {
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/produtos" element={<ProductsPage />} />
             <Route path="/obras" element={<WorksPage />} />
             <Route path="/profissionais" element={<ProfessionalsPage />} />
             <Route path="/atuacao" element={<ServiceAreasPage />} />

@@ -103,7 +103,7 @@ export function Hero() {
                     Falar com Atendente
                   </a>
                   <a 
-                    href="/#produtos"
+                    href="/produtos"
                     className="bg-white/10 hover:bg-white/20 text-white font-bold py-4 px-8 rounded-xl border border-white/20 transition flex items-center gap-2 backdrop-blur-sm"
                   >
                     Ver Catálogo
