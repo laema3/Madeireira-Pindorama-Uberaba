@@ -681,18 +681,18 @@ export function AdminPanel() {
           <nav className="space-y-2">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-              { id: 'manutencao', label: 'Manutenção', icon: <Construction size={20} /> },
-              { id: 'leads', label: 'Leads', icon: <Inbox size={20} /> },
+              { id: 'ajustes', label: 'Ajustes', icon: <SettingsIcon size={20} /> },
               { id: 'atuacao', label: 'Área de Atuação', icon: <MapPin size={20} /> },
               { id: 'categorias', label: 'Categorias & Sub', icon: <List size={20} /> },
               { id: 'clientes', label: 'Clientes', icon: <UserCheck size={20} /> },
+              { id: 'leads', label: 'Leads', icon: <Inbox size={20} /> },
+              { id: 'manutencao', label: 'Manutenção', icon: <Construction size={20} /> },
               { id: 'obras', label: 'Obras', icon: <Hammer size={20} /> },
               { id: 'parceiros', label: 'Parceiros', icon: <Users size={20} /> },
               { id: 'postagens', label: 'Postagens', icon: <FileText size={20} /> },
               { id: 'produtos', label: 'Produtos', icon: <Package size={20} /> },
               { id: 'profissionais', label: 'Profissionais', icon: <Briefcase size={20} /> },
               { id: 'sobre', label: 'Sobre Nós', icon: <Info size={20} /> },
-              { id: 'ajustes', label: 'Ajustes', icon: <SettingsIcon size={20} /> },
               { id: 'usuarios', label: 'Usuários', icon: <UserCheck size={20} /> },
               { id: 'sincronizacao', label: 'Sincronização', icon: <RefreshCw size={20} /> },
             ].filter(item => {
@@ -2732,7 +2732,7 @@ export function AdminPanel() {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {serviceAreas.map(sa => (
+                {[...serviceAreas].sort((a, b) => a.title.localeCompare(b.title)).map(sa => (
                   <div key={sa.id} className="bg-white rounded-xl border shadow-sm overflow-hidden flex group relative">
                     <div className="w-1/3 h-40 bg-stone-100">
                       {sa.image && sa.image.trim() !== '' ? (
