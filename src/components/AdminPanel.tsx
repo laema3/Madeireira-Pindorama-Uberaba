@@ -387,7 +387,7 @@ export function AdminPanel() {
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Crie uma descrição curta e chamativa (máximo 2 frases) para um banner de um site de uma madeireira (Madeireira Pindorama), baseada neste título: "${title}"`,
+        contents: `Crie uma descrição bem curta, direta e com no máximo 2 linhas para um banner de um site de uma madeireira (Madeireira Pindorama), baseada neste título: "${title}". Aja de forma bem concisa.`,
       });
       
       const generatedText = response.text?.trim() || '';

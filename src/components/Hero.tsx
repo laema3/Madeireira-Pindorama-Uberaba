@@ -54,13 +54,9 @@ export function Hero() {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000"
         style={{ backgroundImage: `url("${currentSlide.url}")` }}
       >
-        {/* Dark Overlay for Text Readability */}
-        <div className="absolute inset-0 bg-black/60 md:bg-black/50 lg:bg-gradient-to-r lg:from-black/90 lg:to-black/30"></div>
+        <div className="absolute inset-0 bg-black/60"></div>
       </div>
       
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 py-12 md:py-0">
         <div className="max-w-4xl">
           {/* Content */}

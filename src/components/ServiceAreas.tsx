@@ -17,7 +17,7 @@ export function ServiceAreas() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {serviceAreas && serviceAreas.map((area) => (
+          {serviceAreas && [...serviceAreas].sort((a, b) => a.title.localeCompare(b.title)).map((area) => (
             <div 
               key={area.id} 
               className="flex flex-col sm:flex-row bg-stone-50 rounded-2xl overflow-hidden shadow-sm border border-stone-100 group hover:shadow-md transition-shadow"
