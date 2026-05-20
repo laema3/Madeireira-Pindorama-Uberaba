@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
 import { useData } from './DataContext';
 
 export function AIChat() {
@@ -30,15 +29,6 @@ export function AIChat() {
     setIsLoading(true);
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        console.error('Chave de API Gemini faltando');
-        throw new Error('Chave de API não configurada corretamente.');
-      }
-
-      const ai = new GoogleGenAI({ apiKey });
-      
-      // Prepare context about the company
       const systemInstruction = `Você é o assistente virtual da Madeireira Pindorama.
         Informações da Empresa:
         - Nome: Madeireira Pindorama
@@ -55,21 +45,27 @@ export function AIChat() {
         - Se não souber algo específico, peça para o cliente entrar em contato via WhatsApp: ${settings?.whatsappUrl || 'via site'}
         - Foque em tirar dúvidas sobre madeiras, projetos e produtos da loja.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [
-          ...messages.map(m => ({
-            role: m.role === 'user' ? 'user' : 'model',
-            parts: [{ text: m.content }]
-          })),
-          { role: 'user', parts: [{ text: userMessage }] }
-        ],
-        config: {
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            ...messages.map(m => ({
+              role: m.role === 'user' ? 'user' : 'model',
+              parts: [{ text: m.content }]
+            })),
+            { role: 'user', parts: [{ text: userMessage }] }
+          ],
           systemInstruction
-        }
+        })
       });
 
-      const aiResponse = response.text || 'Desculpe, tive um problema ao processar sua pergunta. Pode repetir?';
+      if (!response.ok) {
+        throw new Error('Falha ao comunicar com o servidor');
+      }
+
+      const responseData = await response.json();
+      const aiResponse = responseData.text || 'Desculpe, tive um problema ao processar sua pergunta. Pode repetir?';
       setMessages(prev => [...prev, { role: 'ai', content: aiResponse }]);
     } catch (error: any) {
       console.error('AI Chat Error:', error);

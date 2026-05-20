@@ -164,7 +164,6 @@ const LeadStatusBadge = ({ status }: { status: LeadStatus }) => {
 };
 import { auth } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
-import { GoogleGenAI } from '@google/genai';
 
 export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao' | 'usuarios' | 'leads' | 'manutencao'>('dashboard');
@@ -378,19 +377,20 @@ export function AdminPanel() {
 
     setIsGeneratingDesc(prev => ({ ...prev, [index]: true }));
     try {
-      const apiKey = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) {
-        showNotification('Chave da API do Gemini não configurada.', 'error');
-        return;
-      }
-      
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Crie uma descrição bem curta, direta e com no máximo 2 linhas para um banner de um site de uma madeireira (Madeireira Pindorama), baseada neste título: "${title}". Aja de forma bem concisa.`,
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: `Crie uma descrição bem curta, direta e com no máximo 2 linhas para um banner de um site de uma madeireira (Madeireira Pindorama), baseada neste título: "${title}". Aja de forma bem concisa.`
+        })
       });
       
-      const generatedText = response.text?.trim() || '';
+      if (!response.ok) {
+        throw new Error('Falha ao comunicar com o servidor');
+      }
+
+      const responseData = await response.json();
+      const generatedText = responseData.text?.trim() || '';
       
       if (generatedText) {
         const newSlides = [...(settingsForm.heroSlides || [])];

@@ -72,7 +72,7 @@ export function Hero() {
                 key={`content-${index}`}
                 className="transition-all duration-500"
               >
-                <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold leading-tight mb-6">
+                <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold leading-none mb-6">
                   {currentSlide.title ? currentSlide.title.split(' ').map((word, i, arr) => (
                     <span key={i}>
                       {i === arr.length - 1 ? (

@@ -51,6 +51,34 @@ async function startServer() {
     res.json({ status: 'ok', keys: count.count });
   });
 
+  app.post('/api/ai/generate', async (req, res) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
+      }
+      
+      const ai = new GoogleGenAI({ apiKey });
+      const { contents, systemInstruction } = req.body;
+      
+      const config: any = {};
+      if (systemInstruction) {
+        config.systemInstruction = systemInstruction;
+      }
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: contents,
+        config: config,
+      });
+      
+      res.json({ text: response.text });
+    } catch (error: any) {
+      console.error('Error in /api/ai/generate:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
