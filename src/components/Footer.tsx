@@ -80,6 +80,9 @@ export function Footer() {
   
           <div className="border-t border-white/10 pt-8 text-center text-sm flex flex-col items-center gap-4">
             <p className="text-white/60">{settings?.footerText || '© Madeireira Pindorama'}</p>
+            <div className="flex items-center justify-center gap-4 text-white/50 text-xs">
+              <a href="/politica-de-privacidade" className="hover:text-white transition">Política de Privacidade</a>
+            </div>
             <a href="#admin" className="text-white/10 hover:text-white transition-colors" title="Área Administrativa">
               <Settings size={14} />
             </a>

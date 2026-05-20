@@ -8,6 +8,7 @@ import { DataProvider } from './components/DataContext';
 import { AdminPanel } from './components/AdminPanel';
 import { FaviconManager } from './components/FaviconManager';
 import { ConnectionStatus } from './components/ConnectionStatus';
+import { CookieBanner } from './components/CookieBanner';
 
 // Pages
 import { Home } from './pages/Home';
@@ -17,6 +18,7 @@ import { ProfessionalsPage } from './pages/ProfessionalsPage';
 import { ServiceAreasPage } from './pages/ServiceAreasPage';
 import { PartnersPage } from './pages/PartnersPage';
 import { PostsPage } from './pages/PostsPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 
 import { AIChat } from './components/AIChat';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
@@ -77,12 +79,14 @@ function AppContent() {
             <Route path="/atuacao" element={<ServiceAreasPage />} />
             <Route path="/parceiros" element={<PartnersPage />} />
             <Route path="/dicas" element={<PostsPage />} />
+            <Route path="/politica-de-privacidade" element={<PrivacyPolicyPage />} />
           </Routes>
         </main>
         <Footer />
         <FloatingActions />
         <AIChat />
         <PWAInstallPrompt />
+        <CookieBanner />
         
         {/* Secret Admin Link in Footer (hidden but accessible) */}
         <div className="fixed bottom-0 left-0 w-full h-2 z-0 opacity-0 hover:opacity-100 pointer-events-none">
