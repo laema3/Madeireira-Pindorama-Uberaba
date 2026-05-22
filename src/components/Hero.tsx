@@ -49,7 +49,7 @@ export function Hero() {
   return (
     <div className="relative w-full bg-emerald-50 py-4 md:py-8 flex items-center shrink-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="relative w-full min-h-[600px] md:min-h-[680px] rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl flex items-center bg-stone-900 group">
+        <div className="relative w-full min-h-[600px] md:min-h-[680px] rounded-tl-[2rem] rounded-br-[2rem] md:rounded-tl-[3rem] md:rounded-br-[3rem] overflow-hidden shadow-2xl flex items-center bg-stone-900 group">
           {/* Background Slider */}
           <div
             key={`bg-${index}`}
