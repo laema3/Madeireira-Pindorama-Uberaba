@@ -1860,7 +1860,7 @@ export function AdminPanel() {
                                   ...newImages.map(url => ({ url, title: 'Novo Slide', description: 'Descrição do slide' }))
                                 ]
                               }));
-                            }, { maxSize: 600, quality: 0.3, preserveTransparency: false });
+                            }, { maxSize: 1920, quality: 0.85, preserveTransparency: false });
                           }
                         }}
                         className="w-full p-2 border rounded"
