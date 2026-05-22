@@ -55,7 +55,7 @@ async function startServer() {
     try {
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
+        return res.status(500).json({ error: 'A Chave de API do Gemini não está configurada no servidor.' });
       }
       
       const ai = new GoogleGenAI({ apiKey });
@@ -67,7 +67,7 @@ async function startServer() {
       }
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.5-flash",
         contents: contents,
         config: config,
       });

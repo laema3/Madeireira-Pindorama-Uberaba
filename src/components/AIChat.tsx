@@ -60,11 +60,12 @@ export function AIChat() {
         })
       });
 
+      const responseData = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Falha ao comunicar com o servidor');
+        throw new Error(responseData.error || 'Falha ao comunicar com o servidor');
       }
 
-      const responseData = await response.json();
       const aiResponse = responseData.text || 'Desculpe, tive um problema ao processar sua pergunta. Pode repetir?';
       setMessages(prev => [...prev, { role: 'ai', content: aiResponse }]);
     } catch (error: any) {

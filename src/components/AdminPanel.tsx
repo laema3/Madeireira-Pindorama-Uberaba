@@ -385,11 +385,12 @@ export function AdminPanel() {
         })
       });
       
+      const responseData = await response.json();
+
       if (!response.ok) {
-        throw new Error('Falha ao comunicar com o servidor');
+        throw new Error(responseData.error || 'Falha ao comunicar com o servidor');
       }
 
-      const responseData = await response.json();
       const generatedText = responseData.text?.trim() || '';
       
       if (generatedText) {
@@ -398,9 +399,9 @@ export function AdminPanel() {
         setSettingsForm({ ...settingsForm, heroSlides: newSlides });
         showNotification('Descrição gerada com sucesso!');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao gerar descrição:', error);
-      showNotification('Erro ao gerar descrição com IA.', 'error');
+      showNotification(error.message || 'Erro ao gerar descrição com IA.', 'error');
     } finally {
       setIsGeneratingDesc(prev => ({ ...prev, [index]: false }));
     }

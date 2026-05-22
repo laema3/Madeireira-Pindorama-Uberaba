@@ -1,5 +1,6 @@
 {
   "name": "Madeireira Pindorama",
   "description": "Website moderno para a Madeireira Pindorama com catálogo de produtos, informações institucionais e assistente virtual.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
