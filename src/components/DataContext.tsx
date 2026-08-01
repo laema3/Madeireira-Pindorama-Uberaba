@@ -501,7 +501,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [posts, setPosts] = useFirestoreCollection<Post>('posts', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions);
   const [leads, setLeads] = useFirestoreCollection<Lead>('leads', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions, !!user);
   const [quotes, setQuotes] = useFirestoreCollection<Quote>('quotes', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions, !!user);
-  const [users, setUsers] = useFirestoreCollection<SystemUser>('users', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions, !!user);
+  const [users, setUsers] = useFirestoreCollection<SystemUser>('users', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions);
 
   const [settings, setSettings] = useFirestoreDocument<Settings>('settings', 'global', {
     logoUrl: '',
