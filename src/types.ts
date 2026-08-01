@@ -67,6 +67,7 @@ export interface HeroSlide {
 }
 
 export interface Settings {
+  companyName?: string;
   logoUrl: string;
   footerLogoUrl?: string;
   footerText: string;
@@ -115,6 +116,7 @@ export interface SystemUser {
   id: string;
   name: string;
   email: string;
+  password?: string;
   role: 'admin' | 'editor' | 'viewer';
 }
 
@@ -129,4 +131,35 @@ export interface Lead {
   notes?: string;
   status: LeadStatus;
   createdAt: string;
+}
+
+export interface QuoteItem {
+  id: string;
+  quantity: number;
+  unit?: string; // 'un', 'm', 'm²', 'm³', 'kg', 'pç'
+  description: string;
+  unitPrice: number;
+  total: number;
+}
+
+export interface Quote {
+  id: string;
+  number?: string;
+  companyName?: string;
+  companyLogo?: string;
+  clientName: string;
+  address: string;
+  phone: string;
+  whatsapp: string;
+  items: QuoteItem[];
+  discount: number;
+  discountType: 'fixed' | 'percent';
+  discountStatus?: 'pendente' | 'aprovado' | 'rejeitado';
+  discountApprovedBy?: string;
+  discountApprovedAt?: string;
+  finalTotal: number;
+  status: 'pendente' | 'aprovado' | 'fechado' | 'nao_fechado';
+  createdAt: string;
+  approvedAt?: string;
+  approvedBy?: string;
 }

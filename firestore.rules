@@ -245,7 +245,8 @@ service cloud.firestore {
       return hasRequiredFields(['name', 'email', 'role']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.email is string && isValidEmail(data.email) &&
-             data.role in ['admin', 'editor', 'viewer'];
+             data.role in ['admin', 'editor', 'viewer'] &&
+             (!('password' in data) || data.password == null || (data.password is string && data.password.size() < 200));
     }
 
     function isValidSettings(data) {
@@ -260,10 +261,12 @@ service cloud.firestore {
              (!('facebookPixelId' in data) || data.facebookPixelId == null || data.facebookPixelId is string);
     }
 
-    function isValidAboutData(data) {
-      return (data.title is string && data.title.size() > 0 && data.title.size() < 300) &&
-             (data.description is string && data.description.size() < 20000) &&
-             (data.image is string && isValidUrl(data.image));
+    function isValidQuote(data) {
+      return (data.clientName is string && data.clientName.size() > 0 && data.clientName.size() < 200) &&
+             (data.address is string && data.address.size() < 500) &&
+             (data.phone is string && data.phone.size() < 100) &&
+             (data.finalTotal is number && data.finalTotal >= 0) &&
+             (data.status in ['pendente', 'aprovado', 'fechado', 'nao_fechado']);
     }
 
     match /test/connection {
@@ -346,6 +349,10 @@ service cloud.firestore {
       allow create: if isAdmin() && isValidPost(request.resource.data);
       allow update: if isAdmin() && isValidPost(request.resource.data);
       allow delete: if isAdmin();
+    }
+
+    match /quotes/{quoteId} {
+      allow read, create, update, delete: if isAdmin();
     }
 
     match /users/{userId} {

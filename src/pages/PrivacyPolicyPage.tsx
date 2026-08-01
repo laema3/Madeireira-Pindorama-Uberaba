@@ -11,7 +11,6 @@ export function PrivacyPolicyPage() {
     <div className="bg-stone-50 min-h-screen">
       <PageBanner 
         title="Política de Privacidade" 
-        subtitle="Termos de Uso e Proteção de Dados" 
       />
       
       <div className="max-w-4xl mx-auto px-4 py-16 sm:px-6 lg:px-8">

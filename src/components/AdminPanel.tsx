@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from './DataContext';
-import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post, SystemUser, Lead, LeadStatus } from '../types';
+import { Product, Partner, Client, Category, Subcategory, Settings, Work, Professional, ServiceArea, Post, SystemUser, Lead, LeadStatus, Quote, QuoteItem } from '../types';
 import { 
-  Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, 
+  ChevronDown, Folder, Plus, Edit, Trash2, Save, X, LayoutDashboard, Package, Users, Info, Settings as SettingsIcon, 
   Tag, List, UserCheck, Hammer, Image as ImageIcon, LogOut, Lock, User, Briefcase, MapPin, 
   FileText, Video, RefreshCw, Download, Upload, Sparkles, AlertCircle, TreePine, Home, 
   Paintbrush, Layers, Boxes, Grid, Truck, HardHat, Ruler, Map, Construction, Shovel, Info as TooltipIcon,
@@ -14,7 +14,7 @@ import {
   BrickWall, Cylinder, Pyramid, Square, Circle, Triangle, Scissors, Pipette, Brush, Eraser,
   Table, Sofa, Microwave, Refrigerator, WashingMachine, Tv2, Speaker, Watch, Luggage, 
   Dna, FlaskConical, Microscope, Stethoscope, Syringe, GraduationCap, Trophy, Medal, Target, 
-  Rocket, Plane, Ship, Bike, Footprints, Tent, TreeDeciduous, Trees, Flower2
+  Rocket, Plane, Ship, Bike, Footprints, Tent, TreeDeciduous, Trees, Flower2, Eye
 } from 'lucide-react';
 
 const CATEGORY_ICONS = [
@@ -166,14 +166,16 @@ import { auth } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 
 export function AdminPanel() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao' | 'usuarios' | 'leads' | 'manutencao'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'sobre' | 'produtos' | 'obras' | 'categorias' | 'clientes' | 'parceiros' | 'profissionais' | 'ajustes' | 'atuacao' | 'postagens' | 'sincronizacao' | 'usuarios' | 'leads' | 'manutencao' | 'orcamentos'>('dashboard');
   const [internalProductTab, setInternalProductTab] = useState('all');
+  const [isDiversosOpen, setIsDiversosOpen] = useState(true);
   const { 
     about, history, updateAbout, updateHistory,
     products, addProduct, updateProduct, deleteProduct,
     partners, addPartner, updatePartner, deletePartner,
     clients, addClient, updateClient, deleteClient,
     leads, addLead, updateLead, deleteLead,
+    quotes, addQuote, updateQuote, deleteQuote,
     categories, addCategory, updateCategory, deleteCategory,
     subcategories, addSubcategory, updateSubcategory, deleteSubcategory,
     settings, updateSettings,
@@ -197,6 +199,8 @@ export function AdminPanel() {
   const [editingPost, setEditingPost] = useState<Partial<Post> | null>(null);
   const [editingUser, setEditingUser] = useState<Partial<SystemUser> | null>(null);
   const [editingLead, setEditingLead] = useState<Partial<Lead> | null>(null);
+  const [editingQuote, setEditingQuote] = useState<Partial<Quote> | null>(null);
+  const [viewingQuote, setViewingQuote] = useState<Quote | null>(null);
   const [leadStatusFilter, setLeadStatusFilter] = useState<LeadStatus | 'all'>('all');
   
   const [aboutForm, setAboutForm] = useState(about);
@@ -226,6 +230,7 @@ export function AdminPanel() {
   const canDelete = isAdminEmail || currentUserRole === 'admin';
   const canSave = isAdminEmail || currentUserRole === 'admin' || currentUserRole === 'editor';
   const canAccessAdmin = isAdminEmail || !!currentUserRole;
+  const isAdmin = isAdminEmail || currentUserRole === 'admin';
 
   const aboutImageRef = useRef<HTMLInputElement>(null);
   const historyImageRef = useRef<HTMLInputElement>(null);
@@ -407,6 +412,42 @@ export function AdminPanel() {
     }
   };
 
+  // WhatsApp Sharing & Status Helpers
+  const handleShareWhatsApp = (q: Quote) => {
+    const company = settings?.companyName || 'Madeireira Pindorama';
+    const itemsList = (q.items || []).map(i => `- ${i.quantity} ${i.unit || 'un'} ${i.description} (R$ ${((i.quantity || 0) * (i.unitPrice || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`).join('\n');
+    const sub = (q.items || []).reduce((s, i) => s + (i.quantity * (i.unitPrice || 0)), 0);
+    const disc = q.discount || 0;
+    const discAmt = q.discountType === 'percent' ? (sub * disc) / 100 : disc;
+    const total = Math.max(0, sub - discAmt);
+    
+    const text = encodeURIComponent(
+      `*Orçamento #${q.number || ''} - ${company}*\n\n` +
+      `Olá *${q.clientName}*, segue o orçamento solicitado:\n\n` +
+      `${itemsList}\n\n` +
+      (disc > 0 ? `Subtotal: R$ ${sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\nDesconto: - R$ ${discAmt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` : '') +
+      `*Total Final: R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}*\n\n` +
+      `Ficamos à disposição para fechar negócio!`
+    );
+
+    const phoneNum = (q.whatsapp || q.phone || '').replace(/\D/g, '');
+    const url = phoneNum ? `https://wa.me/${phoneNum}?text=${text}` : `https://wa.me/?text=${text}`;
+    window.open(url, '_blank');
+  };
+
+  const getQuoteStatusBadge = (status?: string) => {
+    switch(status) {
+      case 'aprovado':
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-emerald-100 text-emerald-800">Aprovado</span>;
+      case 'fechado':
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-blue-100 text-blue-800">Fechado (Venda)</span>;
+      case 'nao_fechado':
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-red-100 text-red-800">Não Fechado</span>;
+      default:
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-amber-100 text-amber-800">Pendente</span>;
+    }
+  };
+
   // Generic Save/Delete Handlers
   const handleSaveItem = async <T extends { id?: string }>(
     item: Partial<T>,
@@ -503,6 +544,22 @@ export function AdminPanel() {
     
     setIsLoggingIn(true);
     try {
+      const foundUser = systemUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+      const isGlobalAdmin = email.toLowerCase() === (settings.adminUser || 'contato@madeireirapindorama.com.br').toLowerCase() && password === (settings.adminPassword || 'mad*2026');
+
+      if (foundUser || isGlobalAdmin) {
+        const mockUser = {
+          uid: foundUser ? foundUser.id : 'global-admin',
+          email: foundUser ? foundUser.email : (settings.adminUser || 'contato@madeireirapindorama.com.br'),
+          displayName: foundUser ? foundUser.name : 'Administrador',
+          emailVerified: true
+        };
+        setUser(mockUser);
+        showNotification('Login realizado com sucesso!');
+        setIsLoggingIn(false);
+        return;
+      }
+
       await signInWithEmailAndPassword(auth, email, password);
       showNotification('Login realizado com sucesso!');
     } catch (error: any) {
@@ -679,46 +736,82 @@ export function AdminPanel() {
             )}
           </div>
           
-          <nav className="space-y-2">
-            {[
-              { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-              { id: 'ajustes', label: 'Ajustes', icon: <SettingsIcon size={20} /> },
-              { id: 'atuacao', label: 'Área de Atuação', icon: <MapPin size={20} /> },
-              { id: 'categorias', label: 'Categorias & Sub', icon: <List size={20} /> },
-              { id: 'clientes', label: 'Clientes', icon: <UserCheck size={20} /> },
-              { id: 'leads', label: 'Leads', icon: <Inbox size={20} /> },
-              { id: 'manutencao', label: 'Manutenção', icon: <Construction size={20} /> },
-              { id: 'obras', label: 'Obras', icon: <Hammer size={20} /> },
-              { id: 'parceiros', label: 'Parceiros', icon: <Users size={20} /> },
-              { id: 'postagens', label: 'Postagens', icon: <FileText size={20} /> },
-              { id: 'produtos', label: 'Produtos', icon: <Package size={20} /> },
-              { id: 'profissionais', label: 'Profissionais', icon: <Briefcase size={20} /> },
-              { id: 'sobre', label: 'Sobre Nós', icon: <Info size={20} /> },
-              { id: 'usuarios', label: 'Usuários', icon: <UserCheck size={20} /> },
-              { id: 'sincronizacao', label: 'Sincronização', icon: <RefreshCw size={20} /> },
-            ].filter(item => {
-              // Only admins can see users and sync
+          <nav className="space-y-1">
+            <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'dashboard' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <LayoutDashboard size={20} /> Dashboard
+            </button>
+            <button onClick={() => setActiveTab('ajustes')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'ajustes' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <SettingsIcon size={20} /> Ajustes
+            </button>
+            <button onClick={() => setActiveTab('orcamentos')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'orcamentos' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <FileText size={20} /> Orçamentos
+            </button>
+            <button onClick={() => setActiveTab('categorias')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'categorias' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <List size={20} /> Categorias & Sub
+            </button>
+            <button onClick={() => setActiveTab('clientes')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'clientes' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <UserCheck size={20} /> Clientes
+            </button>
+            <button onClick={() => setActiveTab('manutencao')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'manutencao' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Construction size={20} /> Manutenção
+            </button>
+            <button onClick={() => setActiveTab('parceiros')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'parceiros' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Users size={20} /> Parceiros
+            </button>
+            <button onClick={() => setActiveTab('produtos')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'produtos' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Package size={20} /> Produtos
+            </button>
+            <button onClick={() => setActiveTab('profissionais')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'profissionais' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Briefcase size={20} /> Profissionais
+            </button>
+            <button onClick={() => setActiveTab('sobre')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'sobre' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+              <Info size={20} /> Sobre Nós
+            </button>
+
+            {/* Diversos Accordion / Group */}
+            <div className="pt-2">
+              <button 
+                onClick={() => setIsDiversosOpen(!isDiversosOpen)}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-lg transition hover:bg-emerald-800/50 text-emerald-100 font-semibold text-sm"
+              >
+                <span className="flex items-center gap-3"><Folder size={20} /> Diversos</span>
+                <ChevronDown size={16} className={`transition-transform ${isDiversosOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isDiversosOpen && (
+                <div className="pl-4 space-y-1 mt-1 border-l border-emerald-700 ml-4">
+                  <button onClick={() => setActiveTab('atuacao')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${activeTab === 'atuacao' ? 'bg-emerald-800 font-bold text-white' : 'text-emerald-200 hover:bg-emerald-800/50'}`}>
+                    <MapPin size={16} /> Área de Atuação
+                  </button>
+                  <button onClick={() => setActiveTab('leads')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${activeTab === 'leads' ? 'bg-emerald-800 font-bold text-white' : 'text-emerald-200 hover:bg-emerald-800/50'}`}>
+                    <Inbox size={16} /> Leads
+                  </button>
+                  <button onClick={() => setActiveTab('obras')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${activeTab === 'obras' ? 'bg-emerald-800 font-bold text-white' : 'text-emerald-200 hover:bg-emerald-800/50'}`}>
+                    <Hammer size={16} /> Obras
+                  </button>
+                  <button onClick={() => setActiveTab('postagens')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${activeTab === 'postagens' ? 'bg-emerald-800 font-bold text-white' : 'text-emerald-200 hover:bg-emerald-800/50'}`}>
+                    <FileText size={16} /> Postagens
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Admin only */}
+            {(() => {
               const isAdminEmail = ['camillasites@gmail.com', 'contato@madeireirapindorama.com.br'].includes(user?.email?.toLowerCase() || '');
               const userRole = systemUsers.find(u => u.email.toLowerCase() === user?.email?.toLowerCase())?.role;
               const isAdmin = isAdminEmail || userRole === 'admin';
-              
-              if ((item.id === 'usuarios' || item.id === 'sincronizacao') && !isAdmin) return false;
-              return true;
-            }).sort((a, b) => {
-              if (a.id === 'dashboard') return -1;
-              if (b.id === 'dashboard') return 1;
-              if (a.id === 'sincronizacao') return 1;
-              if (b.id === 'sincronizacao') return -1;
-              return a.label.localeCompare(b.label);
-            }).map((item) => (
-              <button 
-                key={item.id}
-                onClick={() => setActiveTab(item.id as any)} 
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === item.id ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}
-              >
-                {item.icon} {item.label}
-              </button>
-            ))}
+              if (!isAdmin) return null;
+              return (
+                <div className="pt-2 space-y-1">
+                  <button onClick={() => setActiveTab('usuarios')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'usuarios' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+                    <UserCheck size={20} /> Usuários
+                  </button>
+                  <button onClick={() => setActiveTab('sincronizacao')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === 'sincronizacao' ? 'bg-emerald-800 font-bold' : 'hover:bg-emerald-800/50'}`}>
+                    <RefreshCw size={20} /> Sincronização
+                  </button>
+                </div>
+              );
+            })()}
             
             <div className="px-4 py-3 mb-4 bg-emerald-800/30 rounded-lg border border-emerald-700/50 mt-4">
               <p className="text-[10px] uppercase tracking-wider text-emerald-300 opacity-70 mb-1">Administrador</p>
@@ -892,59 +985,770 @@ export function AdminPanel() {
             </div>
           )}
 
+          {/* --- ORÇAMENTOS --- */}
+          {activeTab === 'orcamentos' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-bold text-emerald-900">Gestão de Orçamentos</h3>
+                  <p className="text-sm text-stone-500">Crie, edite, aprove e gerencie orçamentos para clientes.</p>
+                </div>
+                <button 
+                  onClick={() => setEditingQuote({
+                    number: `ORC-${Date.now().toString().slice(-4)}`,
+                    clientName: '',
+                    address: '',
+                    phone: '',
+                    whatsapp: '',
+                    items: [{ id: '1', quantity: 1, description: '', unitPrice: 0, total: 0 }],
+                    discount: 0,
+                    discountType: 'fixed',
+                    finalTotal: 0,
+                    status: 'pendente',
+                    createdAt: new Date().toISOString()
+                  })}
+                  className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-800 flex items-center gap-2 font-bold shadow-sm"
+                >
+                  <Plus size={18} /> Novo Orçamento
+                </button>
+              </div>
+
+              {editingQuote && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-200">
+                    <div className="flex justify-between items-center mb-6 pb-4 border-b">
+                      <h4 className="text-xl font-bold text-emerald-900">
+                        {editingQuote.id ? `Editar Orçamento #${editingQuote.number || ''}` : 'Novo Orçamento'}
+                      </h4>
+                      <button onClick={() => setEditingQuote(null)} className="text-stone-400 hover:text-stone-600"><X size={24} /></button>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* Logomarca e Nome da Empresa (Logo acima do cabeçalho do cliente) */}
+                      <div className="bg-emerald-900 text-white p-4 rounded-xl flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <img src={settings?.logoUrl || '/logo.png'} alt="Logo" className="h-12 w-12 object-contain bg-white p-1 rounded-lg" />
+                          <div>
+                            <h4 className="font-bold text-lg">{settings?.companyName || 'Madeireira Pindorama'}</h4>
+                            <p className="text-xs text-emerald-200">Orçamento Oficial de Vendas</p>
+                          </div>
+                        </div>
+                        <div className="text-right text-xs text-emerald-200">
+                          <p>{settings?.phone}</p>
+                          <p>{settings?.email}</p>
+                        </div>
+                      </div>
+
+                      {/* Cabeçalho do Orçamento (Dados do Cliente) */}
+                      <div className="bg-stone-50 p-4 rounded-xl border border-stone-200">
+                        <h5 className="font-bold text-stone-700 mb-3 text-sm uppercase tracking-wider">Cabeçalho (Dados do Cliente)</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-stone-600 mb-1">Nome do Cliente</label>
+                            <input 
+                              className="w-full p-2.5 border rounded-lg bg-white" 
+                              placeholder="Nome completo"
+                              value={editingQuote.clientName || ''} 
+                              onChange={e => setEditingQuote({...editingQuote, clientName: e.target.value})} 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-stone-600 mb-1">Endereço</label>
+                            <input 
+                              className="w-full p-2.5 border rounded-lg bg-white" 
+                              placeholder="Endereço da obra/cliente"
+                              value={editingQuote.address || ''} 
+                              onChange={e => setEditingQuote({...editingQuote, address: e.target.value})} 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-stone-600 mb-1">Número do Orçamento</label>
+                            <input 
+                              className="w-full p-2.5 border rounded-lg bg-white font-mono font-bold text-emerald-800" 
+                              value={editingQuote.number || ''} 
+                              onChange={e => setEditingQuote({...editingQuote, number: e.target.value})} 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-stone-600 mb-1">Telefone</label>
+                            <input 
+                              className="w-full p-2.5 border rounded-lg bg-white" 
+                              placeholder="(34) 0000-0000"
+                              value={editingQuote.phone || ''} 
+                              onChange={e => setEditingQuote({...editingQuote, phone: e.target.value})} 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-stone-600 mb-1">WhatsApp</label>
+                            <input 
+                              className="w-full p-2.5 border rounded-lg bg-white" 
+                              placeholder="(34) 99999-9999"
+                              value={editingQuote.whatsapp || ''} 
+                              onChange={e => setEditingQuote({...editingQuote, whatsapp: e.target.value})} 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-stone-600 mb-1">Data</label>
+                            <input 
+                              type="date"
+                              className="w-full p-2.5 border rounded-lg bg-white" 
+                              value={editingQuote.createdAt ? editingQuote.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]} 
+                              onChange={e => setEditingQuote({...editingQuote, createdAt: new Date(e.target.value).toISOString()})} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Corpo do Orçamento: Itens (Com Unidade e Quantidade/Metros) */}
+                      <div>
+                        <div className="flex justify-between items-center mb-3">
+                          <h5 className="font-bold text-stone-700 text-sm uppercase tracking-wider">Corpo do Orçamento (Itens)</h5>
+                          <button 
+                            onClick={() => {
+                              const items = editingQuote.items || [];
+                              setEditingQuote({
+                                ...editingQuote,
+                                items: [...items, { id: Date.now().toString(), quantity: 1, unit: 'un', description: '', unitPrice: 0, total: 0 }]
+                              });
+                            }}
+                            className="bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-200 transition flex items-center gap-1"
+                          >
+                            <Plus size={14} /> Adicionar Item
+                          </button>
+                        </div>
+
+                        <div className="border border-stone-200 rounded-xl overflow-hidden bg-white">
+                          <table className="w-full text-left">
+                            <thead className="bg-stone-50 border-b text-xs text-stone-500 uppercase font-bold">
+                              <tr>
+                                <th className="p-3 w-28">Qtd / Un.</th>
+                                <th className="p-3">Descrição do Material / Serviço</th>
+                                <th className="p-3 w-32">P. Unitário (R$)</th>
+                                <th className="p-3 w-32 text-right">Total (R$)</th>
+                                <th className="p-3 w-16 text-center">Ações</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-stone-100">
+                              {(editingQuote.items || []).map((item, index) => {
+                                const itemTotal = (item.quantity || 0) * (item.unitPrice || 0);
+                                return (
+                                  <tr key={item.id || index} className="hover:bg-stone-50">
+                                    <td className="p-2">
+                                      <div className="flex gap-1">
+                                        <input 
+                                          type="number" 
+                                          step="any"
+                                          min="0"
+                                          className="w-16 p-2 border rounded-lg text-center font-bold" 
+                                          value={item.quantity} 
+                                          onChange={e => {
+                                            const qty = parseFloat(e.target.value) || 0;
+                                            const newItems = [...(editingQuote.items || [])];
+                                            newItems[index] = { ...item, quantity: qty, total: qty * item.unitPrice };
+                                            setEditingQuote({ ...editingQuote, items: newItems });
+                                          }} 
+                                        />
+                                        <select 
+                                          className="w-16 p-1.5 border rounded-lg text-xs bg-white font-semibold"
+                                          value={item.unit || 'un'}
+                                          onChange={e => {
+                                            const unit = e.target.value;
+                                            const newItems = [...(editingQuote.items || [])];
+                                            newItems[index] = { ...item, unit };
+                                            setEditingQuote({ ...editingQuote, items: newItems });
+                                          }}
+                                        >
+                                          <option value="un">un</option>
+                                          <option value="m">m</option>
+                                          <option value="m²">m²</option>
+                                          <option value="m³">m³</option>
+                                          <option value="kg">kg</option>
+                                          <option value="pç">pç</option>
+                                        </select>
+                                      </div>
+                                    </td>
+                                    <td className="p-2">
+                                      <input 
+                                        className="w-full p-2 border rounded-lg" 
+                                        placeholder="Ex: Tábua de Pinus 30cm x 3m"
+                                        value={item.description} 
+                                        onChange={e => {
+                                          const desc = e.target.value;
+                                          const newItems = [...(editingQuote.items || [])];
+                                          newItems[index] = { ...item, description: desc };
+                                          setEditingQuote({ ...editingQuote, items: newItems });
+                                        }} 
+                                      />
+                                    </td>
+                                    <td className="p-2">
+                                      <input 
+                                        type="number" 
+                                        step="0.01"
+                                        className="w-full p-2 border rounded-lg text-right" 
+                                        value={item.unitPrice} 
+                                        onChange={e => {
+                                          const price = parseFloat(e.target.value) || 0;
+                                          const newItems = [...(editingQuote.items || [])];
+                                          newItems[index] = { ...item, unitPrice: price, total: item.quantity * price };
+                                          setEditingQuote({ ...editingQuote, items: newItems });
+                                        }} 
+                                      />
+                                    </td>
+                                    <td className="p-2 text-right font-bold text-stone-800">
+                                      R$ {itemTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </td>
+                                    <td className="p-2 text-center">
+                                      <button 
+                                        onClick={() => {
+                                          const newItems = (editingQuote.items || []).filter((_, i) => i !== index);
+                                          setEditingQuote({ ...editingQuote, items: newItems });
+                                        }}
+                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                        title="Remover item"
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Rodapé / Desconto (Valores e Porcentagens) e Totais */}
+                      <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 space-y-4">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <div>
+                              <label className="block text-xs font-bold text-emerald-900 mb-1">Desconto</label>
+                              <input 
+                                type="number" 
+                                step="0.01"
+                                min="0"
+                                className="w-32 p-2 border rounded-lg bg-white" 
+                                value={editingQuote.discount || 0} 
+                                onChange={e => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  const isNewDiscount = val > 0 && val !== (editingQuote.discount || 0);
+                                  setEditingQuote({
+                                    ...editingQuote, 
+                                    discount: val,
+                                    discountStatus: isNewDiscount ? 'pendente' : (val === 0 ? undefined : editingQuote.discountStatus)
+                                  });
+                                }} 
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-emerald-900 mb-1">Tipo de Desconto</label>
+                              <select 
+                                className="p-2 border rounded-lg bg-white font-medium text-sm"
+                                value={editingQuote.discountType || 'fixed'}
+                                onChange={e => setEditingQuote({...editingQuote, discountType: e.target.value as 'fixed' | 'percent'})}
+                              >
+                                <option value="fixed">R$ (Valor Fixo)</option>
+                                <option value="percent">% (Porcentagem)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-emerald-900 mb-1">Status do Orçamento / Venda</label>
+                              <select 
+                                className="p-2 border rounded-lg bg-white font-medium text-sm"
+                                value={editingQuote.status || 'pendente'}
+                                onChange={e => setEditingQuote({...editingQuote, status: e.target.value as any})}
+                              >
+                                <option value="pendente">Pendente</option>
+                                <option value="aprovado">Aprovado</option>
+                                <option value="fechado">Fechado (Venda Concretizada)</option>
+                                <option value="nao_fechado">Não Fechado</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            {(() => {
+                              const subtotal = (editingQuote.items || []).reduce((sum, item) => sum + (item.quantity * (item.unitPrice || 0)), 0);
+                              const discountVal = editingQuote.discount || 0;
+                              const discountType = editingQuote.discountType || 'fixed';
+                              const discountAmount = discountType === 'percent' ? (subtotal * discountVal) / 100 : discountVal;
+                              const final = Math.max(0, subtotal - discountAmount);
+                              return (
+                                <div>
+                                  <p className="text-xs text-stone-500">Subtotal: R$ {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                  {discountVal > 0 && (
+                                    <p className="text-xs text-red-600 font-medium">
+                                      Desconto ({discountType === 'percent' ? `${discountVal}%` : `R$ ${discountVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}): - R$ {discountAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </p>
+                                  )}
+                                  <p className="text-2xl font-black text-emerald-900">Total: R$ {final.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+
+                        {/* Bloco de Aprovação de Desconto pelo Administrador */}
+                        {(editingQuote.discount || 0) > 0 && (
+                          <div className={`p-4 rounded-xl border ${editingQuote.discountStatus === 'aprovado' ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : editingQuote.discountStatus === 'rejeitado' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-amber-50 border-amber-200 text-amber-900'}`}>
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                              <div>
+                                <h6 className="font-bold text-sm flex items-center gap-1.5">
+                                  {editingQuote.discountStatus === 'aprovado' ? <CheckCircle2 size={16} className="text-emerald-700" /> : <AlertCircle size={16} className="text-amber-700" />}
+                                  {editingQuote.discountStatus === 'aprovado' 
+                                    ? `Desconto Aprovado por ${editingQuote.discountApprovedBy || 'Administrador'}`
+                                    : editingQuote.discountStatus === 'rejeitado'
+                                    ? 'Desconto Rejeitado pelo Administrador'
+                                    : 'Aprovação de Desconto Necessária (Exclusivo Administrador)'}
+                                </h6>
+                                <p className="text-xs mt-0.5 opacity-90">
+                                  {editingQuote.discountStatus === 'aprovado' 
+                                    ? 'O desconto foi autorizado. Impressão e emissão liberadas.'
+                                    : editingQuote.discountStatus === 'rejeitado'
+                                    ? 'O desconto foi rejeitado. Altere o valor ou remova o desconto para prosseguir.'
+                                    : 'Este orçamento possui desconto aplicado e aguarda validação e aprovação do Administrador.'}
+                                </p>
+                              </div>
+
+                              {isAdmin && editingQuote.discountStatus !== 'aprovado' && (
+                                <div className="flex gap-2">
+                                  <button 
+                                    onClick={() => {
+                                      setEditingQuote({
+                                        ...editingQuote,
+                                        discountStatus: 'aprovado',
+                                        discountApprovedBy: user?.email || 'Admin',
+                                        discountApprovedAt: new Date().toISOString()
+                                      });
+                                      showNotification('Desconto aprovado com sucesso!', 'success');
+                                    }}
+                                    className="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1"
+                                  >
+                                    <CheckCircle2 size={14} /> Aprovar Desconto
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      setEditingQuote({
+                                        ...editingQuote,
+                                        discountStatus: 'rejeitado',
+                                        discountApprovedBy: user?.email || 'Admin',
+                                        discountApprovedAt: new Date().toISOString()
+                                      });
+                                      showNotification('Desconto rejeitado.', 'error');
+                                    }}
+                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1"
+                                  >
+                                    <XCircle size={14} /> Rejeitar
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-8 pt-4 border-t flex flex-wrap justify-between items-center gap-4">
+                      <div className="flex items-center gap-3">
+                        {canSave && editingQuote.status !== 'aprovado' && (
+                          <button 
+                            onClick={() => {
+                              const subtotal = (editingQuote.items || []).reduce((sum, item) => sum + (item.quantity * (item.unitPrice || 0)), 0);
+                              const discountVal = editingQuote.discount || 0;
+                              const discountType = editingQuote.discountType || 'fixed';
+                              const discountAmount = discountType === 'percent' ? (subtotal * discountVal) / 100 : discountVal;
+                              const final = Math.max(0, subtotal - discountAmount);
+                              const updated = { 
+                                ...editingQuote, 
+                                discountType,
+                                finalTotal: final,
+                                status: 'aprovado' as const,
+                                approvedAt: new Date().toISOString(),
+                                approvedBy: user?.email || 'Admin'
+                              };
+                              handleSaveItem(updated, setEditingQuote, addQuote, updateQuote, 'orçamento');
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition text-sm"
+                          >
+                            <CheckCircle2 size={18} /> Aprovar Orçamento
+                          </button>
+                        )}
+                        {editingQuote.status === 'aprovado' && (
+                          <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-2 rounded-lg flex items-center gap-1">
+                            <CheckCircle2 size={16} /> Aprovado por {editingQuote.approvedBy || 'Admin'}
+                          </span>
+                        )}
+
+                        {/* Botão de Impressão / PDF (Liberado somente se sem desconto ou com desconto aprovado) */}
+                        {(() => {
+                          const hasDiscount = (editingQuote.discount || 0) > 0;
+                          const isDiscountApproved = editingQuote.discountStatus === 'aprovado';
+                          const canPrint = !hasDiscount || isDiscountApproved;
+                          return (
+                            <button
+                              disabled={!canPrint}
+                              onClick={() => {
+                                if (!canPrint) {
+                                  showNotification('A impressão requer aprovação do desconto pelo Administrador.', 'error');
+                                  return;
+                                }
+                                window.print();
+                              }}
+                              className={`px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 transition text-sm ${canPrint ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md' : 'bg-stone-200 text-stone-400 cursor-not-allowed'}`}
+                              title={canPrint ? 'Imprimir Orçamento' : 'Aguardando aprovação do desconto pelo Administrador para liberar impressão'}
+                            >
+                              <Printer size={16} /> Imprimir Orçamento
+                            </button>
+                          );
+                        })()}
+
+                        {editingQuote.id && (
+                          <button
+                            onClick={() => handleShareWhatsApp(editingQuote as Quote)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition text-sm"
+                          >
+                            <MessageCircle size={16} /> WhatsApp
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button onClick={() => setEditingQuote(null)} className="px-5 py-2.5 border rounded-xl hover:bg-stone-100 font-medium">Cancelar</button>
+                        <button 
+                          onClick={() => {
+                            const subtotal = (editingQuote.items || []).reduce((sum, item) => sum + (item.quantity * (item.unitPrice || 0)), 0);
+                            const discountVal = editingQuote.discount || 0;
+                            const discountType = editingQuote.discountType || 'fixed';
+                            const discountAmount = discountType === 'percent' ? (subtotal * discountVal) / 100 : discountVal;
+                            const final = Math.max(0, subtotal - discountAmount);
+                            const toSave = { 
+                              ...editingQuote, 
+                              discountType,
+                              finalTotal: final,
+                              discountStatus: discountVal > 0 ? (editingQuote.discountStatus || 'pendente') : undefined
+                            };
+                            handleSaveItem(toSave, setEditingQuote, addQuote, updateQuote, 'orçamento');
+                          }} 
+                          className="px-6 py-2.5 bg-emerald-700 text-white rounded-xl font-bold hover:bg-emerald-800 shadow-md transition"
+                        >
+                          Salvar Orçamento
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {viewingQuote && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-8 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-200">
+                    <div className="flex justify-between items-center mb-6 pb-4 border-b">
+                      <h4 className="text-xl font-bold text-emerald-900">Visualizar Orçamento #{viewingQuote.number || ''}</h4>
+                      <div className="flex gap-2 items-center">
+                        <button 
+                          onClick={() => handleShareWhatsApp(viewingQuote)}
+                          className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-700 shadow-sm"
+                        >
+                          <MessageCircle size={16} /> WhatsApp
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const hasDiscount = (viewingQuote.discount || 0) > 0;
+                            const isDiscountApproved = viewingQuote.discountStatus === 'aprovado';
+                            const canPrint = !hasDiscount || isDiscountApproved;
+                            if (!canPrint) {
+                              showNotification('A impressão requer aprovação do desconto pelo Administrador.', 'error');
+                              return;
+                            }
+                            window.print();
+                          }}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-blue-700 shadow-sm"
+                        >
+                          <Printer size={16} /> Imprimir
+                        </button>
+                        <button onClick={() => setViewingQuote(null)} className="text-stone-400 hover:text-stone-600 p-1"><X size={24} /></button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* Company Header */}
+                      <div className="bg-emerald-900 text-white p-6 rounded-2xl flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-4">
+                          <img src={settings?.logoUrl || '/logo.png'} alt="Logo" className="h-14 w-14 object-contain bg-white p-1.5 rounded-xl" />
+                          <div>
+                            <h3 className="font-extrabold text-xl">{settings?.companyName || 'Madeireira Pindorama'}</h3>
+                            <p className="text-xs text-emerald-200">Orçamento Oficial de Vendas</p>
+                          </div>
+                        </div>
+                        <div className="text-right text-xs text-emerald-200 space-y-1">
+                          <p>{settings?.phone}</p>
+                          <p>{settings?.email}</p>
+                          <p className="font-mono font-bold text-white">Nº {viewingQuote.number}</p>
+                        </div>
+                      </div>
+
+                      {/* Client Info */}
+                      <div className="bg-stone-50 p-5 rounded-xl border border-stone-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-stone-400 uppercase font-bold">Cliente</p>
+                          <p className="font-bold text-stone-800 text-lg">{viewingQuote.clientName}</p>
+                          <p className="text-sm text-stone-600 mt-1">{viewingQuote.address || 'Endereço não informado'}</p>
+                        </div>
+                        <div className="md:text-right">
+                          <p className="text-xs text-stone-400 uppercase font-bold">Contato & Data</p>
+                          <p className="text-sm text-stone-700 font-medium">{viewingQuote.phone} {viewingQuote.whatsapp ? `/ WhatsApp: ${viewingQuote.whatsapp}` : ''}</p>
+                          <p className="text-xs text-stone-500 mt-1">Data: {viewingQuote.createdAt ? new Date(viewingQuote.createdAt).toLocaleDateString('pt-BR') : '-'}</p>
+                          <p className="text-xs mt-1">
+                            Status: <span className={`px-2 py-0.5 rounded-full font-bold uppercase ${viewingQuote.status === 'aprovado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{viewingQuote.status || 'pendente'}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Items Table */}
+                      <div className="border border-stone-200 rounded-xl overflow-hidden bg-white">
+                        <table className="w-full text-left">
+                          <thead className="bg-stone-50 border-b text-xs text-stone-500 uppercase font-bold">
+                            <tr>
+                              <th className="p-3 w-24">Qtd</th>
+                              <th className="p-3">Descrição</th>
+                              <th className="p-3 w-32">P. Unitário</th>
+                              <th className="p-3 w-32 text-right">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone-100">
+                            {(viewingQuote.items || []).map((item, idx) => (
+                              <tr key={idx} className="hover:bg-stone-50">
+                                <td className="p-3 font-bold text-stone-800">{item.quantity} {item.unit || 'un'}</td>
+                                <td className="p-3 text-stone-700">{item.description}</td>
+                                <td className="p-3 text-stone-600">R$ {(item.unitPrice || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                <td className="p-3 text-right font-bold text-stone-900">R$ {((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Totals & Discount */}
+                      <div className="bg-emerald-50/60 p-5 rounded-xl border border-emerald-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div>
+                          {(viewingQuote.discount || 0) > 0 && (
+                            <div className="text-xs space-y-1">
+                              <p className="font-bold text-emerald-900">Desconto Aplicado: {viewingQuote.discountType === 'percent' ? `${viewingQuote.discount}%` : `R$ ${viewingQuote.discount?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}</p>
+                              <p className={`font-medium ${viewingQuote.discountStatus === 'aprovado' ? 'text-emerald-700' : viewingQuote.discountStatus === 'rejeitado' ? 'text-red-600' : 'text-amber-700'}`}>
+                                Status do Desconto: {viewingQuote.discountStatus === 'aprovado' ? 'Aprovado pelo Administrador' : viewingQuote.discountStatus === 'rejeitado' ? 'Rejeitado' : 'Pendente de Aprovação'}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          {(() => {
+                            const sub = (viewingQuote.items || []).reduce((s, i) => s + (i.quantity * (i.unitPrice || 0)), 0);
+                            const discVal = viewingQuote.discount || 0;
+                            const discAmt = viewingQuote.discountType === 'percent' ? (sub * discVal) / 100 : discVal;
+                            const fin = Math.max(0, sub - discAmt);
+                            return (
+                              <div>
+                                <p className="text-xs text-stone-500">Subtotal: R$ {sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                {discVal > 0 && <p className="text-xs text-red-600">Desconto: - R$ {discAmt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
+                                <p className="text-2xl font-black text-emerald-900">Total Final: R$ {fin.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-8 pt-4 border-t flex justify-end gap-3">
+                      <button onClick={() => setViewingQuote(null)} className="px-6 py-2.5 bg-stone-200 text-stone-700 rounded-xl font-bold hover:bg-stone-300">Fechar</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Quotes List Table */}
+              <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-stone-50 border-b text-stone-500 text-xs uppercase font-bold">
+                    <tr>
+                      <th className="p-4">Nº / Data</th>
+                      <th className="p-4">Cliente</th>
+                      <th className="p-4">Contato</th>
+                      <th className="p-4">Total</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {quotes.map(q => (
+                      <tr key={q.id} className="hover:bg-stone-50 transition">
+                        <td className="p-4">
+                          <span className="font-mono font-bold text-emerald-900">{q.number || 'ORC'}</span>
+                          <div className="text-xs text-stone-400">{q.createdAt ? new Date(q.createdAt).toLocaleDateString('pt-BR') : '-'}</div>
+                        </td>
+                        <td className="p-4 font-bold text-stone-800">{q.clientName}</td>
+                        <td className="p-4 text-sm text-stone-600">
+                          <div>{q.phone}</div>
+                          {q.whatsapp && (
+                            <a href={`https://wa.me/${q.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-emerald-600 text-xs flex items-center gap-1 hover:underline">
+                              <MessageCircle size={12} /> {q.whatsapp}
+                            </a>
+                          )}
+                        </td>
+                        <td className="p-4 font-bold text-emerald-950">
+                          R$ {(q.finalTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="p-4">
+                          {getQuoteStatusBadge(q.status)}
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={() => handleShareWhatsApp(q)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition" title="Compartilhar no WhatsApp"><MessageCircle size={16} /></button>
+                            <button onClick={() => setViewingQuote(q)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition" title="Visualizar e Imprimir"><Eye size={16} /></button>
+                            <button onClick={() => setEditingQuote(q)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar"><Edit size={16} /></button>
+                            <button onClick={() => handleDeleteItem(q.id!, deleteQuote, 'orçamento')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Excluir"><Trash2 size={16} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {quotes.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="p-12 text-center text-stone-400 italic">
+                          Nenhum orçamento cadastrado ainda.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* --- DASHBOARD --- */}
           {activeTab === 'dashboard' && (
-            <div>
-              <h3 className="text-2xl font-bold text-emerald-900 mb-6">Visão Geral</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-emerald-100 rounded-lg text-emerald-800"><Package /></div>
-                    <span className="text-3xl font-bold text-emerald-900">{products.length}</span>
-                  </div>
-                  <p className="text-emerald-800 font-medium">Produtos Cadastrados</p>
+            <div className="space-y-8">
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-emerald-900">Visão Geral</h3>
+                  <button 
+                    onClick={() => setActiveTab('orcamentos')}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition"
+                  >
+                    <FileText size={16} /> Ver Todos os Orçamentos
+                  </button>
                 </div>
-                <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-blue-100 rounded-lg text-blue-800"><UserCheck /></div>
-                    <span className="text-3xl font-bold text-blue-900">{clients.length}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-3 bg-emerald-100 rounded-lg text-emerald-800"><Package /></div>
+                      <span className="text-3xl font-bold text-emerald-900">{products.length}</span>
+                    </div>
+                    <p className="text-emerald-800 font-medium">Produtos Cadastrados</p>
                   </div>
-                  <p className="text-blue-800 font-medium">Clientes Cadastrados</p>
+                  <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-3 bg-blue-100 rounded-lg text-blue-800"><FileText /></div>
+                      <span className="text-3xl font-bold text-blue-900">{quotes.length}</span>
+                    </div>
+                    <p className="text-blue-800 font-medium">Orçamentos Totais</p>
+                  </div>
+                  <div className="bg-emerald-100/70 p-6 rounded-xl border border-emerald-200">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-3 bg-emerald-200 rounded-lg text-emerald-900"><CheckCircle2 /></div>
+                      <span className="text-3xl font-bold text-emerald-950">{quotes.filter(q => q.status === 'fechado').length}</span>
+                    </div>
+                    <p className="text-emerald-900 font-medium">Vendas Concretizadas</p>
+                  </div>
+                  <div className="bg-red-50 p-6 rounded-xl border border-red-100">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-3 bg-red-100 rounded-lg text-red-800"><Inbox /></div>
+                      <span className="text-3xl font-bold text-red-900">{leads.length}</span>
+                    </div>
+                    <p className="text-red-800 font-medium">Novos Leads</p>
+                  </div>
+                  <div className="bg-amber-50 p-6 rounded-xl border border-amber-100">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-3 bg-amber-100 rounded-lg text-amber-800"><Users /></div>
+                      <span className="text-3xl font-bold text-amber-900">{partners.length}</span>
+                    </div>
+                    <p className="text-amber-800 font-medium">Parceiros Ativos</p>
+                  </div>
+                  <div className="bg-purple-50 p-6 rounded-xl border border-purple-100">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-3 bg-purple-100 rounded-lg text-purple-800"><List /></div>
+                      <span className="text-3xl font-bold text-purple-900">{categories.length}</span>
+                    </div>
+                    <p className="text-purple-800 font-medium">Categorias</p>
+                  </div>
+                  <div className="bg-orange-50 p-6 rounded-xl border border-orange-100">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-3 bg-orange-100 rounded-lg text-orange-800"><Hammer /></div>
+                      <span className="text-3xl font-bold text-orange-900">{works.length}</span>
+                    </div>
+                    <p className="text-orange-800 font-medium">Obras Realizadas</p>
+                  </div>
+                  <div className="bg-teal-50 p-6 rounded-xl border border-teal-100">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-3 bg-teal-100 rounded-lg text-teal-800"><Briefcase /></div>
+                      <span className="text-3xl font-bold text-teal-900">{professionals.length}</span>
+                    </div>
+                    <p className="text-teal-800 font-medium">Profissionais Indicados</p>
+                  </div>
                 </div>
-                <div className="bg-red-50 p-6 rounded-xl border border-red-100">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-red-100 rounded-lg text-red-800"><Inbox /></div>
-                    <span className="text-3xl font-bold text-red-900">{leads.length}</span>
-                  </div>
-                  <p className="text-red-800 font-medium">Novos Leads</p>
+              </div>
+
+              {/* Recent Quotes on Dashboard */}
+              <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-lg font-bold text-emerald-900 flex items-center gap-2">
+                    <FileText className="text-emerald-600" size={20} /> Orçamentos Recentes
+                  </h4>
+                  <button onClick={() => setActiveTab('orcamentos')} className="text-xs font-bold text-emerald-700 hover:underline">Ver Todos</button>
                 </div>
-                <div className="bg-amber-50 p-6 rounded-xl border border-amber-100">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-amber-100 rounded-lg text-amber-800"><Users /></div>
-                    <span className="text-3xl font-bold text-amber-900">{partners.length}</span>
-                  </div>
-                  <p className="text-amber-800 font-medium">Parceiros Ativos</p>
-                </div>
-                <div className="bg-purple-50 p-6 rounded-xl border border-purple-100">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-purple-100 rounded-lg text-purple-800"><List /></div>
-                    <span className="text-3xl font-bold text-purple-900">{categories.length}</span>
-                  </div>
-                  <p className="text-purple-800 font-medium">Categorias</p>
-                </div>
-                <div className="bg-orange-50 p-6 rounded-xl border border-orange-100">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-orange-100 rounded-lg text-orange-800"><Hammer /></div>
-                    <span className="text-3xl font-bold text-orange-900">{works.length}</span>
-                  </div>
-                  <p className="text-orange-800 font-medium">Obras Realizadas</p>
-                </div>
-                <div className="bg-teal-50 p-6 rounded-xl border border-teal-100">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-teal-100 rounded-lg text-teal-800"><Briefcase /></div>
-                    <span className="text-3xl font-bold text-teal-900">{professionals.length}</span>
-                  </div>
-                  <p className="text-teal-800 font-medium">Profissionais Indicados</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-stone-50 border-b text-xs text-stone-500 uppercase font-bold">
+                      <tr>
+                        <th className="p-3">Nº / Data</th>
+                        <th className="p-3">Cliente</th>
+                        <th className="p-3">Total</th>
+                        <th className="p-3">Status</th>
+                        <th className="p-3 text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {quotes.slice(0, 5).map(q => (
+                        <tr key={q.id} className="hover:bg-stone-50">
+                          <td className="p-3">
+                            <span className="font-mono font-bold text-emerald-800">#{q.number || '000'}</span>
+                            <p className="text-xs text-stone-400">{q.createdAt ? new Date(q.createdAt).toLocaleDateString('pt-BR') : '-'}</p>
+                          </td>
+                          <td className="p-3">
+                            <p className="font-bold text-stone-800">{q.clientName}</p>
+                            <p className="text-xs text-stone-500">{q.phone}</p>
+                          </td>
+                          <td className="p-3 font-bold text-emerald-950">
+                            R$ {(q.finalTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="p-3">
+                            {getQuoteStatusBadge(q.status)}
+                          </td>
+                          <td className="p-3 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => handleShareWhatsApp(q)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition" title="Compartilhar no WhatsApp"><MessageCircle size={16} /></button>
+                              <button onClick={() => setViewingQuote(q)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition" title="Visualizar"><Eye size={16} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {quotes.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-8 text-center text-stone-400 italic">
+                            Nenhum orçamento cadastrado.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -2887,24 +3691,29 @@ export function AdminPanel() {
 
               {editingUser && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white p-6 rounded-xl w-full max-w-md">
+                  <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-2xl border border-stone-200">
                     <div className="flex justify-between items-center mb-4">
-                      <h4 className="text-xl font-bold">{editingUser.id ? 'Editar Usuário' : 'Novo Usuário autorizado'}</h4>
-                      <button onClick={() => setEditingUser(null)}><X /></button>
+                      <h4 className="text-xl font-bold text-emerald-900">{editingUser.id ? 'Editar Usuário' : 'Novo Usuário Local'}</h4>
+                      <button onClick={() => setEditingUser(null)} className="text-stone-400 hover:text-stone-600"><X /></button>
                     </div>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium">Nome</label>
-                        <input className="w-full p-2 border rounded" placeholder="Nome do colaborador" value={editingUser.name} onChange={e => setEditingUser({...editingUser, name: e.target.value})} />
+                        <label className="block text-sm font-medium text-stone-700">Nome</label>
+                        <input className="w-full p-2.5 border rounded-lg" placeholder="Nome do colaborador" value={editingUser.name || ''} onChange={e => setEditingUser({...editingUser, name: e.target.value})} />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium">Email (Google)</label>
-                        <input type="email" className="w-full p-2 border rounded" placeholder="email@gmail.com" value={editingUser.email} onChange={e => setEditingUser({...editingUser, email: e.target.value})} />
-                        <p className="text-[10px] text-stone-500 mt-1">O usuário deve logar usando este e-mail através do botão Google ou Criar conta com ele.</p>
+                        <label className="block text-sm font-medium text-stone-700">Email</label>
+                        <input type="email" className="w-full p-2.5 border rounded-lg" placeholder="usuario@sistema.com" value={editingUser.email || ''} onChange={e => setEditingUser({...editingUser, email: e.target.value})} />
+                        <p className="text-[11px] text-stone-500 mt-1">E-mail de acesso exclusivo para este sistema (não requer validação externa).</p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium">Nível de Acesso</label>
-                        <select className="w-full p-2 border rounded" value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value as any})}>
+                        <label className="block text-sm font-medium text-stone-700">Senha de Acesso</label>
+                        <input type="text" className="w-full p-2.5 border rounded-lg" placeholder="Defina a senha" value={editingUser.password || ''} onChange={e => setEditingUser({...editingUser, password: e.target.value})} />
+                        <p className="text-[11px] text-stone-500 mt-1">Senha usada pelo colaborador para entrar no painel.</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-stone-700">Nível de Acesso</label>
+                        <select className="w-full p-2.5 border rounded-lg bg-white" value={editingUser.role || 'editor'} onChange={e => setEditingUser({...editingUser, role: e.target.value as any})}>
                           <option value="admin">Administrador (Pode tudo)</option>
                           <option value="editor">Editor (Pode salvar, mas não excluir)</option>
                           <option value="viewer">Visualizador (Apenas vê os dados)</option>
@@ -2912,8 +3721,8 @@ export function AdminPanel() {
                       </div>
                     </div>
                     <div className="mt-6 flex justify-end gap-2">
-                      <button onClick={() => setEditingUser(null)} className="px-4 py-2 border rounded hover:bg-gray-100">Cancelar</button>
-                      <button onClick={() => handleSaveItem(editingUser, setEditingUser, addUser, updateUser, 'usuário')} className="px-4 py-2 bg-emerald-700 text-white rounded hover:bg-emerald-800">Salvar Permissão</button>
+                      <button onClick={() => setEditingUser(null)} className="px-4 py-2 border rounded-lg hover:bg-stone-100 font-medium">Cancelar</button>
+                      <button onClick={() => handleSaveItem(editingUser, setEditingUser, addUser, updateUser, 'usuário')} className="px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 font-bold">Salvar Usuário</button>
                     </div>
                   </div>
                 </div>
@@ -2925,6 +3734,7 @@ export function AdminPanel() {
                     <tr>
                       <th className="p-4 font-bold text-stone-600 text-sm">Nome</th>
                       <th className="p-4 font-bold text-stone-600 text-sm">Email</th>
+                      <th className="p-4 font-bold text-stone-600 text-sm">Senha</th>
                       <th className="p-4 font-bold text-stone-600 text-sm">Nível</th>
                       <th className="p-4 font-bold text-stone-600 text-sm text-right">Ações</th>
                     </tr>
@@ -2938,6 +3748,7 @@ export function AdminPanel() {
                         </div>
                       </td>
                       <td className="p-4 text-stone-500">contato@madeireirapindorama.com.br</td>
+                      <td className="p-4 font-mono text-xs text-stone-500">mad*2026</td>
                       <td className="p-4"><span className="text-xs bg-emerald-700 text-white px-2 py-1 rounded">PROPRIETÁRIO</span></td>
                       <td className="p-4 text-right overflow-hidden">
                         <Lock size={16} className="ml-auto opacity-20" />
@@ -2947,6 +3758,7 @@ export function AdminPanel() {
                       <tr key={u.id} className="border-b hover:bg-stone-50">
                         <td className="p-4 font-medium">{u.name}</td>
                         <td className="p-4 text-stone-600">{u.email}</td>
+                        <td className="p-4 font-mono text-xs text-stone-600">{u.password || '-'}</td>
                         <td className="p-4">
                           <span className={`text-xs px-2 py-1 rounded font-bold uppercase ${
                             u.role === 'admin' ? 'bg-purple-100 text-purple-700' :

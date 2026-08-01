@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback, useMemo } from 'react';
-import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work, ServiceArea, Post, SystemUser, Lead } from '../types';
+import { Product, Partner, Professional, AboutData, Client, Category, Subcategory, Settings, Work, ServiceArea, Post, SystemUser, Lead, Quote } from '../types';
 
 import { db, auth } from '../lib/firebase';
 import { 
@@ -141,6 +141,11 @@ interface DataContextType {
   addLead: (lead: Lead) => void;
   updateLead: (lead: Lead) => void;
   deleteLead: (id: string) => void;
+
+  quotes: Quote[];
+  addQuote: (quote: Quote) => void;
+  updateQuote: (quote: Quote) => void;
+  deleteQuote: (id: string) => void;
 
   users: SystemUser[];
   addUser: (user: SystemUser) => void;
@@ -495,6 +500,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [serviceAreas, setServiceAreas] = useFirestoreCollection<ServiceArea>('service_areas', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions);
   const [posts, setPosts] = useFirestoreCollection<Post>('posts', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions);
   const [leads, setLeads] = useFirestoreCollection<Lead>('leads', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions, !!user);
+  const [quotes, setQuotes] = useFirestoreCollection<Quote>('quotes', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions, !!user);
   const [users, setUsers] = useFirestoreCollection<SystemUser>('users', [], handleSyncChange, saveToCache, loadFromCache, pendingDeletionsRef, setPendingDeletions, !!user);
 
   const [settings, setSettings] = useFirestoreDocument<Settings>('settings', 'global', {
@@ -648,6 +654,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const serviceAreaCrud = useMemo(() => createCrud<ServiceArea>('service_areas', setServiceAreas), [createCrud, setServiceAreas]);
   const postCrud = useMemo(() => createCrud<Post>('posts', setPosts), [createCrud, setPosts]);
   const leadCrud = useMemo(() => createCrud<Lead>('leads', setLeads), [createCrud, setLeads]);
+  const quoteCrud = useMemo(() => createCrud<Quote>('quotes', setQuotes), [createCrud, setQuotes]);
   const baseUserCrud = useMemo(() => createCrud<SystemUser>('users', setUsers), [createCrud, setUsers]);
   
   const userCrud = useMemo(() => ({
@@ -690,9 +697,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const exportData = useCallback(() => {
     return JSON.stringify({
-      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads
+      products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads, quotes
     }, null, 2);
-  }, [products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads]);
+  }, [products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads, quotes]);
 
   const importData = useCallback(async (jsonData: string) => {
     // Import logic would be complex with Firestore (batch writes), skipping for now or implementing basic
@@ -715,7 +722,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [itemsLoadedCount, totalItemsToLoad, isInitialLoading, hasTimedOutShort, isOnline]);
 
   const value = useMemo(() => ({
-    products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads,
+    products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads, quotes,
     isSyncing, lastSyncError, isOnline, loadingProgress, isInitialLoading,
     exportData, importData, forceSyncPull,
     addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.remove,
@@ -731,11 +738,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addPost: postCrud.add, updatePost: postCrud.update, deletePost: postCrud.remove,
     addUser: userCrud.add, updateUser: userCrud.update, deleteUser: userCrud.remove,
     addLead: leadCrud.add, updateLead: leadCrud.update, deleteLead: leadCrud.remove,
+    addQuote: quoteCrud.add, updateQuote: quoteCrud.update, deleteQuote: quoteCrud.remove,
   }), [
-    products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads,
+    products, partners, professionals, about, history, clients, categories, subcategories, settings, works, serviceAreas, posts, users, leads, quotes,
     isSyncing, lastSyncError, isOnline, loadingProgress, isInitialLoading,
     exportData, importData, forceSyncPull,
-    productCrud, partnerCrud, updateAboutFn, updateHistoryFn, clientCrud, categoryCrud, subcategoryCrud, updateSettingsFn, workCrud, professionalCrud, serviceAreaCrud, postCrud, userCrud, leadCrud
+    productCrud, partnerCrud, updateAboutFn, updateHistoryFn, clientCrud, categoryCrud, subcategoryCrud, updateSettingsFn, workCrud, professionalCrud, serviceAreaCrud, postCrud, userCrud, leadCrud, quoteCrud
   ]);
 
   return (
